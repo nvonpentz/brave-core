@@ -21,7 +21,7 @@ import {
   SignMessageCommandPayload,
   SignMessageResponsePayload
 } from '../../common/trezor/trezor-messages'
-import { sendTrezorCommand } from '../../common/trezor/trezor-bridge-transport'
+import { sendTrezorCommand, closeTrezorBridge } from '../../common/trezor/trezor-bridge-transport'
 import { getLocale } from '../../../common/locale'
 import { hardwareDeviceIdFromAddress } from '../hardwareDeviceIdFromAddress'
 import { SignHardwareMessageOperationResult, SignHardwareTransactionOperationResult } from '../../common/hardware_operations'
@@ -101,19 +101,23 @@ export default class TrezorBridgeKeyring extends EventEmitter {
     return { success: true, payload: data.payload.payload.signature }
   }
 
-  isUnlocked = () => {
-    return this.unlocked_
+  isUnlocked = (): boolean => {
+    return this.unlocked
   }
 
-  unlock = async () => {
-    const data = await this.sendTrezorCommand<UnlockResponse>({
-      // @ts-ignore
-      id: crypto.randomUUID(),
+  cancelOperation = async () => {
+    closeTrezorBridge()
+  }
+
+  unlock = async (): Promise<HardwareOperationResult> => {
+    const data = await this.sendTrezorCommand<UnlockResponsePayload>({
+      id: TrezorCommand.Unlock,
       origin: window.origin,
       command: TrezorCommand.Unlock
     })
-    if (!data) {
-      return false
+    if (data === TrezorErrorsCodes.BridgeNotReady ||
+        data === TrezorErrorsCodes.CommandInProgress) {
+      return this.createErrorFromCode(data)
     }
     this.unlocked_ = data.result
     if (data.result) {
