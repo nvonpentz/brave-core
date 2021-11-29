@@ -573,7 +573,8 @@ void KeyringController::GetKeyringInfo(const std::string& keyring_id,
 
 void KeyringController::GetDefaultKeyringInfo(
     GetDefaultKeyringInfoCallback callback) {
-  GetKeyringInfo(kDefaultKeyringId, std::move(callback));
+  // GetKeyringInfo(kDefaultKeyringId, std::move(callback));
+  GetKeyringInfo(kFilecoinKeyringId, std::move(callback));
 }
 
 void KeyringController::GetMnemonicForDefaultKeyring(
@@ -584,6 +585,7 @@ void KeyringController::GetMnemonicForDefaultKeyring(
 void KeyringController::CreateWallet(const std::string& password,
                                      CreateWalletCallback callback) {
   auto* keyring = CreateKeyring(kDefaultKeyringId, password);
+
   if (keyring) {
     AddAccountForDefaultKeyring(GetAccountName(1));
   }
@@ -1210,6 +1212,8 @@ bool KeyringController::IsHardwareAccount(const std::string& account) const {
 
 void KeyringController::Unlock(const std::string& password,
                                UnlockCallback callback) {
+
+  ResumeKeyring(kFilecoinKeyringId, password);
   if (!ResumeKeyring(kDefaultKeyringId, password)) {
     encryptor_.reset();
     std::move(callback).Run(false);
