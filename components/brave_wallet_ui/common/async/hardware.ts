@@ -18,6 +18,13 @@ import LedgerBridgeKeyring from '../../common/ledgerjs/eth_ledger_bridge_keyring
 import TrezorBridgeKeyring from '../../common/trezor/trezor_bridge_keyring'
 import { HardwareWalletErrorType } from '../../constants/types'
 
+export function dialogErrorFromTrezorErrorCode (code: TrezorErrorsCodes): HardwareWalletResponseCodeType {
+  if (code === TrezorErrorsCodes.CommandInProgress) {
+    return 'deviceBusy'
+  }
+  return 'openEthereumApp'
+}
+
 export async function signTrezorTransaction (apiProxy: WalletApiProxy, path: string, txInfo: BraveWallet.TransactionInfo): Promise<SignHardwareTransactionType> {
   const chainId = await apiProxy.ethJsonRpcController.getChainId()
   const nonce = await apiProxy.ethTxController.getNonceForHardwareTransaction(txInfo.id)

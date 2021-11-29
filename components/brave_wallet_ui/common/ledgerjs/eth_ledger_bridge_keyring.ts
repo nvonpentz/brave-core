@@ -57,6 +57,7 @@ export default class LedgerBridgeKeyring extends EventEmitter {
     await this.makeApp()
 
     if (this.app) {
+      this.app.transport.on('disconnect', this.onDisconnected)
       const zeroPath = this.getPathForIndex(0, LedgerDerivationPaths.LedgerLive)
       const address = await this._getAddress(zeroPath)
       this.deviceId_ = await hardwareDeviceIdFromAddress(address)
@@ -72,7 +73,7 @@ export default class LedgerBridgeKeyring extends EventEmitter {
     return { success: true, payload: signed }
   }
 
-  signPersonalMessage = async (path: string, address: string, message: string): Promise<SignHardwareMessageOperationResult> => {
+  signPersonalMessage = async (path: string, message: string): Promise<SignHardwareMessageOperationResult> => {
     if (!this.isUnlocked() && !(await this.unlock())) {
       return { success: false, error: getLocale('braveWalletUnlockError') }
     }
@@ -85,7 +86,17 @@ export default class LedgerBridgeKeyring extends EventEmitter {
       }
       return { success: true, payload: signature }
     } catch (e) {
-      return { success: false, error: e.message }
+      return { success: false, error: e.message, code: e.statusCode || e.id || e.name }
+    }
+  }
+
+  cancelOperation = async () => {
+    this.app?.transport.close()
+  }
+
+  private onDisconnected = (e: any) => {
+    if (e.name !== 'DisconnectedDevice') {
+      return
     }
   }
 

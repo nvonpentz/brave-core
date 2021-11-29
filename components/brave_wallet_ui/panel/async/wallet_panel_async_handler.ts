@@ -2,7 +2,6 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
-
 import {
   TransactionInfo,
   SignMessageRequest,
@@ -37,7 +36,10 @@ import {
 import {
   signTrezorTransaction,
   signLedgerTransaction,
-  signMessageWithHardwareKeyring
+  signMessageWithHardwareKeyring,
+  cancelHardwareOperation,
+  dialogErrorFromLedgerErrorCode,
+  dialogErrorFromTrezorErrorCode
 } from '../../common/async/hardware'
 
 import { fetchSwapQuoteFactory } from '../../common/async/handlers'
@@ -45,6 +47,7 @@ import { Store } from '../../common/async/types'
 import { getLocale } from '../../../common/locale'
 
 import getWalletPanelApiProxy from '../wallet_panel_api_proxy'
+import { TrezorErrorsCodes } from '../../common/trezor/trezor-messages'
 
 const handler = new AsyncActionHandler()
 
@@ -308,14 +311,22 @@ handler.on(PanelActions.signMessageHardware.getType(), async (store, messageData
     return
   }
   const info = hardwareAccount.hardware
-  apiProxy.panelHandler.setCloseOnDeactivate(false)
-  const signature = await signMessageWithHardwareKeyring(apiProxy, info.vendor, info.path, messageData.address, messageData.message)
-  apiProxy.panelHandler.setCloseOnDeactivate(true)
-  if (!signature || !signature.success) {
-    store.dispatch(PanelActions.signMessageHardwareProcessed({ success: false, id: messageData.id, error: signature.error }))
-    return
+  const signed = await signMessageWithHardwareKeyring(apiProxy, info.vendor, info.path, messageData.message)
+  if (!signed.success) {
+    if (signed.code) {
+      const deviceError = (info.vendor === TREZOR_HARDWARE_VENDOR)
+        ? dialogErrorFromTrezorErrorCode(signed.code as TrezorErrorsCodes) : dialogErrorFromLedgerErrorCode(signed.code)
+      if (deviceError !== 'transactionRejected') {
+        await store.dispatch(PanelActions.setHardwareWalletInteractionError(deviceError))
+        return
+      }
+    }
   }
-  store.dispatch(PanelActions.signMessageHardwareProcessed({ success: true, id: messageData.id, signature: signature.payload }))
+  const payload: SignMessageHardwareProcessedPayload =
+    signed.success ? { success: signed.success, id: messageData.id, signature: signed.payload }
+                   : { success: signed.success, id: messageData.id, error: signed.error }
+  store.dispatch(PanelActions.signMessageHardwareProcessed(payload))
+  await store.dispatch(PanelActions.navigateToMain())
   apiProxy.panelHandler.closeUI()
 })
 
