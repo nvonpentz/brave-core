@@ -5,6 +5,7 @@
 
 import * as React from 'react'
 
+import { FilecoinAddressProtocol } from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
 import { StyledWrapper } from '../../components/desktop/views/crypto/style'
 import {
   TopTabNavTypes,
@@ -74,6 +75,7 @@ export interface Props {
   onAddHardwareAccounts: (selected: HardwareWalletAccount[]) => void
   onConnectHardwareWallet: (opts: HardwareWalletConnectOpts) => Promise<HardwareWalletAccount[]>
   onImportAccount: (accountName: string, privateKey: string) => void
+  onImportFilecoinAccount: (accountName: string, privateKey: string, network: string, protocol: FilecoinAddressProtocol) => void
   onCreateAccount: (name: string) => void
   onSelectAsset: (asset: ERCToken | undefined) => void
   onChangeTimeline: (path: AssetPriceTimeframe) => void
@@ -117,6 +119,7 @@ const CryptoStoryView = (props: Props) => {
     onAddHardwareAccounts,
     getBalance,
     onImportAccount,
+    onImportFilecoinAccount,
     onUpdateAccountName,
     fetchFullTokenList,
     onSelectNetwork,
@@ -332,6 +335,7 @@ const CryptoStoryView = (props: Props) => {
           onClose={onCloseAddModal}
           onCreateAccount={onCreateAccount}
           onImportAccount={onImportAccount}
+          onImportFilecoinAccount={onImportFilecoinAccount}
           onConnectHardwareWallet={onConnectHardwareWallet}
           onAddHardwareAccounts={onAddHardwareAccounts}
           getBalance={getBalance}

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { FilecoinAddressProtocol } from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
 import { WalletWidgetStandIn } from './style'
 import {
   // SideNav,
@@ -477,6 +478,9 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const onImportAccount = (name: string, key: string) => {
     // doesnt do anything in storybook
   }
+  const onImportFilecoinAccount = (accountName: string, privateKey: string, network: string, protocol: FilecoinAddressProtocol) => {
+    // doesnt do anything in storybook
+  }
 
   const onImportAccountFromJson = (name: string, password: string, json: string) => {
     // doesnt do anything in storybook
@@ -753,6 +757,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                               userAssetList={userAssetList}
                               onCreateAccount={onCreateAccount}
                               onImportAccount={onImportAccount}
+                              onImportFilecoinAccount={onImportFilecoinAccount}
                               onConnectHardwareWallet={onConnectHardwareWallet}
                               onAddHardwareAccounts={onAddHardwareAccounts}
                               getBalance={getBalance}
