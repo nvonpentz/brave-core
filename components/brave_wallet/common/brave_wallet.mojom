@@ -9,6 +9,7 @@ import "mojo/public/mojom/base/time.mojom";
 import "mojo/public/mojom/base/values.mojom";
 import "url/mojom/url.mojom";
 
+
 // Used to notify the renderer of provider information for use in
 // window.ethereum events
 interface EventsListener {
@@ -208,6 +209,23 @@ struct SwapResponse {
 const string kLedgerHardwareVendor = "Ledger";
 const string kTrezorHardwareVendor = "Trezor";
 
+[EnableIf=filecoin_enabled]
+const string kFilecoinTestnet = "t";
+[EnableIf=filecoin_enabled]
+const string kFilecoinMainnet = "f";
+
+[EnableIf=filecoin_enabled]
+enum FilecoinAddressNetwork {
+   kFilecoinTestnet,
+   kFilecoinMainnet
+};
+
+[EnableIf=filecoin_enabled]
+enum FilecoinAddressProtocol {
+  SECP256K1, // Represents the address SECP256K1 protocol
+  BLS  // Represents the address BLS protocol
+};
+
 struct HardwareWalletAccount {
   string address;
   string derivation_path;
@@ -344,6 +362,10 @@ interface KeyringController {
 
   // Imports an account with a specific private key to the keyring
   ImportAccount(string accountName, string privateKey)
+    => (bool success, string address);
+
+  [EnableIf=filecoin_enabled]
+  ImportFilecoinAccount(string accountName, string privateKey, FilecoinAddressNetwork network, FilecoinAddressProtocol protocol)
     => (bool success, string address);
 
   // Imports an account via JSON

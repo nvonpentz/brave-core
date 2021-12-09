@@ -15,7 +15,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/value_iterators.h"
 #include "base/values.h"
-#include "brave/components/brave_wallet/browser/filecoin_keyring.h"
+#include "brave/components/brave_wallet/common/buildflags/buildflags.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_prefs.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
@@ -31,6 +31,10 @@
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/re2/src/re2/re2.h"
 #include "ui/base/l10n/l10n_util.h"
+
+#if BUILDFLAG(FILECOIN_ENABLED)
+#include "brave/components/brave_wallet/browser/filecoin_keyring.h"
+#endif
 
 /* kBraveWalletKeyrings structure
  *
@@ -91,6 +95,7 @@ const size_t kSaltSize = 32;
 const size_t kNonceSize = 12;
 const char kRootPath[] = "m/44'/60'/0'/0";
 const char kDefaultKeyringId[] = "default";
+const char kFilecoinKeyringId[] = "filecoin";
 const char kPasswordEncryptorSalt[] = "password_encryptor_salt";
 const char kPasswordEncryptorNonce[] = "password_encryptor_nonce";
 const char kEncryptedMnemonic[] = "encrypted_mnemonic";
@@ -634,7 +639,61 @@ void KeyringController::GetPrivateKeyForDefaultKeyringAccount(
   std::string private_key = hd_key->GetHexEncodedPrivateKey();
   std::move(callback).Run(!private_key.empty(), private_key);
 }
+#if BUILDFLAG(FILECOIN_ENABLED)
+void KeyringController::ImportFilecoinAccount(const std::string& account_name,
+                                              const std::string& private_key_hex,
+                                              mojom::FilecoinAddressNetwork network,
+                                              mojom::FilecoinAddressProtocol protocol,
+                                              ImportFilecoinAccountCallback callback) {
+  if (account_name.empty() || private_key_hex.empty() || !encryptor_) {
+    LOG(ERROR) << " 1 ";
+    std::move(callback).Run(false, "");
+    return;
+  }
 
+  std::vector<uint8_t> private_key;
+  if (!base::HexStringToBytes(private_key_hex, &private_key)) {
+    LOG(ERROR) << private_key_hex << " result size: " << private_key.size();
+    std::move(callback).Run(false, "");
+    return;
+  }
+
+  auto address = ImportAccountForFilecoinKeyring(account_name, private_key);
+  if (!address) {
+    std::move(callback).Run(false, "");
+    return;
+  }
+
+  std::move(callback).Run(true, *address);
+
+}
+
+absl::optional<std::string> KeyringController::ImportAccountForFilecoinKeyring(
+    const std::string& account_name,
+    const std::vector<uint8_t>& private_key) {
+  if (!filecoin_keyring_) {
+    return absl::nullopt;
+  }
+
+  const std::string address = filecoin_keyring_->ImportAccount(private_key);
+  if (address.empty()) {
+    return absl::nullopt;
+  }
+  std::vector<uint8_t> encrypted_private_key;
+  if (!encryptor_->Encrypt(private_key,
+                           GetOrCreateNonceForKeyring(kFilecoinKeyringId),
+                           &encrypted_private_key)) {
+    return absl::nullopt;
+  }
+  ImportedAccountInfo info = {account_name, address,
+                              base::Base64Encode(encrypted_private_key)};
+  SetImportedAccountForKeyring(prefs_, info, kFilecoinKeyringId);
+
+  NotifyAccountsChanged();
+
+  return address;
+}
+#endif
 void KeyringController::ImportAccount(const std::string& account_name,
                                       const std::string& private_key_hex,
                                       ImportAccountCallback callback) {
@@ -769,8 +828,7 @@ absl::optional<std::string> KeyringController::ImportAccountForDefaultKeyring(
     return absl::nullopt;
   }
 
-  const std::string address = //default_keyring_->ImportAccount(private_key);
-                              filecoin_keyring_->ImportAccount(private_key);
+  const std::string address = default_keyring_->ImportAccount(private_key);
   if (address.empty()) {
     return absl::nullopt;
   }
@@ -1158,9 +1216,10 @@ bool KeyringController::CreateDefaultKeyringInternal(
 
   default_keyring_ = std::make_unique<HDKeyring>();
   default_keyring_->ConstructRootHDKey(*seed, kRootPath);
+#if BUILDFLAG(FILECOIN_ENABLED)
   filecoin_keyring_ = std::make_unique<FilecoinKeyring>();
   filecoin_keyring_->ConstructRootHDKey(*seed, kRootPath);
-
+#endif
   UpdateLastUnlockPref(prefs_);
 
   return true;
