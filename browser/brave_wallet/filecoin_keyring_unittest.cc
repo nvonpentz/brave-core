@@ -5,23 +5,45 @@
 
 #include "brave/components/brave_wallet/browser/filecoin_keyring.h"
 
+#include "base/base64.h"
 #include "base/strings/string_number_conversions.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace brave_wallet {
 
-TEST(FilecoinKeyring, ImportAccount) {
+TEST(FilecoinKeyring, ImportFilecoinSECP) {
+  std::string private_key_base64 =
+      "rQG5jnbc+y64fckG+T0EHVwpLBmW9IgAT7U990HXcGk=";
+  std::string input_key;
+  ASSERT_TRUE(base::Base64Decode(private_key_base64, &input_key));
+  ASSERT_FALSE(input_key.empty());
+  std::vector<uint8_t> private_key(input_key.begin(), input_key.end());
+
+  FilecoinKeyring keyring;
+  auto address = keyring.ImportFilecoinSECP256K1Account(
+      private_key, mojom::kFilecoinTestnet);
+  EXPECT_EQ(address, "t1lqarsh4nkg545ilaoqdsbtj4uofplt6sto26ziy");
+  EXPECT_EQ(keyring.GetImportedAccountsNumber(), size_t(1));
+}
+
+TEST(FilecoinKeyring, ImportFilecoinBLS) {
   std::string private_key_hex =
-      "7b2254797065223a22736563703235366b31222c22507269766174654b6579223a22397a"
-      "476d306335784e4359494b4b452f517976756d7255444339766e706146344774614f646c"
-      "723459514d3d227d";
+      "6a4b3d3f3ccb3676e34e16bc07a9371dede3a037def6114e79e51705f823723f";
   std::vector<uint8_t> private_key;
   ASSERT_TRUE(base::HexStringToBytes(private_key_hex, &private_key));
 
+  std::string public_key_hex =
+      "b5774f3d8546d3e797653a5423effa7ab06d4cd3587697d3647798d9fe739167ebeaf1ef"
+      "053f957a7678ee4de0e32a83";
+  std::vector<uint8_t> public_key;
+  ASSERT_TRUE(base::HexStringToBytes(public_key_hex, &public_key));
+
   FilecoinKeyring keyring;
-  ASSERT_TRUE(keyring.GetAddress(0).empty());
-  auto address = keyring.ImportAccount(private_key);
-  EXPECT_EQ(address, "t1gfpgfwrxdntcmcfqm7epsxrmsxlmsryvjkgat3i");
+  std::string address = keyring.ImportFilecoinBLSAccount(
+      private_key, public_key, mojom::kFilecoinTestnet);
+  EXPECT_EQ(address,
+            "t3wv3u6pmfi3j6pf3fhjkch372pkyg2tgtlb3jpu3eo6mnt7ttsft6x2xr54ct7fl2"
+            "oz4o4tpa4mvigcrayh4a");
   EXPECT_EQ(keyring.GetImportedAccountsNumber(), size_t(1));
 }
 

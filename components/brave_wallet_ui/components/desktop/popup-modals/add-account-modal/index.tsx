@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { FILECOIN_TESTNET, FilecoinAddressProtocol } from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
 import { AddAccountNavTypes, WalletAccountType } from '../../../../constants/types'
 import { AddAccountNavOptions } from '../../../../options/add-account-nav-options'
 import { Select } from 'brave-ui/components'
@@ -25,6 +26,7 @@ export interface Props {
   onClose: () => void
   onCreateAccount: (name: string) => void
   onImportAccount: (accountName: string, privateKey: string) => void
+  onImportFilecoinAccount: (accountName: string, key: string, network: string, protocol: FilecoinAddressProtocol) => void
   onImportAccountFromJson: (accountName: string, password: string, json: string) => void
   onConnectHardwareWallet: (opts: HardwareWalletConnectOpts) => Promise<HardwareWalletAccount[]>
   onAddHardwareAccounts: (selected: HardwareWalletAccount[]) => void
@@ -44,6 +46,7 @@ const AddAccountModal = (props: Props) => {
     onClose,
     onCreateAccount,
     onImportAccount,
+    onImportFilecoinAccount,
     onConnectHardwareWallet,
     onAddHardwareAccounts,
     getBalance,
@@ -95,7 +98,10 @@ const AddAccountModal = (props: Props) => {
     }
     if (tab === 'import') {
       if (importOption === 'key') {
-        onImportAccount(accountName, privateKey)
+        onImportFilecoinAccount(accountName, privateKey, FILECOIN_TESTNET, FilecoinAddressProtocol.BLS)
+        if (!accountName) {
+          onImportAccount(accountName, privateKey)
+        }
       } else {
         if (file) {
           const index = file[0]

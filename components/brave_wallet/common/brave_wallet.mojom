@@ -215,15 +215,9 @@ const string kFilecoinTestnet = "t";
 const string kFilecoinMainnet = "f";
 
 [EnableIf=filecoin_enabled]
-enum FilecoinAddressNetwork {
-   kFilecoinTestnet,
-   kFilecoinMainnet
-};
-
-[EnableIf=filecoin_enabled]
 enum FilecoinAddressProtocol {
-  SECP256K1, // Represents the address SECP256K1 protocol
-  BLS  // Represents the address BLS protocol
+  SECP256K1 = 1, // Represents the address SECP256K1 protocol
+  BLS = 3 // Represents the address BLS protocol
 };
 
 struct HardwareWalletAccount {
@@ -365,7 +359,11 @@ interface KeyringController {
     => (bool success, string address);
 
   [EnableIf=filecoin_enabled]
-  ImportFilecoinAccount(string accountName, string privateKey, FilecoinAddressNetwork network, FilecoinAddressProtocol protocol)
+  ImportFilecoinSECP256K1Account(string accountName, string privateKey, string network)
+    => (bool success, string address);
+
+  [EnableIf=filecoin_enabled]
+  ImportFilecoinBLSAccount(string accountName, string privateKey, string publicKey, string network)
     => (bool success, string address);
 
   // Imports an account via JSON

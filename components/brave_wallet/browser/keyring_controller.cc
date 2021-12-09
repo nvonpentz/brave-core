@@ -640,53 +640,130 @@ void KeyringController::GetPrivateKeyForDefaultKeyringAccount(
   std::move(callback).Run(!private_key.empty(), private_key);
 }
 #if BUILDFLAG(FILECOIN_ENABLED)
-void KeyringController::ImportFilecoinAccount(const std::string& account_name,
-                                              const std::string& private_key_hex,
-                                              mojom::FilecoinAddressNetwork network,
-                                              mojom::FilecoinAddressProtocol protocol,
-                                              ImportFilecoinAccountCallback callback) {
-  if (account_name.empty() || private_key_hex.empty() || !encryptor_) {
+bool KeyringController::IsFilecoinAccount(const std::string& account) const {
+  for (const auto& filecoin_account_info :
+       GetImportedAccountsForKeyring(prefs_, kFilecoinKeyringId)) {
+    mojom::AccountInfoPtr account_info = mojom::AccountInfo::New();
+    if (account == filecoin_account_info.account_address) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void KeyringController::ImportFilecoinSECP256K1Account(
+    const std::string& account_name,
+    const std::string& private_key_base64,
+    const std::string& network,
+    ImportFilecoinSECP256K1AccountCallback callback) {
+  if (account_name.empty() || private_key_base64.empty() || !encryptor_) {
     LOG(ERROR) << " 1 ";
     std::move(callback).Run(false, "");
     return;
   }
-
-  std::vector<uint8_t> private_key;
-  if (!base::HexStringToBytes(private_key_hex, &private_key)) {
-    LOG(ERROR) << private_key_hex << " result size: " << private_key.size();
+  std::string input_key;
+  if (!base::Base64Decode(private_key_base64, &input_key) ||
+      input_key.empty()) {
+    LOG(ERROR) << private_key_base64 << " result size: " << input_key.size();
     std::move(callback).Run(false, "");
     return;
   }
-
-  auto address = ImportAccountForFilecoinKeyring(account_name, private_key);
+  std::vector<uint8_t> private_key(input_key.begin(), input_key.end());
+  auto address = ImportSECP256K1AccountForFilecoinKeyring(account_name,
+                                                          private_key, network);
   if (!address) {
     std::move(callback).Run(false, "");
     return;
   }
 
   std::move(callback).Run(true, *address);
-
 }
 
-absl::optional<std::string> KeyringController::ImportAccountForFilecoinKeyring(
+void KeyringController::ImportFilecoinBLSAccount(
     const std::string& account_name,
-    const std::vector<uint8_t>& private_key) {
+    const std::string& private_key_hex,
+    const std::string& public_key_hex,
+    const std::string& network,
+    ImportFilecoinBLSAccountCallback callback) {
+  if (account_name.empty() || private_key_hex.empty() ||
+      public_key_hex.empty() || !encryptor_) {
+    std::move(callback).Run(false, "");
+    return;
+  }
+  std::vector<uint8_t> private_key;
+  if (!base::HexStringToBytes(private_key_hex, &private_key)) {
+    LOG(ERROR) << private_key_hex << " result size: " << private_key.size();
+    std::move(callback).Run(false, "");
+    return;
+  }
+  std::vector<uint8_t> public_key;
+  if (!base::HexStringToBytes(public_key_hex, &public_key)) {
+    LOG(ERROR) << public_key_hex << " result size: " << public_key.size();
+    std::move(callback).Run(false, "");
+    return;
+  }
+
+  auto address = ImportBLSAccountForFilecoinKeyring(account_name, private_key,
+                                                    public_key, network);
+  if (!address) {
+    std::move(callback).Run(false, "");
+    return;
+  }
+
+  std::move(callback).Run(true, *address);
+}
+absl::optional<std::string>
+KeyringController::ImportSECP256K1AccountForFilecoinKeyring(
+    const std::string& account_name,
+    const std::vector<uint8_t>& private_key,
+    const std::string& network) {
   if (!filecoin_keyring_) {
     return absl::nullopt;
   }
 
-  const std::string address = filecoin_keyring_->ImportAccount(private_key);
+  const std::string address =
+      filecoin_keyring_->ImportFilecoinSECP256K1Account(private_key, network);
   if (address.empty()) {
     return absl::nullopt;
   }
-  std::vector<uint8_t> encrypted_private_key;
+  std::vector<uint8_t> encrypted_key;
   if (!encryptor_->Encrypt(private_key,
                            GetOrCreateNonceForKeyring(kFilecoinKeyringId),
-                           &encrypted_private_key)) {
+                           &encrypted_key)) {
     return absl::nullopt;
   }
   ImportedAccountInfo info = {account_name, address,
-                              base::Base64Encode(encrypted_private_key)};
+                              base::Base64Encode(encrypted_key)};
+  SetImportedAccountForKeyring(prefs_, info, kFilecoinKeyringId);
+
+  NotifyAccountsChanged();
+
+  return address;
+}
+
+absl::optional<std::string>
+KeyringController::ImportBLSAccountForFilecoinKeyring(
+    const std::string& account_name,
+    const std::vector<uint8_t>& private_key,
+    const std::vector<uint8_t>& public_key,
+    const std::string& network) {
+  if (!filecoin_keyring_) {
+    return absl::nullopt;
+  }
+
+  const std::string address = filecoin_keyring_->ImportFilecoinBLSAccount(
+      private_key, public_key, network);
+  if (address.empty()) {
+    return absl::nullopt;
+  }
+  std::vector<uint8_t> encrypted_key;
+  if (!encryptor_->Encrypt(private_key,
+                           GetOrCreateNonceForKeyring(kFilecoinKeyringId),
+                           &encrypted_key)) {
+    return absl::nullopt;
+  }
+  ImportedAccountInfo info = {account_name, address,
+                              base::Base64Encode(encrypted_key)};
   SetImportedAccountForKeyring(prefs_, info, kFilecoinKeyringId);
 
   NotifyAccountsChanged();
@@ -698,7 +775,6 @@ void KeyringController::ImportAccount(const std::string& account_name,
                                       const std::string& private_key_hex,
                                       ImportAccountCallback callback) {
   if (account_name.empty() || private_key_hex.empty() || !encryptor_) {
-    LOG(ERROR) << " 1 ";
     std::move(callback).Run(false, "");
     return;
   }
@@ -771,19 +847,37 @@ void KeyringController::GetPrivateKeyForImportedAccount(
   std::move(callback).Run(false, "");
 }
 
+HDKeyring* KeyringController::GetKeyringForAddress(const std::string& address) {
+#if BUILDFLAG(FILECOIN_ENABLED)
+  if (IsFilecoinAccount(address))
+    return filecoin_keyring_.get();
+#endif
+  return default_keyring_.get();
+}
+
+std::string KeyringController::GetKeyringId(HDKeyring::Type type) const {
+#if BUILDFLAG(FILECOIN_ENABLED)
+  if (type == HDKeyring::kFilecoin)
+    return kFilecoinKeyringId;
+#endif
+  return kDefaultKeyringId;
+}
+
 void KeyringController::RemoveImportedAccount(
     const std::string& address,
     RemoveImportedAccountCallback callback) {
-  if (address.empty() || !default_keyring_) {
+  auto* keyring = GetKeyringForAddress(address);
+  if (address.empty() || !keyring) {
     std::move(callback).Run(false);
     return;
   }
 
-  if (!default_keyring_->RemoveImportedAccount(address)) {
+  if (!keyring->RemoveImportedAccount(address)) {
     std::move(callback).Run(false);
     return;
   }
-  RemoveImportedAccountForKeyring(prefs_, address, kDefaultKeyringId);
+  RemoveImportedAccountForKeyring(prefs_, address,
+                                  GetKeyringId(keyring->type()));
 
   NotifyAccountsChanged();
   if (address == prefs_->GetString(kBraveWalletSelectedAccount)) {
@@ -885,6 +979,15 @@ std::vector<mojom::AccountInfoPtr> KeyringController::GetAccountInfosForKeyring(
   // append hardware accounts info
   for (const auto& hardware_account_info : GetHardwareAccountsSync()) {
     result.push_back(hardware_account_info.Clone());
+  }
+
+  for (const auto& filecoin_account_info :
+       GetImportedAccountsForKeyring(prefs_, kFilecoinKeyringId)) {
+    mojom::AccountInfoPtr account_info = mojom::AccountInfo::New();
+    account_info->address = filecoin_account_info.account_address;
+    account_info->name = filecoin_account_info.account_name;
+    account_info->is_imported = true;
+    result.push_back(std::move(account_info));
   }
   return result;
 }

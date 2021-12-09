@@ -12,10 +12,11 @@
 
 #include "base/gtest_prod_util.h"
 #include "base/values.h"
+#include "brave/components/brave_wallet/browser/hd_keyring.h"
 #include "brave/components/brave_wallet/browser/password_encryptor.h"
-#include "brave/components/brave_wallet/common/buildflags/buildflags.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
+#include "brave/components/brave_wallet/common/buildflags/buildflags.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -31,7 +32,6 @@ class OneShotTimer;
 
 namespace brave_wallet {
 
-class HDKeyring;
 class EthTransaction;
 class KeyringControllerUnitTest;
 class BraveWalletProviderImplUnitTest;
@@ -125,11 +125,17 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
                              const std::string& json,
                              ImportAccountCallback callback) override;
 #if BUILDFLAG(FILECOIN_ENABLED)
-  void ImportFilecoinAccount(const std::string& account_name,
-                             const std::string& private_key,
-                             mojom::FilecoinAddressNetwork network,
-                             mojom::FilecoinAddressProtocol protocol,
-                             ImportFilecoinAccountCallback callback) override;
+  void ImportFilecoinSECP256K1Account(
+      const std::string& account_name,
+      const std::string& private_key,
+      const std::string& network,
+      ImportFilecoinSECP256K1AccountCallback callback) override;
+  void ImportFilecoinBLSAccount(
+      const std::string& account_name,
+      const std::string& private_key,
+      const std::string& public_key,
+      const std::string& network,
+      ImportFilecoinBLSAccountCallback callback) override;
 #endif
   void AddHardwareAccounts(
       std::vector<mojom::HardwareWalletAccountPtr> info) override;
@@ -158,6 +164,7 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
 
   bool IsDefaultKeyringCreated();
   bool IsHardwareAccount(const std::string& account) const;
+
   void SignTransactionByDefaultKeyring(const std::string& address,
                                        EthTransaction* tx,
                                        uint256_t chain_id);
@@ -237,6 +244,7 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
 
   void AddAccountForDefaultKeyring(const std::string& account_name);
   void OnAutoLockFired();
+  HDKeyring* GetKeyringForAddress(const std::string& address);
   std::vector<mojom::AccountInfoPtr> GetHardwareAccountsSync() const;
 
   // Address will be returned when success
@@ -244,9 +252,17 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
       const std::string& account_name,
       const std::vector<uint8_t>& private_key);
 #if BUILDFLAG(FILECOIN_ENABLED)
-  absl::optional<std::string> ImportAccountForFilecoinKeyring(
+  absl::optional<std::string> ImportSECP256K1AccountForFilecoinKeyring(
       const std::string& account_name,
-      const std::vector<uint8_t>& private_key);
+      const std::vector<uint8_t>& private_key,
+      const std::string& network);
+  absl::optional<std::string> ImportBLSAccountForFilecoinKeyring(
+      const std::string& account_name,
+      const std::vector<uint8_t>& private_key,
+      const std::vector<uint8_t>& public_key,
+      const std::string& network);
+  std::string GetKeyringId(HDKeyring::Type type) const;
+  bool IsFilecoinAccount(const std::string& account) const;
 #endif
   size_t GetAccountMetasNumberForKeyring(const std::string& id);
 

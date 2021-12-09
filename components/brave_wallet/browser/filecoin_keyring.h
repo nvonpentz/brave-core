@@ -14,8 +14,9 @@
 
 #include "base/containers/flat_map.h"
 #include "base/gtest_prod_util.h"
-#include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "brave/components/brave_wallet/browser/hd_keyring.h"
+#include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
+#include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace brave_wallet {
@@ -29,21 +30,18 @@ class FilecoinKeyring: public HDKeyring {
 
   Type type() const override;
 
-  // address will be returned
-  std::string ImportAccount(const std::vector<uint8_t>& private_key) override;
-  size_t GetImportedAccountsNumber() const;
-  bool RemoveImportedAccount(const std::string& address);
-  std::string GetAddress(size_t index) const override;
-  HDKey* GetHDKeyFromAddress(const std::string& address);
+  std::string ImportFilecoinSECP256K1Account(
+      const std::vector<uint8_t>& input_key,
+      const std::string& network);
+  std::string ImportFilecoinBLSAccount(const std::vector<uint8_t>& private_key,
+                                       const std::vector<uint8_t>& public_key,
+                                       const std::string& network);
 
  protected:
-  std::string GetAddressInternal(const HDKey* hd_key) const;
-
+  std::string GetAddressInternal(const std::vector<uint8_t>& payload,
+                                 mojom::FilecoinAddressProtocol protocol) const;
   std::unique_ptr<HDKey> root_;
   std::unique_ptr<HDKey> master_key_;
-  // (address, key)
-  base::flat_map<std::string, std::unique_ptr<HDKey>> imported_accounts_;
-
  private:
   friend FilecoinKeyring;
   FilecoinKeyring(const FilecoinKeyring&) = delete;
