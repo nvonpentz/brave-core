@@ -9,7 +9,6 @@ import "mojo/public/mojom/base/time.mojom";
 import "mojo/public/mojom/base/values.mojom";
 import "url/mojom/url.mojom";
 
-
 // Used to notify the renderer of provider information for use in
 // window.ethereum events
 interface EventsListener {

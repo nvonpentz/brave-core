@@ -164,7 +164,6 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
 
   bool IsDefaultKeyringCreated();
   bool IsHardwareAccount(const std::string& account) const;
-
   void SignTransactionByDefaultKeyring(const std::string& address,
                                        EthTransaction* tx,
                                        uint256_t chain_id);

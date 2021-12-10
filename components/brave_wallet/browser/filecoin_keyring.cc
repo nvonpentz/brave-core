@@ -67,7 +67,6 @@ std::string FilecoinKeyring::ImportFilecoinBLSAccount(
   if (!AddImportedAddress(address, std::move(hd_key))) {
     return std::string();
   }
-  LOG(ERROR) << "address:" << address;
   return address;
 }
 
@@ -89,7 +88,6 @@ std::string FilecoinKeyring::ImportFilecoinSECP256K1Account(
   if (!AddImportedAddress(address, std::move(hd_key))) {
     return std::string();
   }
-  LOG(ERROR) << "address:" << address;
   return address;
 }
 
@@ -97,7 +95,6 @@ std::string FilecoinKeyring::GetAddressInternal(
     const std::vector<uint8_t>& payload,
     mojom::FilecoinAddressProtocol protocol) const {
   std::vector<uint8_t> checksumPayload(payload);
-  LOG(ERROR) << "protocol:" << int(protocol);
   checksumPayload.insert(checksumPayload.begin(), int(protocol));
   auto checksum = BlakeHash(checksumPayload, 4);
   std::vector<uint8_t> final(payload);
