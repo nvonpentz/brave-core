@@ -8,6 +8,11 @@ action("generate_breakpad_symbols") {
     symbols_dir
   ]
 
+  if (brave_debug_symbols_level == 2) {
+    platform_symbols_dir = "$brave_dist_dir/$brave_product_name.pdb.syms"
+    outputs += [ platform_symbols_dir ]
+  }
+
   # On both Windows x86 and x64 we will single thread
   # symbol generation due to Python's Global Interpreter
   # Lock (GIL) which causes a large slowdown if
@@ -22,6 +27,12 @@ action("generate_breakpad_symbols") {
     "--clear",
     rebase_path(root_out_dir)
   ]
+
+  if (brave_debug_symbols_level == 2) {
+    args += [
+      "--platform-symbols-dir=" + rebase_path(platform_symbols_dir),
+    ]
+  }
 
   script = "//brave/tools/win/generate_breakpad_symbols.py"
 

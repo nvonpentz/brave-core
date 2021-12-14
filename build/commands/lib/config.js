@@ -171,6 +171,7 @@ const Config = function () {
   this.braveAndroidKeystorePassword = getNPMConfig(['brave_android_keystore_password'])
   this.braveAndroidKeyPassword = getNPMConfig(['brave_android_key_password'])
   this.braveVariationsServerUrl = getNPMConfig(['brave_variations_server_url']) || ''
+  this.braveDebugSymbolsLevel = getNPMConfig(['brave_debug_symbols_level']) || 1
 }
 
 Config.prototype.isOfficialBuild = function () {
@@ -289,6 +290,7 @@ Config.prototype.buildArgs = function () {
     sparkle_dsa_private_key_file: this.sparkleDSAPrivateKeyFile,
     sparkle_eddsa_private_key: this.sparkleEdDSAPrivateKey,
     sparkle_eddsa_public_key: this.sparkleEdDSAPublicKey,
+    brave_debug_symbols_level: this.braveDebugSymbolsLevel,
     ...this.extraGnArgs,
   }
 

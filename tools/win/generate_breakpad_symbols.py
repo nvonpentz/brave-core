@@ -18,7 +18,7 @@ import sys
 import threading
 
 from datetime import datetime
-from shutil import rmtree
+from shutil import rmtree, copy
 
 CONCURRENT_TASKS=1
 BRAVE_ROOT=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -80,6 +80,13 @@ def GenerateSymbols(options, binaries):
             f.write(syms)
             f.close()
 
+            if options.platform_symbols_dir:
+                pdb_output_path = os.path.join(options.platform_symbols_dir,
+                                               module_line.group(2),
+                                               module_line.group(1))
+                mkdir_p(pdb_output_path)
+                copy(binary, pdb_output_path)
+
             if options.verbose:
                 with print_lock:
                     thread_end = datetime.utcnow()
@@ -108,6 +115,8 @@ def main():
                         help='The build output directory.')
     parser.add_argument('--symbols-dir', required=True,
                         help='The directory where to write the symbols file.')
+    parser.add_argument('--platform-symbols-dir',
+                        help='Directory to output pdb files')
     parser.add_argument('--clear', default=False, action='store_true',
                         help='Clear the symbols directory before writing new '
                             'symbols.')
