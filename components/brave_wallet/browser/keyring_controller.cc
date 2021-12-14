@@ -24,6 +24,7 @@
 #include "brave/components/brave_wallet/browser/hd_keyring.h"
 #include "brave/components/brave_wallet/browser/pref_names.h"
 #include "brave/components/brave_wallet/common/eth_address.h"
+#include "brave/components/brave_wallet/common/hex_utils.h"
 #include "components/grit/brave_components_strings.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/prefs/pref_service.h"
@@ -1355,7 +1356,7 @@ bool KeyringController::CreateKeyringInternal(const std::string& keyring_id,
     filecoin_keyring_ = std::make_unique<FilecoinKeyring>();
   }
   auto* keyring = GetHDKeyringById(keyring_id);
-  DCHECK(keyring);
+  DCHECK(keyring) << "No HDKeyring for " << keyring_id;
   if (keyring)
     keyring->ConstructRootHDKey(*seed, kRootPath);
 

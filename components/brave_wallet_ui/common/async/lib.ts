@@ -65,6 +65,7 @@ export const onConnectHardwareWallet = (opts: HardwareWalletConnectOpts): Promis
 export const getBalance = (address: string): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     const controller = getAPIProxy().ethJsonRpcController
+
     const result = await controller.getBalance(address, BraveCoins.ETH)
     if (result.success) {
       resolve(formatBalance(result.balance, 18))
@@ -129,7 +130,7 @@ export function refreshBalances (currentNetwork: EthereumChain) {
     await dispatch(WalletActions.setVisibleTokensInfo(visibleTokens))
 
     const getBalanceReturnInfos = await Promise.all(accounts.map(async (account) => {
-      const balanceInfo = await ethJsonRpcController.getBalance(account.address, BraveCoins.ETH)
+      const balanceInfo = await ethJsonRpcController.getBalance(account.address, BraveCoins.FILECOIN)
       return balanceInfo
     }))
     const balancesAndPrice = {

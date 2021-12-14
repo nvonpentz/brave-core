@@ -18,8 +18,12 @@
 namespace {
 
 std::string ConvertAttoFilToFil(const std::string& atto, int decimal) {
- // For simplicity we take just first decimals now.
- return atto.substr(0, decimal);
+  brave_wallet::uint256_t attofil = 0;
+  brave_wallet::StringToUint256(atto, &attofil);
+  if (attofil > 0) {
+  }
+  // For simplicity we take just first decimals now.
+  return atto.substr(0, decimal);
 }
 
 }

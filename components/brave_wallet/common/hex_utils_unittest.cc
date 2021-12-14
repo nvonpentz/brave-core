@@ -7,7 +7,21 @@
 
 #include <vector>
 
+#include "base/logging.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
+namespace {
+std::string DivideHex(const std::string& one_hex, const std::string& two_hex) {
+  brave_wallet::uint256_t one = 0;
+  brave_wallet::StringToUint256(one_hex, &one);
+  brave_wallet::uint256_t two = 0;
+  brave_wallet::StringToUint256(two_hex, &two);
+  brave_wallet::uint256_t remainder = 0;
+  auto result = brave_wallet::divide(one, two, &remainder);
+  DLOG(INFO) << "Remainder:" << brave_wallet::Uint256ValueToHex(remainder);
+  return brave_wallet::Uint256ValueToHex(result);
+}
+}  // namespace
 
 namespace brave_wallet {
 
@@ -104,6 +118,13 @@ TEST(HexUtilsUnitTest, Uint256ValueToHex) {
   input_val *= static_cast<uint256_t>(100000000000);
   ASSERT_EQ(Uint256ValueToHex(input_val), "0x878678326eac900000000");
   ASSERT_EQ(Uint256ValueToHex(3735928559), "0xdeadbeef");
+}
+
+TEST(HexUtilsUnitTest, Division) {
+  EXPECT_EQ(DivideHex("100000000000000000000", "1000000000000000000"), "0x64");
+  EXPECT_EQ(DivideHex("199965236082952348343", "63576545046"), "0xbb78f8e0");
+  EXPECT_EQ(DivideHex("10", "3"), "0x3");
+  EXPECT_EQ(DivideHex("10", "7"), "0x1");
 }
 
 }  // namespace brave_wallet

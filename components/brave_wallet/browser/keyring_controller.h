@@ -35,9 +35,7 @@ namespace brave_wallet {
 class EthTransaction;
 class KeyringControllerUnitTest;
 class BraveWalletProviderImplUnitTest;
-#if BUILDFLAG(FILECOIN_ENABLED)
 class FilecoinKeyring;
-#endif
 
 // This class is not thread-safe and should have single owner
 class KeyringController : public KeyedService, public mojom::KeyringController {
@@ -124,7 +122,6 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
                              const std::string& password,
                              const std::string& json,
                              ImportAccountCallback callback) override;
-#if BUILDFLAG(FILECOIN_ENABLED)
   void ImportFilecoinSECP256K1Account(
       const std::string& account_name,
       const std::string& private_key,
@@ -136,7 +133,6 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
       const std::string& public_key,
       const std::string& network,
       ImportFilecoinBLSAccountCallback callback) override;
-#endif
   void AddHardwareAccounts(
       std::vector<mojom::HardwareWalletAccountPtr> info) override;
   void RemoveHardwareAccount(const std::string& address) override;
@@ -243,9 +239,7 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
   FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, AutoLock);
   FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, SetSelectedAccount);
   FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, UnknownKeyring);
-#if BUILDFLAG(FILECOIN_ENABLED)
   FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, ImportedFilecoinAccounts);
-#endif
   friend class BraveWalletProviderImplUnitTest;
   friend class EthTxControllerUnitTest;
 
@@ -261,7 +255,6 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
   absl::optional<std::string> ImportAccountForDefaultKeyring(
       const std::string& account_name,
       const std::vector<uint8_t>& private_key);
-#if BUILDFLAG(FILECOIN_ENABLED)
   absl::optional<std::string> ImportSECP256K1AccountForFilecoinKeyring(
       const std::string& account_name,
       const std::vector<uint8_t>& private_key,
@@ -272,7 +265,6 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
       const std::vector<uint8_t>& public_key,
       const std::string& network);
   bool IsFilecoinAccount(const std::string& account) const;
-#endif
   size_t GetAccountMetasNumberForKeyring(const std::string& id);
 
   std::vector<mojom::AccountInfoPtr> GetAccountInfosForKeyring(
@@ -317,9 +309,8 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
   std::unique_ptr<HDKeyring> default_keyring_;
   std::unique_ptr<base::OneShotTimer> auto_lock_timer_;
   std::unique_ptr<PrefChangeRegistrar> pref_change_registrar_;
-#if BUILDFLAG(FILECOIN_ENABLED)
   std::unique_ptr<FilecoinKeyring> filecoin_keyring_;
-#endif
+
   // TODO(darkdh): For other keyrings support
   // std::vector<std::unique_ptr<HDKeyring>> keyrings_;
 
