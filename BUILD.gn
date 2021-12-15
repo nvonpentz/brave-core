@@ -349,6 +349,9 @@ action("create_symbols_dist") {
 
   inputs = get_target_outputs(":brave_license_dist_resources")
   dir_inputs = [ "$brave_product_name.breakpad.syms" ]
+  if (brave_debug_symbols_level == 2) {
+    dir_inputs += [ "$brave_product_name.pdb.syms" ]
+  }
 
   file_inputs = []
   foreach(input, inputs) {
