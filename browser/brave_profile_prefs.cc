@@ -311,7 +311,7 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterBooleanPref(kNewTabPageShowStats, true);
   registry->RegisterBooleanPref(kNewTabPageShowRewards, true);
   registry->RegisterBooleanPref(kNewTabPageShowBinance, true);
-  registry->RegisterBooleanPref(kNewTabPageShowBraveTalk, false);
+  registry->RegisterBooleanPref(kNewTabPageShowBraveTalk, true);
   registry->RegisterBooleanPref(kNewTabPageShowGemini, true);
   registry->RegisterBooleanPref(kNewTabPageHideAllWidgets, false);
   registry->RegisterBooleanPref(kNewTabPageWidgetVisibilityMigrated, false);
