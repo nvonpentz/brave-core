@@ -18,6 +18,12 @@ std::string DivideHex(const std::string& one_hex, const std::string& two_hex) {
   brave_wallet::StringToUint256(two_hex, &two);
   brave_wallet::uint256_t remainder = 0;
   auto result = brave_wallet::divide(one, two, &remainder);
+  if (remainder > 0) {
+    brave_wallet::uint256_t percentages = remainder * 100;
+    brave_wallet::uint256_t r = 0;
+    auto drob = brave_wallet::divide(percentages, two, &r);
+    DLOG(INFO) << "drob:" << brave_wallet::Uint256ValueToHex(drob);
+  }
   DLOG(INFO) << "Remainder:" << brave_wallet::Uint256ValueToHex(remainder);
   return brave_wallet::Uint256ValueToHex(result);
 }
@@ -121,10 +127,14 @@ TEST(HexUtilsUnitTest, Uint256ValueToHex) {
 }
 
 TEST(HexUtilsUnitTest, Division) {
-  EXPECT_EQ(DivideHex("100000000000000000000", "1000000000000000000"), "0x64");
-  EXPECT_EQ(DivideHex("199965236082952348343", "63576545046"), "0xbb78f8e0");
-  EXPECT_EQ(DivideHex("10", "3"), "0x3");
-  EXPECT_EQ(DivideHex("10", "7"), "0x1");
+  //EXPECT_EQ(DivideHex("100000000000000000000", "1000000000000000000"), "0x64");
+  //EXPECT_EQ(DivideHex("199965236082952348343", "63576545046"), "0xbb78f8e0");
+  //EXPECT_EQ(DivideHex("10", "3"), "0x3");
+  //EXPECT_EQ(DivideHex("10", "7"), "0x1");
+  EXPECT_EQ(DivideHex("7", "3"), "");
+  brave_wallet::uint256_t one = 0;
+  brave_wallet::StringToUint256("100000000000000000000", &one);
+  EXPECT_EQ(brave_wallet::Uint256ToString(one), "");
 }
 
 }  // namespace brave_wallet

@@ -188,4 +188,17 @@ uint256_t divide(uint256_t a, uint256_t b, uint256_t* remainder) {
   return result;
 }
 
+std::string Uint256ToString(uint256_t a) {
+  uint256_t x = a;
+  std::string s;
+  while (x > 0) {
+      uint256_t remainder = 0;
+      x = brave_wallet::divide(x, 10, &remainder);
+      s.push_back(remainder + '0');
+      DLOG(INFO) << "s:" << s;
+  }
+  reverse(s.begin(), s.end());
+  return s;
+}
+
 }  // namespace brave_wallet
