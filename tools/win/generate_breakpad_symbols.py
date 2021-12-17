@@ -20,8 +20,9 @@ import threading
 from datetime import datetime
 from shutil import rmtree, copy
 
-CONCURRENT_TASKS=1
-BRAVE_ROOT=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+CONCURRENT_TASKS = 1
+BRAVE_ROOT = os.path.abspath(os.path.dirname(
+    os.path.dirname(os.path.dirname(__file__))))
 
 
 def GetCommandOutput(command):
@@ -32,8 +33,9 @@ def GetCommandOutput(command):
 
     From chromium_utils.
     """
-    devnull = open(os.devnull, 'w') # pylint: disable=consider-using-with
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=devnull) # pylint: disable=consider-using-with
+    devnull = open(os.devnull, 'w')  # pylint: disable=consider-using-with
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE,
+                            stderr=devnull)  # pylint: disable=consider-using-with
     output = proc.communicate()[0]
     return output.decode('utf-8')
 
@@ -45,7 +47,8 @@ def mkdir_p(path):
     except OSError as e:
         if e.errno == errno.EEXIST and os.path.isdir(path):
             pass
-        else: raise
+        else:
+            raise
 
 
 def GenerateSymbols(options, binaries):
@@ -60,15 +63,18 @@ def GenerateSymbols(options, binaries):
 
             if options.verbose:
                 with print_lock:
-                    print("Generating symbols for {0}".format(binary), flush=True)
+                    print("Generating symbols for {0}".format(
+                        binary), flush=True)
                     thread_start = datetime.utcnow()
 
             dump_syms = os.path.join(options.build_dir, 'dump_syms.exe')
             syms = GetCommandOutput([dump_syms, binary])
-            module_line = re.match(r"MODULE [^ ]+ [^ ]+ ([0-9A-Fa-f]+) (.*)\r\n", syms)
+            module_line = re.match(
+                r"MODULE [^ ]+ [^ ]+ ([0-9A-Fa-f]+) (.*)\r\n", syms)
             if module_line is None:
                 with print_lock:
-                    print("Failed to get symbols for {0}".format(binary), flush=True)
+                    print("Failed to get symbols for {0}".format(
+                        binary), flush=True)
                 q.task_done()
                 continue
 
@@ -76,7 +82,8 @@ def GenerateSymbols(options, binaries):
                                        module_line.group(1))
             mkdir_p(output_path)
             symbol_file = "%s.sym" % module_line.group(2)[:-4]  # strip .pdb
-            f = open(os.path.join(output_path, symbol_file), 'w') # pylint: disable=consider-using-with
+            f = open(os.path.join(output_path, symbol_file),
+                     'w')  # pylint: disable=consider-using-with
             f.write(syms)
             f.close()
 
@@ -119,7 +126,7 @@ def main():
                         help='Directory to output pdb files')
     parser.add_argument('--clear', default=False, action='store_true',
                         help='Clear the symbols directory before writing new '
-                            'symbols.')
+                        'symbols.')
     parser.add_argument('-j', '--jobs', default=CONCURRENT_TASKS, action='store',
                         type=int, help='Number of parallel tasks to run.')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -130,7 +137,7 @@ def main():
     if args.clear:
         try:
             rmtree(args.symbols_dir)
-        except: # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             pass
 
     pdbs = []
