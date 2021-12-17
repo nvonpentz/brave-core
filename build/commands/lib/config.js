@@ -171,7 +171,7 @@ const Config = function () {
   this.braveAndroidKeystorePassword = getNPMConfig(['brave_android_keystore_password'])
   this.braveAndroidKeyPassword = getNPMConfig(['brave_android_key_password'])
   this.braveVariationsServerUrl = getNPMConfig(['brave_variations_server_url']) || ''
-  this.braveDebugSymbolLevel = getNPMConfig(['brave_debug_symbol_level']) || 1
+  this.braveDebugSymbolLevel = getNPMConfig(['brave_debug_symbol_level']) || ''
 }
 
 Config.prototype.isOfficialBuild = function () {
@@ -290,7 +290,6 @@ Config.prototype.buildArgs = function () {
     sparkle_dsa_private_key_file: this.sparkleDSAPrivateKeyFile,
     sparkle_eddsa_private_key: this.sparkleEdDSAPrivateKey,
     sparkle_eddsa_public_key: this.sparkleEdDSAPublicKey,
-    brave_debug_symbol_level: this.braveDebugSymbolLevel,
     ...this.extraGnArgs,
   }
 
@@ -310,6 +309,10 @@ Config.prototype.buildArgs = function () {
       args.brave_android_keystore_password = this.braveAndroidKeystorePassword
       args.brave_android_key_password = this.braveAndroidKeyPassword
     }
+  }
+
+  if (this.braveDebugSymbolLevel) {
+    args.brave_debug_symbol_level = parseInt(this.braveDebugSymbolLevel)
   }
 
   if (process.platform === 'win32' && this.build_omaha) {
