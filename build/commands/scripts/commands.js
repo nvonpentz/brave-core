@@ -76,6 +76,7 @@ function AddCommonBuildOptions(commandLine) {
     .option('--bitflyer_staging_client_id <bitflyer_staging_client_id>')
     .option('--bitflyer_staging_client_secret <bitflyer_staging_client_secret>')
     .option('--bitflyer_staging_url <bitflyer_staging_url>')
+    .option('--brave_debug_symbol_level <level>', '(0 = no symbol archive, 1 = only breakpad, 2 = breakpad + native(i.e. pdb) symbol archive)')
     .option('--brave_google_api_endpoint <brave_google_api_endpoint>')
     .option('--brave_google_api_key <brave_google_api_key>')
     .option('--brave_infura_project_id <brave_infura_project_id>')

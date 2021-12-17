@@ -6,7 +6,7 @@ action("generate_breakpad_symbols") {
   symbols_dir = "$brave_dist_dir/$brave_product_name.breakpad.syms"
   outputs = [ symbols_dir ]
 
-  if (brave_debug_symbols_level == 2) {
+  if (brave_debug_symbol_level == 2) {
     platform_symbols_dir = "$brave_dist_dir/$brave_product_name.pdb.syms"
     outputs += [ platform_symbols_dir ]
   }
@@ -26,7 +26,7 @@ action("generate_breakpad_symbols") {
     rebase_path(root_out_dir),
   ]
 
-  if (brave_debug_symbols_level == 2) {
+  if (brave_debug_symbol_level == 2) {
     args += [ "--platform-symbols-dir=" + rebase_path(platform_symbols_dir) ]
   }
 
