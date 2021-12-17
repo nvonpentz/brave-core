@@ -30,7 +30,7 @@ action("generate_breakpad_symbols") {
     args += [ "--platform-symbols-dir=" + rebase_path(platform_symbols_dir) ]
   }
 
-  script = "//brave/tools/win/generate_breakpad_symbols.py"
+  script = "//brave/tools/win/generate_debug_symbols.py"
 
   deps = [
     "//brave/build/win:copy_pdb",
