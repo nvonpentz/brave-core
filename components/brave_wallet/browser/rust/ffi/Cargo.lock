@@ -730,33 +730,18 @@ dependencies = [
 
 [[package]]
 name = "filcrypto"
+description = "FFI Interface to Filecoin Proofs"
 version = "0.7.5"
-dependencies = [
- "anyhow",
- "bellperson",
- "bls-signatures",
- "blstrs",
- "byteorder 1.4.3",
- "cbindgen",
- "drop_struct_macro_derive",
- "fff",
- "ffi-toolkit",
- "fil_logger",
- "filecoin-proofs-api",
- "filepath",
- "fr32 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "group",
- "libc",
- "log",
- "memmap",
- "rand 0.8.4",
- "rand_chacha 0.3.1",
- "rayon",
- "rust-gpu-tools",
- "serde_json",
- "storage-proofs-porep",
- "tempfile",
+authors = [
+  "nemo <nemo@protocol.ai>",
+  "dignifiedquire <me@dignifiedquire.com>",
+  "laser <l@s3r.com>"
 ]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/filecoin-project/filecoin-ffi"
+readme = "README.md"
+edition = "2018"
+publish = false
 
 [[package]]
 name = "filecoin-hashers"
