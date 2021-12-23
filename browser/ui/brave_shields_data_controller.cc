@@ -18,7 +18,7 @@ BraveShieldsDataController::~BraveShieldsDataController() = default;
 
 BraveShieldsDataController::BraveShieldsDataController(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {}
+    : content::WebContentsUserData<BraveShieldsDataController>(*web_contents) {}
 
 void BraveShieldsDataController::ClearAllResourcesList() {
   resource_list_blocked_ads_.clear();
@@ -51,12 +51,12 @@ int BraveShieldsDataController::GetTotalBlockedCount() {
 
 bool BraveShieldsDataController::GetIsBraveShieldsEnabled() {
   auto* map = HostContentSettingsMapFactory::GetForProfile(
-      web_contents()->GetBrowserContext());
+      GetWebContents().GetBrowserContext());
   return brave_shields::GetBraveShieldsEnabled(map, GetCurrentSiteURL());
 }
 
 GURL BraveShieldsDataController::GetCurrentSiteURL() {
-  return web_contents()->GetURL();
+  return GetWebContents().GetURL();
 }
 
 void BraveShieldsDataController::HandleItemBlocked(
