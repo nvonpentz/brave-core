@@ -31,6 +31,9 @@ namespace skus {
 // will be able to purchase VPN from account.brave.com and the browser can
 // detect the purchase and use those credentials during authentication when
 // establishing a connection to our partner providing the VPN service.
+//
+// TODO(bsclifton): trying to cleanup the gin.
+// Looking at chrome/renderer/net/net_error_page_controller.h as an example
 class SdkPageController {
  public:
   explicit SdkPageController(content::RenderFrame* render_frame);
@@ -87,7 +90,7 @@ class SdkPageController {
                            const std::string& response);
 
   content::RenderFrame* render_frame_;
-  mojo::Remote<skus::mojom::SdkController> sdk_controller_;
+  mojo::Remote<skus::mojom::SdkService> sdk_service_;
 };
 
 }  // namespace skus

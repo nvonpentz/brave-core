@@ -30,12 +30,12 @@ SdkPageController::SdkPageController(content::RenderFrame* render_frame)
 SdkPageController::~SdkPageController() = default;
 
 bool SdkPageController::EnsureConnected() {
-  if (!sdk_controller_.is_bound()) {
+  if (!sdk_service_.is_bound()) {
     render_frame_->GetBrowserInterfaceBroker()->GetInterface(
-        sdk_controller_.BindNewPipeAndPassReceiver());
+        sdk_service_.BindNewPipeAndPassReceiver());
   }
 
-  return sdk_controller_.is_bound();
+  return sdk_service_.is_bound();
 }
 
 void SdkPageController::AddJavaScriptObjectToFrame(
@@ -52,7 +52,7 @@ void SdkPageController::AddJavaScriptObjectToFrame(
 
 void SdkPageController::ResetRemote(content::RenderFrame* render_frame) {
   render_frame_ = render_frame;
-  sdk_controller_.reset();
+  sdk_service_.reset();
   EnsureConnected();
 }
 
@@ -143,7 +143,7 @@ v8::Local<v8::Promise> SdkPageController::RefreshOrder(v8::Isolate* isolate,
   auto context_old(
       v8::Global<v8::Context>(isolate, isolate->GetCurrentContext()));
 
-  sdk_controller_->RefreshOrder(
+  sdk_service_->RefreshOrder(
       order_id,
       base::BindOnce(&SdkPageController::OnRefreshOrder, base::Unretained(this),
                      std::move(promise_resolver), isolate,
@@ -210,7 +210,7 @@ v8::Local<v8::Promise> SdkPageController::FetchOrderCredentials(
   auto context_old(
       v8::Global<v8::Context>(isolate, isolate->GetCurrentContext()));
 
-  sdk_controller_->FetchOrderCredentials(
+  sdk_service_->FetchOrderCredentials(
       order_id,
       base::BindOnce(&SdkPageController::OnFetchOrderCredentials,
                      base::Unretained(this), std::move(promise_resolver),
@@ -256,7 +256,7 @@ v8::Local<v8::Promise> SdkPageController::PrepareCredentialsPresentation(
   auto context_old(
       v8::Global<v8::Context>(isolate, isolate->GetCurrentContext()));
 
-  sdk_controller_->PrepareCredentialsPresentation(
+  sdk_service_->PrepareCredentialsPresentation(
       domain, path,
       base::BindOnce(&SdkPageController::OnPrepareCredentialsPresentation,
                      base::Unretained(this), std::move(promise_resolver),
@@ -301,7 +301,7 @@ v8::Local<v8::Promise> SdkPageController::CredentialSummary(
   auto context_old(
       v8::Global<v8::Context>(isolate, isolate->GetCurrentContext()));
 
-  sdk_controller_->CredentialSummary(
+  sdk_service_->CredentialSummary(
       domain,
       base::BindOnce(&SdkPageController::OnCredentialSummary,
                      base::Unretained(this), std::move(promise_resolver),

@@ -57,42 +57,42 @@ struct CppSDK;
 //
 // For more information, please see:
 // https://github.com/brave-intl/br-rs/tree/skus
-class SdkController : public KeyedService, public mojom::SdkController {
+class SdkService : public KeyedService, public mojom::SdkService {
  public:
-  explicit SdkController(
+  explicit SdkService(
       PrefService* prefs,
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
-  ~SdkController() override;
+  ~SdkService() override;
 
-  SdkController(const SdkController&) = delete;
-  SdkController& operator=(SdkController&) = delete;
+  SdkService(const SdkService&) = delete;
+  SdkService& operator=(SdkService&) = delete;
 
-  mojo::PendingRemote<mojom::SdkController> MakeRemote();
-  void Bind(mojo::PendingReceiver<mojom::SdkController> receiver);
+  mojo::PendingRemote<mojom::SdkService> MakeRemote();
+  void Bind(mojo::PendingReceiver<mojom::SdkService> receiver);
 
-  // mojom::SdkController
+  // mojom::SdkService
   void RefreshOrder(
       const std::string& order_id,
-      skus::mojom::SdkController::RefreshOrderCallback callback) override;
+      skus::mojom::SdkService::RefreshOrderCallback callback) override;
   void FetchOrderCredentials(
       const std::string& order_id,
-      skus::mojom::SdkController::FetchOrderCredentialsCallback callback)
+      skus::mojom::SdkService::FetchOrderCredentialsCallback callback)
       override;
   void PrepareCredentialsPresentation(
       const std::string& domain,
       const std::string& path,
-      skus::mojom::SdkController::PrepareCredentialsPresentationCallback
+      skus::mojom::SdkService::PrepareCredentialsPresentationCallback
           callback) override;
   void CredentialSummary(
       const std::string& domain,
-      skus::mojom::SdkController::CredentialSummaryCallback callback) override;
+      skus::mojom::SdkService::CredentialSummaryCallback callback) override;
 
  private:
   std::unique_ptr<skus::SkusSdkContextImpl> context_;
   ::rust::Box<skus::CppSDK> sdk_;
   PrefService* prefs_;
-  mojo::ReceiverSet<mojom::SdkController> receivers_;
-  base::WeakPtrFactory<SdkController> weak_factory_;
+  mojo::ReceiverSet<mojom::SdkService> receivers_;
+  base::WeakPtrFactory<SdkService> weak_factory_;
 };
 
 }  // namespace skus

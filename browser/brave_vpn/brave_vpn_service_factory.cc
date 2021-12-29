@@ -13,7 +13,7 @@
 #include "content/public/browser/storage_partition.h"
 
 #if defined(OS_WIN) || defined(OS_MAC)
-#include "brave/browser/skus/sdk_controller_factory.h"
+#include "brave/browser/skus/sdk_service_factory.h"
 #include "brave/components/brave_vpn/brave_vpn_service_desktop.h"
 #include "brave/components/brave_vpn/brave_vpn_utils.h"
 #endif
@@ -52,7 +52,7 @@ BraveVpnServiceFactory::BraveVpnServiceFactory()
           "BraveVpnService",
           BrowserContextDependencyManager::GetInstance()) {
 #if defined(OS_WIN) || defined(OS_MAC)
-  DependsOn(skus::SdkControllerFactory::GetInstance());
+  DependsOn(skus::SdkServiceFactory::GetInstance());
 #endif
 }
 
@@ -65,9 +65,10 @@ KeyedService* BraveVpnServiceFactory::BuildServiceInstanceFor(
       default_storage_partition->GetURLLoaderFactoryForBrowserProcess();
 
 #if defined(OS_WIN) || defined(OS_MAC)
+  // TODO(bsclifton): how to handle as a pending remote?
   return new BraveVpnServiceDesktop(
       shared_url_loader_factory, user_prefs::UserPrefs::Get(context),
-      skus::SdkControllerFactory::GetControllerForContext(context));
+      skus::SdkServiceFactory::GetForContext_WRONG(context));
 #endif
 
 #if defined(OS_ANDROID)
