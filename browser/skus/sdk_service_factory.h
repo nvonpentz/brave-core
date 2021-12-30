@@ -11,16 +11,17 @@
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 
+class BraveVpnServiceFactory;
+
 namespace skus {
 
-// Singleton that creates/deletes SdkServiceFactory as new Profiles are
-// created/shutdown.
 class SdkServiceFactory : public BrowserContextKeyedServiceFactory {
  public:
   static mojo::PendingRemote<mojom::SdkService> GetForContext(
       content::BrowserContext* context);
-  static skus::SdkService* GetForContext_WRONG(
-      content::BrowserContext* context);
+  static void BindForContext(
+      content::BrowserContext* context,
+      mojo::PendingReceiver<skus::mojom::SdkService> receiver);
   static SdkServiceFactory* GetInstance();
 
   SdkServiceFactory(const SdkServiceFactory&) = delete;
@@ -28,9 +29,13 @@ class SdkServiceFactory : public BrowserContextKeyedServiceFactory {
 
  private:
   friend struct base::DefaultSingletonTraits<SdkServiceFactory>;
+  friend BraveVpnServiceFactory;
 
   SdkServiceFactory();
   ~SdkServiceFactory() override;
+
+  // Used by BraveVpnServiceFactory
+  static SdkService* GetForContextPrivate(content::BrowserContext* context);
 
   // BrowserContextKeyedServiceFactory overrides:
   KeyedService* BuildServiceInstanceFor(

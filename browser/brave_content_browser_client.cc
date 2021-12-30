@@ -325,14 +325,7 @@ void MaybeBindSkusSdkImpl(
     content::RenderFrameHost* const frame_host,
     mojo::PendingReceiver<skus::mojom::SdkService> receiver) {
   auto* context = frame_host->GetBrowserContext();
-  mojo::PendingRemote<skus::mojom::SdkService> pending =
-      skus::SdkServiceFactory::GetForContext(context);
-  // TODO(bsclifton): what to do here?
-
-  auto* service = skus::SdkServiceFactory::GetForContext_WRONG(context);
-  if (service) {
-    service->Bind(std::move(receiver));
-  }
+  skus::SdkServiceFactory::BindForContext(context, std::move(receiver));
 }
 
 }  // namespace

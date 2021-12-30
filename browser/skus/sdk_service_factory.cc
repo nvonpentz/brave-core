@@ -43,13 +43,27 @@ mojo::PendingRemote<mojom::SdkService> SdkServiceFactory::GetForContext(
 }
 
 // static
-skus::SdkService* SdkServiceFactory::GetForContext_WRONG(
+SdkService* SdkServiceFactory::GetForContextPrivate(
     content::BrowserContext* context) {
   if (!IsAllowedForContext(context)) {
     return nullptr;
   }
   return static_cast<skus::SdkService*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
+}
+
+// static
+void SdkServiceFactory::BindForContext(
+    content::BrowserContext* context,
+    mojo::PendingReceiver<skus::mojom::SdkService> receiver) {
+  if (!IsAllowedForContext(context)) {
+    return;
+  }
+  auto* service = static_cast<skus::SdkService*>(
+      GetInstance()->GetServiceForBrowserContext(context, true));
+  if (service) {
+    service->Bind(std::move(receiver));
+  }
 }
 
 SdkServiceFactory::SdkServiceFactory()

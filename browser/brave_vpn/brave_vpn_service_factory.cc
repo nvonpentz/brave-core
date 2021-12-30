@@ -65,10 +65,9 @@ KeyedService* BraveVpnServiceFactory::BuildServiceInstanceFor(
       default_storage_partition->GetURLLoaderFactoryForBrowserProcess();
 
 #if defined(OS_WIN) || defined(OS_MAC)
-  // TODO(bsclifton): how to handle as a pending remote?
   return new BraveVpnServiceDesktop(
       shared_url_loader_factory, user_prefs::UserPrefs::Get(context),
-      skus::SdkServiceFactory::GetForContext_WRONG(context));
+      skus::SdkServiceFactory::GetForContextPrivate(context));
 #endif
 
 #if defined(OS_ANDROID)
