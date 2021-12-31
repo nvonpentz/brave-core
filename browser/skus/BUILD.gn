@@ -5,8 +5,8 @@
 
 source_set("skus") {
   sources = [
-    "//brave/browser/skus/sdk_service_factory.cc",
-    "//brave/browser/skus/sdk_service_factory.h",
+    "//brave/browser/skus/skus_service_factory.cc",
+    "//brave/browser/skus/skus_service_factory.h",
   ]
 
   deps = [

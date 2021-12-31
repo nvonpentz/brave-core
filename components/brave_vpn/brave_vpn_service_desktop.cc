@@ -22,7 +22,7 @@
 #include "brave/components/brave_vpn/pref_names.h"
 #include "brave/components/brave_vpn/switches.h"
 #include "brave/components/skus/browser/pref_names.h"
-#include "brave/components/skus/browser/sdk_service.h"
+#include "brave/components/skus/browser/skus_service.h"
 #include "brave/components/skus/browser/skus_utils.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -88,13 +88,12 @@ std::string GetBraveVPNPaymentsEnv() {
 BraveVpnServiceDesktop::BraveVpnServiceDesktop(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
     PrefService* prefs,
-    skus::SdkService* sdk_service)
+    skus::SkusService* skus_service)
     : BraveVpnService(url_loader_factory),
       prefs_(prefs),
-      sdk_service_(sdk_service) {
+      skus_service_(skus_service) {
   DCHECK(brave_vpn::IsBraveVPNEnabled());
-  DCHECK(sdk_service_);
-  DETACH_FROM_SEQUENCE(sequence_checker_);
+  DCHECK(skus_service_);
 
   auto* cmd = base::CommandLine::ForCurrentProcess();
   is_simulation_ = cmd->HasSwitch(brave_vpn::switches::kBraveVPNSimulation);
@@ -426,6 +425,7 @@ void BraveVpnServiceDesktop::LoadCachedRegionData() {
 
 void BraveVpnServiceDesktop::OnPrepareCredentialsPresentation(
     const std::string& credential_as_cookie) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // Credential is returned in cookie format.
   net::CookieInclusionStatus status;
   net::ParsedCookie credential_cookie(credential_as_cookie, &status);
@@ -486,7 +486,7 @@ void BraveVpnServiceDesktop::LoadPurchasedState() {
   }
 
   // if a credential is ready, we can present it
-  sdk_service_->PrepareCredentialsPresentation(
+  skus_service_->PrepareCredentialsPresentation(
       skus::GetDomain("vpn"), "*",
       base::BindOnce(&BraveVpnServiceDesktop::OnPrepareCredentialsPresentation,
                      base::Unretained(this)));

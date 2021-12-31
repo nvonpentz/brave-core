@@ -90,7 +90,7 @@ class SdkPageController {
                            const std::string& response);
 
   content::RenderFrame* render_frame_;
-  mojo::Remote<skus::mojom::SdkService> sdk_service_;
+  mojo::Remote<skus::mojom::SkusService> skus_service_;
 };
 
 }  // namespace skus

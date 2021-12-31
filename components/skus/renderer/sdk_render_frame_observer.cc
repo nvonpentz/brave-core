@@ -35,7 +35,7 @@ void SdkRenderFrameObserver::DidCreateScriptContext(
     return;
 
   if (!native_javascript_handle_) {
-    native_javascript_handle_.reset(new SdkPageController(render_frame()));
+    native_javascript_handle_ = std::make_unique<SdkPageController>(render_frame());
   } else {
     native_javascript_handle_->ResetRemote(render_frame());
   }
@@ -44,6 +44,7 @@ void SdkRenderFrameObserver::DidCreateScriptContext(
 }
 
 bool SdkRenderFrameObserver::IsSkusSdkAllowed() {
+  DCHECK(base::FeatureList::IsEnabled(skus::features::kSkusFeature));
   // NOTE: please open a security review when appending to this list.
   static base::NoDestructor<std::vector<blink::WebSecurityOrigin>> safe_origins{
       {{blink::WebSecurityOrigin::Create(GURL("https://account.brave.com"))},
@@ -51,8 +52,6 @@ bool SdkRenderFrameObserver::IsSkusSdkAllowed() {
            GURL("https://account.bravesoftware.com"))},
        {blink::WebSecurityOrigin::Create(
            GURL("https://account.brave.software"))}}};
-  if (!base::FeatureList::IsEnabled(skus::features::kSdkFeature))
-    return false;
 
   const blink::WebSecurityOrigin& visited_origin =
       render_frame()->GetWebFrame()->GetSecurityOrigin();

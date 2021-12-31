@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "brave/components/skus/browser/sdk_service.h"
+#include "brave/components/skus/browser/skus_service.h"
 
 #include <utility>
 
@@ -81,7 +81,7 @@ void OnCredentialSummary(skus::CredentialSummaryCallbackState* callback_state,
 
 namespace skus {
 
-SdkService::SdkService(
+SkusService::SkusService(
     PrefService* prefs,
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory)
     : context_(std::make_unique<skus::SkusSdkContextImpl>(prefs,
@@ -90,21 +90,21 @@ SdkService::SdkService(
       prefs_(prefs),
       weak_factory_(this) {}
 
-SdkService::~SdkService() {}
+SkusService::~SkusService() {}
 
-mojo::PendingRemote<mojom::SdkService> SdkService::MakeRemote() {
-  mojo::PendingRemote<mojom::SdkService> remote;
+mojo::PendingRemote<mojom::SkusService> SkusService::MakeRemote() {
+  mojo::PendingRemote<mojom::SkusService> remote;
   receivers_.Add(this, remote.InitWithNewPipeAndPassReceiver());
   return remote;
 }
 
-void SdkService::Bind(mojo::PendingReceiver<mojom::SdkService> receiver) {
+void SkusService::Bind(mojo::PendingReceiver<mojom::SkusService> receiver) {
   receivers_.Add(this, std::move(receiver));
 }
 
-void SdkService::RefreshOrder(
+void SkusService::RefreshOrder(
     const std::string& order_id,
-    mojom::SdkService::RefreshOrderCallback callback) {
+    mojom::SkusService::RefreshOrderCallback callback) {
   std::unique_ptr<skus::RefreshOrderCallbackState> cbs(
       new skus::RefreshOrderCallbackState);
   cbs->cb = std::move(callback);
@@ -112,9 +112,9 @@ void SdkService::RefreshOrder(
   sdk_->refresh_order(OnRefreshOrder, std::move(cbs), order_id);
 }
 
-void SdkService::FetchOrderCredentials(
+void SkusService::FetchOrderCredentials(
     const std::string& order_id,
-    mojom::SdkService::FetchOrderCredentialsCallback callback) {
+    mojom::SkusService::FetchOrderCredentialsCallback callback) {
   std::unique_ptr<skus::FetchOrderCredentialsCallbackState> cbs(
       new skus::FetchOrderCredentialsCallbackState);
   cbs->cb = std::move(callback);
@@ -124,10 +124,10 @@ void SdkService::FetchOrderCredentials(
                                 order_id);
 }
 
-void SdkService::PrepareCredentialsPresentation(
+void SkusService::PrepareCredentialsPresentation(
     const std::string& domain,
     const std::string& path,
-    mojom::SdkService::PrepareCredentialsPresentationCallback callback) {
+    mojom::SkusService::PrepareCredentialsPresentationCallback callback) {
   std::unique_ptr<skus::PrepareCredentialsPresentationCallbackState> cbs(
       new skus::PrepareCredentialsPresentationCallbackState);
   cbs->cb = std::move(callback);
@@ -138,9 +138,9 @@ void SdkService::PrepareCredentialsPresentation(
                                          std::move(cbs), domain, path);
 }
 
-void SdkService::CredentialSummary(
+void SkusService::CredentialSummary(
     const std::string& domain,
-    mojom::SdkService::CredentialSummaryCallback callback) {
+    mojom::SkusService::CredentialSummaryCallback callback) {
   std::unique_ptr<skus::CredentialSummaryCallbackState> cbs(
       new skus::CredentialSummaryCallbackState);
   cbs->cb = std::move(callback);

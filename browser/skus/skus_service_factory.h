@@ -3,11 +3,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef BRAVE_BROWSER_SKUS_SDK_SERVICE_FACTORY_H_
-#define BRAVE_BROWSER_SKUS_SDK_SERVICE_FACTORY_H_
+#ifndef BRAVE_BROWSER_SKUS_SKUS_SERVICE_FACTORY_H_
+#define BRAVE_BROWSER_SKUS_SKUS_SERVICE_FACTORY_H_
 
 #include "base/memory/singleton.h"
-#include "brave/components/skus/browser/sdk_service.h"
+#include "brave/components/skus/browser/skus_service.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 
@@ -15,27 +15,27 @@ class BraveVpnServiceFactory;
 
 namespace skus {
 
-class SdkServiceFactory : public BrowserContextKeyedServiceFactory {
+class SkusServiceFactory : public BrowserContextKeyedServiceFactory {
  public:
-  static mojo::PendingRemote<mojom::SdkService> GetForContext(
+  static mojo::PendingRemote<mojom::SkusService> GetForContext(
       content::BrowserContext* context);
   static void BindForContext(
       content::BrowserContext* context,
-      mojo::PendingReceiver<skus::mojom::SdkService> receiver);
-  static SdkServiceFactory* GetInstance();
+      mojo::PendingReceiver<skus::mojom::SkusService> receiver);
+  static SkusServiceFactory* GetInstance();
 
-  SdkServiceFactory(const SdkServiceFactory&) = delete;
-  SdkServiceFactory& operator=(const SdkServiceFactory&) = delete;
+  SkusServiceFactory(const SkusServiceFactory&) = delete;
+  SkusServiceFactory& operator=(const SkusServiceFactory&) = delete;
 
  private:
-  friend struct base::DefaultSingletonTraits<SdkServiceFactory>;
+  friend struct base::DefaultSingletonTraits<SkusServiceFactory>;
   friend BraveVpnServiceFactory;
 
-  SdkServiceFactory();
-  ~SdkServiceFactory() override;
+  SkusServiceFactory();
+  ~SkusServiceFactory() override;
 
   // Used by BraveVpnServiceFactory
-  static SdkService* GetForContextPrivate(content::BrowserContext* context);
+  static SkusService* GetForContextPrivate(content::BrowserContext* context);
 
   // BrowserContextKeyedServiceFactory overrides:
   KeyedService* BuildServiceInstanceFor(
@@ -46,4 +46,4 @@ class SdkServiceFactory : public BrowserContextKeyedServiceFactory {
 
 }  // namespace skus
 
-#endif  // BRAVE_BROWSER_SKUS_SDK_SERVICE_FACTORY_H_
+#endif  // BRAVE_BROWSER_SKUS_SKUS_SERVICE_FACTORY_H_

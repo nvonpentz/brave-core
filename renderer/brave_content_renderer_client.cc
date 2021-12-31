@@ -82,7 +82,7 @@ void BraveContentRendererClient::RenderFrameCreated(
         render_frame, content::ISOLATED_WORLD_ID_GLOBAL);
   }
 
-  if (base::FeatureList::IsEnabled(skus::features::kSdkFeature)) {
+  if (base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
     new skus::SdkRenderFrameObserver(render_frame,
                                      content::ISOLATED_WORLD_ID_GLOBAL);
   }
