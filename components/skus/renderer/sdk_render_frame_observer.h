@@ -11,7 +11,6 @@
 #include "brave/components/skus/renderer/sdk_page_controller.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "third_party/blink/public/web/web_navigation_type.h"
 #include "v8/include/v8.h"
 
 namespace skus {
@@ -34,9 +33,6 @@ class SdkRenderFrameObserver : public content::RenderFrameObserver {
   ~SdkRenderFrameObserver() override;
 
   // RenderFrameObserver implementation.
-  void DidStartNavigation(
-      const GURL& url,
-      absl::optional<blink::WebNavigationType> navigation_type) override;
   void DidCreateScriptContext(v8::Local<v8::Context> context,
                               int32_t world_id) override;
 
@@ -45,9 +41,6 @@ class SdkRenderFrameObserver : public content::RenderFrameObserver {
   void OnDestruct() override;
 
   bool IsSkusSdkAllowed();
-
-  // only allow injection on Brave Software properties
-  GURL url_;
 
   // Handle to "handler" JavaScript object functionality.
   std::unique_ptr<SdkPageController> native_javascript_handle_;

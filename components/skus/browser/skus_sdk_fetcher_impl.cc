@@ -29,7 +29,7 @@ void SkusSdkFetcherImpl::BeginFetch(
     rust::cxxbridge1::Box<skus::HttpRoundtripContext> ctx) {
   auto resource_request = std::make_unique<network::ResourceRequest>();
   resource_request->url = GURL(static_cast<std::string>(req.url));
-  resource_request->method = static_cast<std::string>(req.method).c_str();
+  resource_request->method = static_cast<std::string>(req.method);
   resource_request->credentials_mode = network::mojom::CredentialsMode::kOmit;
   // No cache read, always download from the network.
   resource_request->load_flags =

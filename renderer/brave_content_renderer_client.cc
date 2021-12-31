@@ -13,6 +13,7 @@
 #include "brave/components/brave_shields/common/features.h"
 #include "brave/components/brave_wallet/common/features.h"
 #include "brave/components/cosmetic_filters/renderer/cosmetic_filters_js_render_frame_observer.h"
+#include "brave/components/skus/common/features.h"
 #include "brave/components/skus/renderer/sdk_render_frame_observer.h"
 #include "brave/renderer/brave_render_thread_observer.h"
 #include "brave/renderer/brave_wallet/brave_wallet_render_frame_observer.h"
@@ -81,8 +82,10 @@ void BraveContentRendererClient::RenderFrameCreated(
         render_frame, content::ISOLATED_WORLD_ID_GLOBAL);
   }
 
-  new skus::SdkRenderFrameObserver(
-      render_frame, content::ISOLATED_WORLD_ID_GLOBAL);
+  if (base::FeatureList::IsEnabled(skus::features::kSdkFeature)) {
+    new skus::SdkRenderFrameObserver(render_frame,
+                                     content::ISOLATED_WORLD_ID_GLOBAL);
+  }
 }
 
 void BraveContentRendererClient::RunScriptsAtDocumentStart(

@@ -12,34 +12,24 @@
 #include "base/no_destructor.h"
 #include "brave/components/skus/common/features.h"
 #include "content/public/renderer/render_frame.h"
+#include "third_party/blink/public/platform/web_security_origin.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace skus {
 
 SdkRenderFrameObserver::SdkRenderFrameObserver(
-    content::RenderFrame* render_frame,
+    content::RenderFrame * render_frame,
     int32_t world_id)
-    : RenderFrameObserver(render_frame), world_id_(world_id) {}
+    : RenderFrameObserver(render_frame),
+    world_id_(world_id) {}
 
 SdkRenderFrameObserver::~SdkRenderFrameObserver() {}
-
-void SdkRenderFrameObserver::DidStartNavigation(
-    const GURL& url,
-    absl::optional<blink::WebNavigationType> navigation_type) {
-  url_ = url;
-}
 
 void SdkRenderFrameObserver::DidCreateScriptContext(
     v8::Local<v8::Context> context,
     int32_t world_id) {
   if (!render_frame()->IsMainFrame() || world_id_ != world_id)
     return;
-
-  // There could be empty, invalid and "about:blank" URLs,
-  // they should fallback to the main frame rules
-  if (url_.is_empty() || !url_.is_valid() || url_.spec() == "about:blank")
-    url_ = url::Origin(render_frame()->GetWebFrame()->GetSecurityOrigin())
-               .GetURL();
 
   if (!IsSkusSdkAllowed())
     return;
@@ -54,10 +44,25 @@ void SdkRenderFrameObserver::DidCreateScriptContext(
 }
 
 bool SdkRenderFrameObserver::IsSkusSdkAllowed() {
-  return base::FeatureList::IsEnabled(skus::features::kSdkFeature) &&
-         (url_.host() == "account.brave.com" ||
-          url_.host() == "account.bravesoftware.com" ||
-          url_.host() == "account.brave.software");
+  // NOTE: please open a security review when appending to this list.
+  static base::NoDestructor<std::vector<blink::WebSecurityOrigin>> safe_origins{
+      {{blink::WebSecurityOrigin::Create(GURL("https://account.brave.com"))},
+       {blink::WebSecurityOrigin::Create(
+           GURL("https://account.bravesoftware.com"))},
+       {blink::WebSecurityOrigin::Create(
+           GURL("https://account.brave.software"))}}};
+  if (!base::FeatureList::IsEnabled(skus::features::kSdkFeature))
+    return false;
+
+  const blink::WebSecurityOrigin& visited_origin =
+      render_frame()->GetWebFrame()->GetSecurityOrigin();
+  for (const blink::WebSecurityOrigin& safe_origin : *safe_origins) {
+    if (safe_origin.IsSameOriginWith(visited_origin)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void SdkRenderFrameObserver::OnDestruct() {

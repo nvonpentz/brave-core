@@ -109,7 +109,7 @@ void SdkService::RefreshOrder(
       new skus::RefreshOrderCallbackState);
   cbs->cb = std::move(callback);
 
-  sdk_->refresh_order(OnRefreshOrder, std::move(cbs), order_id.c_str());
+  sdk_->refresh_order(OnRefreshOrder, std::move(cbs), order_id);
 }
 
 void SdkService::FetchOrderCredentials(
@@ -121,7 +121,7 @@ void SdkService::FetchOrderCredentials(
   cbs->order_id = order_id;
 
   sdk_->fetch_order_credentials(OnFetchOrderCredentials, std::move(cbs),
-                                order_id.c_str());
+                                order_id);
 }
 
 void SdkService::PrepareCredentialsPresentation(

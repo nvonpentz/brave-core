@@ -13,17 +13,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/storage_partition.h"
 
-namespace {
-
-bool IsAllowedForContext(content::BrowserContext* context) {
-  if (context && !brave::IsRegularProfile(context))
-    return false;
-
-  return true;
-}
-
-}  // namespace
-
 namespace skus {
 
 // static
@@ -34,9 +23,6 @@ SdkServiceFactory* SdkServiceFactory::GetInstance() {
 // static
 mojo::PendingRemote<mojom::SdkService> SdkServiceFactory::GetForContext(
     content::BrowserContext* context) {
-  if (!IsAllowedForContext(context)) {
-    return mojo::PendingRemote<mojom::SdkService>();
-  }
   return static_cast<skus::SdkService*>(
              GetInstance()->GetServiceForBrowserContext(context, true))
       ->MakeRemote();
@@ -45,9 +31,6 @@ mojo::PendingRemote<mojom::SdkService> SdkServiceFactory::GetForContext(
 // static
 SdkService* SdkServiceFactory::GetForContextPrivate(
     content::BrowserContext* context) {
-  if (!IsAllowedForContext(context)) {
-    return nullptr;
-  }
   return static_cast<skus::SdkService*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
 }
@@ -56,9 +39,6 @@ SdkService* SdkServiceFactory::GetForContextPrivate(
 void SdkServiceFactory::BindForContext(
     content::BrowserContext* context,
     mojo::PendingReceiver<skus::mojom::SdkService> receiver) {
-  if (!IsAllowedForContext(context)) {
-    return;
-  }
   auto* service = static_cast<skus::SdkService*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
   if (service) {
