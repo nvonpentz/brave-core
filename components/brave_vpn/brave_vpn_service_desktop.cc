@@ -477,7 +477,7 @@ void BraveVpnServiceDesktop::LoadPurchasedState() {
       prefs_->GetBoolean(skus::prefs::kSkusVPNHasCredential);
 
   if (!has_credential) {
-    // TODO: we can show logic for person to login
+    // TODO(bsclifton): we can show logic for person to login
     // NOTE: we might save (to profile) if person EVER had a valid
     // credential. If so, we may want to show an expired dialog
     // instead of the "purchase" dialog.

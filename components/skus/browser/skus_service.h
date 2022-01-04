@@ -3,8 +3,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SKUS_SERVICE_H_
-#define BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SKUS_SERVICE_H_
+#ifndef BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_H_
+#define BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_H_
 
 #include <memory>
 #include <string>
@@ -92,9 +92,9 @@ class SkusService : public KeyedService, public mojom::SkusService {
   ::rust::Box<skus::CppSDK> sdk_;
   PrefService* prefs_;
   mojo::ReceiverSet<mojom::SkusService> receivers_;
-  base::WeakPtrFactory<SkusService> weak_factory_;
+  base::WeakPtrFactory<SkusService> weak_factory_{this};
 };
 
 }  // namespace skus
 
-#endif  // BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SKUS_SERVICE_H_
+#endif  // BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_H_

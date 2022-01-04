@@ -84,11 +84,10 @@ namespace skus {
 SkusService::SkusService(
     PrefService* prefs,
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory)
-    : context_(std::make_unique<skus::SkusContextImpl>(prefs,
-                                                          url_loader_factory)),
+    : context_(
+          std::make_unique<skus::SkusContextImpl>(prefs, url_loader_factory)),
       sdk_(initialize_sdk(std::move(context_), skus::GetEnvironment())),
-      prefs_(prefs),
-      weak_factory_(this) {}
+      prefs_(prefs) {}
 
 SkusService::~SkusService() {}
 

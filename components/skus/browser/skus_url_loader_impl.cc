@@ -45,8 +45,9 @@ void SkusUrlLoaderImpl::BeginFetch(
 
   simple_url_loader_->DownloadToStringOfUnboundedSizeUntilCrashAndDie(
       url_loader_factory_.get(),
-      base::BindOnce(&SkusUrlLoaderImpl::OnFetchComplete, base::Unretained(this),
-                     std::move(callback), std::move(ctx)));
+      base::BindOnce(&SkusUrlLoaderImpl::OnFetchComplete,
+                     base::Unretained(this), std::move(callback),
+                     std::move(ctx)));
 }
 
 const net::NetworkTrafficAnnotationTag&
