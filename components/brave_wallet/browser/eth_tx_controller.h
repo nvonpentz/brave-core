@@ -98,6 +98,10 @@ class EthTxController : public KeyedService,
       const std::string& tx_meta_id,
       const std::vector<uint8_t>& data,
       SetDataForUnapprovedTransactionCallback callback) override;
+  void SetNonceForUnapprovedTransaction(
+      const std::string& tx_meta_id,
+      const std::string& nonce,
+      SetNonceForUnapprovedTransactionCallback) override;
   void GetNonceForHardwareTransaction(
       const std::string& tx_meta_id,
       GetNonceForHardwareTransactionCallback callback) override;
@@ -118,6 +122,9 @@ class EthTxController : public KeyedService,
       GetTransactionMessageToSignCallback callback) override;
   void AddObserver(
       ::mojo::PendingRemote<mojom::EthTxControllerObserver> observer) override;
+  // Resets things back to the original state of EthTxController
+  // To be used when the Wallet is reset / erased
+  void Reset() override;
 
   static bool ValidateTxData(const mojom::TxDataPtr& tx_data,
                              std::string* error);
@@ -129,6 +136,7 @@ class EthTxController : public KeyedService,
  private:
   FRIEND_TEST_ALL_PREFIXES(EthTxControllerUnitTest, TestSubmittedToConfirmed);
   FRIEND_TEST_ALL_PREFIXES(EthTxControllerUnitTest, RetryTransaction);
+  FRIEND_TEST_ALL_PREFIXES(EthTxControllerUnitTest, Reset);
   friend class EthTxControllerUnitTest;
 
   void NotifyUnapprovedTxUpdated(EthTxStateManager::TxMeta* meta);
@@ -148,8 +156,9 @@ class EthTxController : public KeyedService,
                           ApproveTransactionCallback callback);
   void OnPublishTransaction(std::string tx_meta_id,
                             ApproveTransactionCallback callback,
-                            bool status,
-                            const std::string& tx_hash);
+                            const std::string& tx_hash,
+                            mojom::ProviderError error,
+                            const std::string& error_message);
   void OnGetGasPrice(const std::string& from,
                      const std::string& to,
                      const std::string& value,
@@ -157,14 +166,16 @@ class EthTxController : public KeyedService,
                      const std::string& gas_limit,
                      std::unique_ptr<EthTransaction> tx,
                      AddUnapprovedTransactionCallback callback,
-                     bool success,
-                     const std::string& result);
+                     const std::string& result,
+                     mojom::ProviderError error,
+                     const std::string& error_message);
   void ContinueAddUnapprovedTransaction(
       const std::string& from,
       std::unique_ptr<EthTransaction> tx,
       AddUnapprovedTransactionCallback callback,
-      bool success,
-      const std::string& result);
+      const std::string& result,
+      mojom::ProviderError error,
+      const std::string& error_message);
   void OnGetGasOracle(const std::string& from,
                       const std::string& to,
                       const std::string& value,
@@ -181,8 +192,9 @@ class EthTxController : public KeyedService,
       const std::string& gas_limit,
       std::unique_ptr<EthTransaction> tx,
       SpeedupOrCancelTransactionCallback callback,
-      bool success,
-      const std::string& result);
+      const std::string& result,
+      mojom::ProviderError error,
+      const std::string& error_message);
   void ContinueSpeedupOrCancel1559Transaction(
       const std::string& from,
       const std::string& gas_limit,
@@ -195,12 +207,14 @@ class EthTxController : public KeyedService,
       const std::string& to,
       uint256_t token_id,
       MakeERC721TransferFromDataCallback callback,
-      bool success,
-      bool is_safe_transfer_from_supported);
+      bool is_safe_transfer_from_supported,
+      mojom::ProviderError error,
+      const std::string& error_message);
 
   // KeyringControllerObserver:
   void KeyringCreated() override;
   void KeyringRestored() override;
+  void KeyringReset() override;
   void Locked() override;
   void Unlocked() override;
   void BackedUp() override {}
@@ -219,6 +233,7 @@ class EthTxController : public KeyedService,
   EthJsonRpcController* rpc_controller_;          // NOT OWNED
   KeyringController* keyring_controller_;         // NOT OWNED
   AssetRatioController* asset_ratio_controller_;  // NOT OWNED
+  PrefService* prefs_;                            // NOT OWNED
   std::unique_ptr<EthTxStateManager> tx_state_manager_;
   std::unique_ptr<EthNonceTracker> nonce_tracker_;
   std::unique_ptr<EthPendingTxTracker> pending_tx_tracker_;

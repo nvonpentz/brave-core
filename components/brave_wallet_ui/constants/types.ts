@@ -3,11 +3,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import * as BraveWallet from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
 import { TimeDelta } from 'gen/mojo/public/mojom/base/time.mojom.m.js'
+import * as BraveWallet from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
 import { HardwareWalletResponseCodeType } from '../common/hardware/types'
-// Provide access to all the generated types.
-export * from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
+
+// Re-export BraveWallet for use in other modules, to avoid hard-coding the
+// path of generated mojom files.
+export { BraveWallet }
 export { Url } from 'gen/url/mojom/url.mojom.m.js'
 
 export interface WalletAccountType {
@@ -100,6 +102,8 @@ export type PanelTypes =
   | 'showUnlock'
   | 'sitePermissions'
   | 'addSuggestedToken'
+  | 'transactions'
+  | 'transactionDetails'
 
 export type NavTypes =
   | 'crypto'
@@ -316,20 +320,14 @@ export interface GetAllTokensReturnInfo {
   tokens: BraveWallet.ERCToken[]
 }
 
-export interface GetBalanceReturnInfo {
-  success: boolean
-  balance: string
-}
+export type GetBalanceReturnInfo = BraveWallet.EthJsonRpcController_GetBalance_ResponseParams
 
 export interface GetNativeAssetBalancesPriceReturnInfo {
   fiatPrice: string
   balances: GetBalanceReturnInfo[]
 }
 
-export interface GetERCTokenBalanceReturnInfo {
-  success: boolean
-  balance: string
-}
+export type GetERCTokenBalanceReturnInfo = BraveWallet.EthJsonRpcController_GetERC20TokenBalance_ResponseParams
 
 export interface GetERC20TokenBalanceAndPriceReturnInfo {
   balances: GetERCTokenBalanceReturnInfo[][]
@@ -379,14 +377,15 @@ export type AccountTransactions = {
   [accountId: string]: BraveWallet.TransactionInfo[]
 }
 
-export interface GetEthAddrReturnInfo {
-  success: boolean
-  address: string
+export type GetEthAddrReturnInfo = BraveWallet.EthJsonRpcController_EnsGetEthAddr_ResponseParams
+
+export interface GetERCTokenInfoReturnInfo {
+  token: BraveWallet.ERCToken | null
 }
 
-export interface GetIsStrongPassswordReturnInfo {
-  result: boolean
-}
+export type GetIsStrongPassswordReturnInfo = BraveWallet.KeyringController_IsStrongPassword_ResponseParams
+
+export type GetChecksumEthAddressReturnInfo = BraveWallet.KeyringController_GetChecksumEthAddress_ResponseParams
 
 export interface RecoveryObject {
   value: string
@@ -520,3 +519,8 @@ export enum WalletRoutes {
 }
 
 export const WalletOrigin = 'chrome://wallet'
+
+export type BlockExplorerUrlTypes =
+  | 'tx'
+  | 'address'
+  | 'token'

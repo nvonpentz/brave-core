@@ -2,8 +2,9 @@ import * as React from 'react'
 import BigNumber from 'bignumber.js'
 
 import { getLocale } from '../../../../common/locale'
-import { TransactionInfo, EthereumChain } from '../../../constants/types'
+import { BraveWallet } from '../../../constants/types'
 import { UpdateUnapprovedTransactionGasFieldsType } from '../../../common/constants/action_types'
+
 import { NavButton, Panel } from '../'
 import {
   formatFiatGasFee,
@@ -33,7 +34,8 @@ import {
   SliderLabelRow,
   SliderLabel,
   SliderWrapper,
-  SliderValue
+  SliderValue,
+  WarningText
 } from './style'
 
 export enum MaxPriorityPanels {
@@ -44,8 +46,8 @@ export enum MaxPriorityPanels {
 export interface Props {
   onCancel: () => void
   networkSpotPrice: string
-  transactionInfo: TransactionInfo
-  selectedNetwork: EthereumChain
+  transactionInfo: BraveWallet.TransactionInfo
+  selectedNetwork: BraveWallet.EthereumChain
   baseFeePerGas: string
   suggestedMaxPriorityFeeChoices: string[]
   suggestedSliderStep: string
@@ -175,6 +177,14 @@ const EditGas = (props: Props) => {
     onCancel()
   }
 
+  const isZeroGasPrice = React.useMemo(() => {
+    return (
+      !isEIP1559Transaction &&
+      gasPrice !== '' &&
+      new BigNumber(gWeiToWei(gasPrice)).isZero()
+    )
+  }, [gasPrice])
+
   const isSaveButtonDisabled = React.useMemo(() => {
     if (gasLimit === '') {
       return true
@@ -188,7 +198,7 @@ const EditGas = (props: Props) => {
       return true
     }
 
-    if (!isEIP1559Transaction && new BigNumber(gWeiToWei(gasPrice)).lte(0)) {
+    if (!isEIP1559Transaction && new BigNumber(gWeiToWei(gasPrice)).lt(0)) {
       return true
     }
 
@@ -281,6 +291,10 @@ const EditGas = (props: Props) => {
               value={gasPrice}
               onChange={handleGasPriceInputChanged}
             />
+
+            {isZeroGasPrice && (
+              <WarningText>{getLocale('braveWalletEditGasZeroGasPriceWarning')}</WarningText>
+            )}
           </FormColumn>
         }
 

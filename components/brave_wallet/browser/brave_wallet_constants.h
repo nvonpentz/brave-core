@@ -43,7 +43,7 @@ static base::NoDestructor<std::vector<mojom::ERCToken>> kBuyTokens(
       true, false, "Comp", 18, true, ""},
      {"0xD533a949740bb3306d119CC777fa900bA034cd52", "Curve", "curve.png", true,
       false, "CRV", 18, true, ""},
-     {"0xc00e94Cb662C3520282E6f5717214004A7f26888", "Gemini Dollar", "gusd.png",
+     {"0x056Fd409E1d7A124BD7017459dFEa2F387b6d5Cd", "Gemini Dollar", "gusd.png",
       true, false, "GUSD", 2, true, ""},
      {"0x514910771AF9Ca656af840dff83E8264EcF986CA", "Chainlink",
       "chainlink.png", true, false, "LINK", 18, true, ""},
@@ -131,6 +131,7 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
     {"braveWalletSwapFeesNotice", IDS_BRAVE_WALLET_SWAP_FEES_NOTICE},
     {"braveWalletButtonContinue", IDS_BRAVE_WALLET_BUTTON_CONTINUE},
     {"braveWalletButtonCopy", IDS_BRAVE_WALLET_BUTTON_COPY},
+    {"braveWalletButtonCopied", IDS_BRAVE_WALLET_BUTTON_COPIED},
     {"braveWalletButtonVerify", IDS_BRAVE_WALLET_BUTTON_VERIFY},
     {"braveWalletWelcomeTitle", IDS_BRAVE_WALLET_WELCOME_TITLE},
     {"braveWalletWelcomeDescription", IDS_BRAVE_WALLET_WELCOME_DESCRIPTION},
@@ -235,6 +236,8 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
      IDS_BRAVE_WALLET_LEDGER_LIVE_DERIVATION_PATH},
     {"braveWalletLedgerLegacyDerivationPath",
      IDS_BRAVE_WALLET_LEDGER_LEGACY_DERIVATION_PATH},
+    {"braveWalletConnectHardwareSearchNothingFound",
+     IDS_BRAVE_WALLET_CONNECT_HARDWARE_SEARCH_NOTHING_FOUND},
     {"braveWalletUnknownInternalError",
      IDS_BRAVE_WALLET_UNKNOWN_INTERNAL_ERROR},
     {"braveWalletAccountSettingsDetails",
@@ -449,6 +452,18 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
      IDS_BRAVE_WALLET_TRANSACTION_STATUS_CONFIRMED},
     {"braveWalletTransactionStatusError",
      IDS_BRAVE_WALLET_TRANSACTION_STATUS_ERROR},
+    {"braveWalletRecentTransactions", IDS_BRAVE_WALLET_RECENT_TRANSACTIONS},
+    {"braveWalletTransactionDetails", IDS_BRAVE_WALLET_TRANSACTION_DETAILS},
+    {"braveWalletTransactionDetailDate",
+     IDS_BRAVE_WALLET_TRANSACTION_DETAIL_DATE},
+    {"braveWalletTransactionDetailSpeedUp",
+     IDS_BRAVE_WALLET_TRANSACTION_DETAIL_SPEEDUP},
+    {"braveWalletTransactionDetailHash",
+     IDS_BRAVE_WALLET_TRANSACTION_DETAIL_HASH},
+    {"braveWalletTransactionDetailNetwork",
+     IDS_BRAVE_WALLET_TRANSACTION_DETAIL_NETWORK},
+    {"braveWalletTransactionDetailStatus",
+     IDS_BRAVE_WALLET_TRANSACTION_DETAIL_STATUS},
     {"braveWalletTransactionPlaceholder",
      IDS_BRAVE_WALLET_TRANSACTION_PLACEHOLDER},
     {"braveWalletTransactionApproveUnlimited",
@@ -470,6 +485,8 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
     {"braveWalletEditGasGwei", IDS_BRAVE_WALLET_EDIT_GAS_GWEI},
     {"braveWalletEditGasSetCustom", IDS_BRAVE_WALLET_EDIT_GAS_SET_CUSTOM},
     {"braveWalletEditGasSetSuggested", IDS_BRAVE_WALLET_EDIT_GAS_SET_SUGGESTED},
+    {"braveWalletEditGasZeroGasPriceWarning",
+     IDS_BRAVE_WALLET_EDIT_GAS_ZERO_GAS_PRICE_WARNING},
     {"braveWalletEditPermissionsTitle",
      IDS_BRAVE_WALLET_EDIT_PERMISSIONS_TITLE},
     {"braveWalletEditPermissionsDescription",
@@ -486,6 +503,10 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
     {"braveWalletSameAddressError", IDS_BRAVE_WALLET_SAME_ADDRESS_ERROR},
     {"braveWalletContractAddressError",
      IDS_BRAVE_WALLET_CONTRACT_ADDRESS_ERROR},
+    {"braveWalletAddressMissingChecksumInfoWarning",
+     IDS_BRAVE_WALLET_ADDRESS_MISSING_CHECKSUM_INFO_WARNING},
+    {"braveWalletNotValidChecksumAddressError",
+     IDS_BRAVE_WALLET_NOT_VALID_CHECKSUM_ADDRESS_ERROR},
     {"braveWalletQueueOf", IDS_BRAVE_WALLET_QUEUE_OF},
     {"braveWalletQueueNext", IDS_BRAVE_WALLET_QUEUE_NEXT},
     {"braveWalletQueueFirst", IDS_BRAVE_WALLET_QUEUE_FIRST},
@@ -548,6 +569,9 @@ constexpr char kCryptoEthAddressKey[] = "crypto.ETH.address";
 
 // ERC-165 identifier for ERC721 interface.
 constexpr char kERC721InterfaceId[] = "0x80ac58cd";
+
+extern const char kDefaultKeyringId[];
+extern const char kFilecoinKeyringId[];
 
 }  // namespace brave_wallet
 

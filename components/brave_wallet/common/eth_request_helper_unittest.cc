@@ -30,6 +30,9 @@ TEST(EthRequestHelperUnitTest, CommonParseErrors) {
     EXPECT_FALSE(ParseSwitchEthereumChainParams(error_case, &chain_id));
     mojom::ERCTokenPtr token;
     EXPECT_FALSE(ParseWalletWatchAssetParams(error_case, &token, &message));
+    std::string signature;
+    EXPECT_FALSE(
+        ParsePersonalEcRecoverParams(error_case, &message, &signature));
   }
 }
 
@@ -116,6 +119,7 @@ TEST(EthResponseHelperUnitTest, ShouldCreate1559Tx) {
       "0x7f84E0DfF3ffd0af78770cF86c1b1DdFF99d51C9";
   const std::string trezor_address =
       "0x7f84E0DfF3ffd0af78770cF86c1b1DdFF99d51CA";
+  const std::string hw_address = "0x7f84E0DfF3ffd0af78770cF86c1b1DdFF99d51CC";
 
   mojom::AccountInfoPtr primary_account = mojom::AccountInfo::New(
       "0x7f84E0DfF3ffd0af78770cF86c1b1DdFF99d51C8", "primary", false, nullptr);
@@ -125,10 +129,14 @@ TEST(EthResponseHelperUnitTest, ShouldCreate1559Tx) {
   mojom::AccountInfoPtr trezor_account = mojom::AccountInfo::New(
       trezor_address, "trezor", false,
       mojom::HardwareInfo::New("m/44'/60'/1'/0/0", "Trezor", "123"));
+  mojom::AccountInfoPtr hw_account = mojom::AccountInfo::New(
+      hw_address, "hw", false,
+      mojom::HardwareInfo::New("m/44'/60'/1'/0/0", "Hardware", "123"));
   std::vector<mojom::AccountInfoPtr> account_infos;
   account_infos.push_back(std::move(primary_account));
   account_infos.push_back(std::move(ledger_account));
   account_infos.push_back(std::move(trezor_account));
+  account_infos.push_back(std::move(hw_account));
 
   // Test both EIP1559 and legacy gas fee fields are specified.
   std::string json(
@@ -154,16 +162,22 @@ TEST(EthResponseHelperUnitTest, ShouldCreate1559Tx) {
                                  account_infos, from));
   EXPECT_TRUE(
       ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, ledger_address));
+  EXPECT_TRUE(ShouldCreate1559Tx(tx_data.Clone(), true, account_infos,
+                                 base::ToLowerASCII(ledger_address)));
+  EXPECT_TRUE(
+      ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, trezor_address));
+  EXPECT_TRUE(ShouldCreate1559Tx(tx_data.Clone(), true, account_infos,
+                                 base::ToLowerASCII(trezor_address)));
   // From is not found in the account infos, can happen when keyring is locked.
   EXPECT_TRUE(ShouldCreate1559Tx(
       tx_data.Clone(), true /* network_supports_eip1559 */, {}, from));
-  // Network don't support EIP1559
+  // Network doesn't support EIP1559
   EXPECT_FALSE(ShouldCreate1559Tx(tx_data.Clone(), false, account_infos, from));
-  // Keyring don't support EIP1559
+  // Keyring doesn't support EIP1559
   EXPECT_FALSE(
-      ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, trezor_address));
+      ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, hw_address));
   EXPECT_FALSE(ShouldCreate1559Tx(tx_data.Clone(), true, account_infos,
-                                  base::ToLowerASCII(trezor_address)));
+                                  base::ToLowerASCII(hw_address)));
 
   // Test only EIP1559 gas fee fields are specified.
   json =
@@ -227,17 +241,21 @@ TEST(EthResponseHelperUnitTest, ShouldCreate1559Tx) {
       ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, ledger_address));
   EXPECT_TRUE(ShouldCreate1559Tx(tx_data.Clone(), true, account_infos,
                                  base::ToLowerASCII(ledger_address)));
+  EXPECT_TRUE(
+      ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, trezor_address));
+  EXPECT_TRUE(ShouldCreate1559Tx(tx_data.Clone(), true, account_infos,
+                                 base::ToLowerASCII(trezor_address)));
   // From is not found in the account infos, can happen when keyring is locked.
   EXPECT_TRUE(ShouldCreate1559Tx(
       tx_data.Clone(), true /* network_supports_eip1559 */, {}, from));
 
   EXPECT_FALSE(ShouldCreate1559Tx(tx_data.Clone(), false, account_infos, from));
   EXPECT_FALSE(ShouldCreate1559Tx(tx_data.Clone(), false, account_infos, from));
-  // Keyring don't support EIP1559
+  // Keyring does't support EIP1559
   EXPECT_FALSE(
-      ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, trezor_address));
+      ShouldCreate1559Tx(tx_data.Clone(), true, account_infos, hw_address));
   EXPECT_FALSE(ShouldCreate1559Tx(tx_data.Clone(), true, account_infos,
-                                  base::ToLowerASCII(trezor_address)));
+                                  base::ToLowerASCII(hw_address)));
 }
 
 TEST(EthResponseHelperUnitTest, ParseEthSignParams) {
@@ -279,6 +297,13 @@ TEST(EthResponseHelperUnitTest, ParsePersonalSignParams) {
           "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83"
         ]
       })");
+  const std::string json_missing_0x_prefix(
+      R"({
+        "params": [
+          "deadbeef",
+          "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83"
+        ]
+      })");
   const std::string json_extra_entry(
       R"({
         "params": [
@@ -302,6 +327,11 @@ TEST(EthResponseHelperUnitTest, ParsePersonalSignParams) {
   EXPECT_EQ(address, "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83");
   EXPECT_EQ(message, "0xdeadbeef");
 
+  EXPECT_TRUE(
+      ParsePersonalSignParams(json_missing_0x_prefix, &address, &message));
+  EXPECT_EQ(address, "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83");
+  EXPECT_EQ(message, "0xdeadbeef");
+
   EXPECT_TRUE(ParsePersonalSignParams(json_extra_entry, &address, &message));
   EXPECT_EQ(address, "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83");
   EXPECT_EQ(message, "0xdeadbeef");
@@ -316,8 +346,63 @@ TEST(EthResponseHelperUnitTest, ParsePersonalSignParams) {
   EXPECT_FALSE(ParsePersonalSignParams(json, nullptr, nullptr));
   EXPECT_FALSE(
       ParsePersonalSignParams("{\"params\":[{}]}", &address, &message));
-  EXPECT_FALSE(
-      ParseEthSignParams("{\"params\":[\"123\",123]}", &address, &message));
+  EXPECT_FALSE(ParsePersonalSignParams("{\"params\":[\"123\",123]}", &address,
+                                       &message));
+}
+
+TEST(EthResponseHelperUnitTest, ParsePersonalEcRecoverParams) {
+  const std::string json(
+      R"({
+        "params": [
+          "0x68656c6c6f20776f726c64",
+          "0xeb0c4e96c69a98dbdd61ac6871e39c12c90e9fa4420a017a23c67f4cc4fd06f43c32ade58cd19ed438ce7e2d7360b59020489e9ac05e56e8637d3e516165c3f11c"
+        ]
+      })");
+  const std::string json_extra_entry(
+      R"({
+        "params": [
+          "0x68656c6c6f20776f726c64",
+          "0xeb0c4e96c69a98dbdd61ac6871e39c12c90e9fa4420a017a23c67f4cc4fd06f43c32ade58cd19ed438ce7e2d7360b59020489e9ac05e56e8637d3e516165c3f11c",
+          "12345",
+          null,
+          123
+        ]
+      })");
+  const std::string json_with_message_string(
+      R"({
+        "params": [
+          "hello world",
+          "0xeb0c4e96c69a98dbdd61ac6871e39c12c90e9fa4420a017a23c67f4cc4fd06f43c32ade58cd19ed438ce7e2d7360b59020489e9ac05e56e8637d3e516165c3f11c"
+        ]
+      })");
+  std::string message;
+  std::string signature;
+  EXPECT_TRUE(ParsePersonalEcRecoverParams(json, &message, &signature));
+  EXPECT_EQ(message, "0x68656c6c6f20776f726c64");
+  EXPECT_EQ(
+      signature,
+      "0xeb0c4e96c69a98dbdd61ac6871e39c12c90e9fa4420a017a23c67f4cc4fd06f43c32ad"
+      "e58cd19ed438ce7e2d7360b59020489e9ac05e56e8637d3e516165c3f11c");
+
+  signature.clear();
+  message.clear();
+  EXPECT_TRUE(
+      ParsePersonalEcRecoverParams(json_extra_entry, &message, &signature));
+  EXPECT_EQ(message, "0x68656c6c6f20776f726c64");
+  EXPECT_EQ(
+      signature,
+      "0xeb0c4e96c69a98dbdd61ac6871e39c12c90e9fa4420a017a23c67f4cc4fd06f43c32ad"
+      "e58cd19ed438ce7e2d7360b59020489e9ac05e56e8637d3e516165c3f11c");
+
+  signature.clear();
+  message.clear();
+  EXPECT_TRUE(ParsePersonalEcRecoverParams(json_with_message_string, &message,
+                                           &signature));
+  EXPECT_EQ(message, "0x68656c6c6f20776f726c64");
+  EXPECT_EQ(
+      signature,
+      "0xeb0c4e96c69a98dbdd61ac6871e39c12c90e9fa4420a017a23c67f4cc4fd06f43c32ad"
+      "e58cd19ed438ce7e2d7360b59020489e9ac05e56e8637d3e516165c3f11c");
 }
 
 TEST(EthResponseHelperUnitTest, GetEthJsonRequestInfo) {

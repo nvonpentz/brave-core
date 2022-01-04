@@ -4,7 +4,7 @@ import {
   AccountAssetOptionType,
   BuySendSwapViewTypes,
   ToOrFromType,
-  EthereumChain
+  BraveWallet
 } from '../../../constants/types'
 import {
   AccountsAssetsNetworks,
@@ -15,7 +15,7 @@ import {
 export interface Props {
   accounts: UserAccountType[]
   selectedAsset: AccountAssetOptionType
-  selectedNetwork: EthereumChain
+  selectedNetwork: BraveWallet.EthereumChain
   selectedAccount: UserAccountType
   selectedAssetAmount: string
   selectedAssetBalance: string
@@ -24,14 +24,15 @@ export interface Props {
   toAddress: string
   showHeader?: boolean
   addressError: string
+  addressWarning: string
   onSubmit: () => void
-  onSelectNetwork: (network: EthereumChain) => void
+  onSelectNetwork: (network: BraveWallet.EthereumChain) => void
   onSelectAccount: (account: UserAccountType) => void
   onSelectAsset: (asset: AccountAssetOptionType, toOrFrom: ToOrFromType) => void
   onSetSendAmount: (value: string) => void
   onSetToAddressOrUrl: (value: string) => void
   onSelectPresetAmount: (percent: number) => void
-  networkList: EthereumChain[]
+  networkList: BraveWallet.EthereumChain[]
   onAddNetwork: () => void
   onAddAsset: () => void
 }
@@ -50,6 +51,7 @@ function SendTab (props: Props) {
     showHeader,
     assetOptions,
     addressError,
+    addressWarning,
     onSubmit,
     onSelectNetwork,
     onSelectAccount,
@@ -66,7 +68,7 @@ function SendTab (props: Props) {
     setSendView(view)
   }
 
-  const onClickSelectNetwork = (network: EthereumChain) => () => {
+  const onClickSelectNetwork = (network: BraveWallet.EthereumChain) => () => {
     onSelectNetwork(network)
     setSendView('send')
 
@@ -115,6 +117,7 @@ function SendTab (props: Props) {
             toAddressOrUrl={toAddressOrUrl}
             toAddress={toAddress}
             addressError={addressError}
+            addressWarning={addressWarning}
             onChangeSendView={onChangeSendView}
             onInputChange={onInputChange}
             onSelectPresetAmount={onSelectPresetAmount}

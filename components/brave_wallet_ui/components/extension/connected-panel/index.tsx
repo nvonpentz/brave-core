@@ -35,10 +35,14 @@ import {
 import { reduceAddress } from '../../../utils/reduce-address'
 import { reduceNetworkDisplayName } from '../../../utils/network-utils'
 import { copyToClipboard } from '../../../utils/copy-to-clipboard'
+
+// Hooks
+import { useExplorer } from '../../../common/hooks'
+
 import {
   WalletAccountType,
   PanelTypes,
-  EthereumChain,
+  BraveWallet,
   BuySupportedChains,
   SwapSupportedChains,
   WalletOrigin,
@@ -49,7 +53,7 @@ import { getLocale } from '../../../../common/locale'
 
 export interface Props {
   selectedAccount: WalletAccountType
-  selectedNetwork: EthereumChain
+  selectedNetwork: BraveWallet.EthereumChain
   isConnected: boolean
   activeOrigin: string
   defaultCurrencies: DefaultCurrencies
@@ -119,19 +123,7 @@ const ConnectedPanel = (props: Props) => {
     ? formatTokenAmountWithCommasAndDecimals(formatedAssetBalance, selectedNetwork.symbol)
     : ''
 
-  const onClickViewOnBlockExplorer = () => {
-    const exporerURL = selectedNetwork.blockExplorerUrls[0]
-    if (exporerURL && selectedAccount.address) {
-      const url = `${exporerURL}/address/${selectedAccount.address}`
-      chrome.tabs.create({ url: url }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('tabs.create failed: ' + chrome.runtime.lastError.message)
-        }
-      })
-    } else {
-      alert(getLocale('braveWalletTransactionExplorerMissing'))
-    }
-  }
+  const onClickViewOnBlockExplorer = useExplorer(selectedNetwork)
 
   return (
     <StyledWrapper onClick={onHideMore} panelBackground={bg}>
@@ -140,7 +132,7 @@ const ConnectedPanel = (props: Props) => {
         onClickLock={onLockWallet}
         onClickSetting={onOpenSettings}
         onClickMore={onShowMore}
-        onClickViewOnBlockExplorer={onClickViewOnBlockExplorer}
+        onClickViewOnBlockExplorer={onClickViewOnBlockExplorer('address', selectedAccount.address)}
         showMore={showMore}
       />
       <CenterColumn>

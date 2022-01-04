@@ -163,9 +163,10 @@ bool ShouldCreate1559Tx(brave_wallet::mojom::TxData1559Ptr tx_data_1559,
                                        account->address, address);
                                  });
 
-  // Only ledger hardware keyring supports EIP-1559 at the moment.
+  // Only ledger and trezor hardware keyrings support EIP-1559 at the moment.
   if (account_it != account_infos.end() && (*account_it)->hardware &&
-      (*account_it)->hardware->vendor != mojom::kLedgerHardwareVendor) {
+      ((*account_it)->hardware->vendor != mojom::kLedgerHardwareVendor &&
+       (*account_it)->hardware->vendor != mojom::kTrezorHardwareVendor)) {
     keyring_supports_eip1559 = false;
   }
 
@@ -295,10 +296,41 @@ bool ParsePersonalSignParams(const std::string& json,
   *address = *address_str;
   if (IsValidHexString(*message_str)) {
     *message = *message_str;
+  } else if (IsValidHexString("0x" + *message_str)) {
+    *message = "0x" + *message_str;
   } else {
     *message = ToHex(*message_str);
   }
 
+  return true;
+}
+
+bool ParsePersonalEcRecoverParams(const std::string& json,
+                                  std::string* message,
+                                  std::string* signature) {
+  if (!message || !signature)
+    return false;
+
+  // personal_ecRecover allows extra params
+  auto list = GetParamsList(json);
+  if (!list || list->size() < 2)
+    return false;
+
+  const std::string* message_str = (*list)[0].GetIfString();
+  const std::string* signature_str = (*list)[1].GetIfString();
+  if (!message_str || !signature_str)
+    return false;
+
+  if (IsValidHexString(*message_str)) {
+    *message = *message_str;
+  } else {
+    *message = ToHex(*message_str);
+  }
+
+  if (!IsValidHexString(*signature_str))
+    return false;
+
+  *signature = *signature_str;
   return true;
 }
 

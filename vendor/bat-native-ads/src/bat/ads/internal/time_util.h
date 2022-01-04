@@ -8,7 +8,7 @@
 
 namespace base {
 class Time;
-}  // namespace base
+}
 
 namespace ads {
 
@@ -23,6 +23,14 @@ base::Time GetTimeAtBeginningOfLastMonth();
 base::Time GetTimeAtEndOfLastMonth();
 base::Time GetTimeAtBeginningOfThisMonth();
 base::Time GetTimeAtEndOfThisMonth();
+
+// TODO(https://github.com/brave/brave-browser/issues/20169): Remove this
+// function when base::Time::FromLocalExploded for linux sandbox will be fixed.
+base::Time GetLocalMidnight(const base::Time& time);
+
+// TODO(https://github.com/brave/brave-browser/issues/20169): Remove this
+// function when base::Time::FromLocalExploded for linux sandbox will be fixed.
+void SetFromLocalExplodedFailedForTesting(bool set_failed);
 
 }  // namespace ads
 

@@ -8,6 +8,8 @@ source_set("brave_wallet") {
     "asset_ratio_controller_factory.h",
     "brave_wallet_context_utils.cc",
     "brave_wallet_context_utils.h",
+    "brave_wallet_reset.cc",
+    "brave_wallet_reset.h",
     "brave_wallet_service_factory.cc",
     "brave_wallet_service_factory.h",
     "erc_token_images_source.cc",
@@ -138,9 +140,9 @@ source_set("unit_tests") {
     "eth_nonce_tracker_unittest.cc",
     "eth_pending_tx_tracker_unittest.cc",
     "eth_tx_state_manager_unittest.cc",
+    "filecoin_keyring_unittest.cc",
     "keyring_controller_unittest.cc",
   ]
-
   deps = [
     "//base/test:test_support",
     "//brave/browser/brave_wallet",

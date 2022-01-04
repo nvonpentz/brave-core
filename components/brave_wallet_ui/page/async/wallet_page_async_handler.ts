@@ -2,13 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
+import * as bls from '@noble/bls12-381'
 
 import getWalletPageApiProxy from '../wallet_page_api_proxy'
 import AsyncActionHandler from '../../../common/AsyncActionHandler'
 import * as WalletPageActions from '../actions/wallet_page_actions'
 import * as WalletActions from '../../common/actions/wallet_actions'
 import {
-  ExternalWalletType,
+  BraveWallet,
   UpdateAccountNamePayloadType,
   WalletState
 } from '../../constants/types'
@@ -22,7 +23,8 @@ import {
   RemoveHardwareAccountPayloadType,
   ViewPrivateKeyPayloadType,
   ImportAccountFromJsonPayloadType,
-  ImportFromExternalWalletPayloadType
+  ImportFromExternalWalletPayloadType,
+  ImportFilecoinAccountPayloadType
 } from '../constants/action_types'
 import {
   findHardwareAccountInfo
@@ -30,8 +32,28 @@ import {
 import { NewUnapprovedTxAdded } from '../../common/constants/action_types'
 import { fetchSwapQuoteFactory } from '../../common/async/handlers'
 import { Store } from '../../common/async/types'
-import { HardwareWalletAccount } from 'components/brave_wallet_ui/common/hardware/types'
 import { GetTokenParam } from '../../utils/api-utils'
+
+function encodeKeyToHex (key: string): string {
+  return Buffer.from(key, 'base64').toString('hex')
+}
+
+function switchEndianness (hexString: string): string | false {
+  const regex = hexString.match(/.{2}/g)
+  if (!regex) {
+    return false
+  }
+  return regex.reverse().join('')
+}
+
+function extractPublicKeyForBLS (privateKey: string): string {
+  // https://github.com/brave/brave-browser/issues/20024
+  const reversedKey = switchEndianness(privateKey)
+  if (!reversedKey) {
+    return ''
+  }
+  return Buffer.from(bls.getPublicKey(reversedKey)).toString('hex')
+}
 
 const handler = new AsyncActionHandler()
 
@@ -109,6 +131,20 @@ handler.on(WalletPageActions.importAccount.getType(), async (store: Store, paylo
   }
 })
 
+handler.on(WalletPageActions.importFilecoinAccount.getType(), async (store: Store, payload: ImportFilecoinAccountPayloadType) => {
+  const { keyringController } = getWalletPageApiProxy()
+  const result = (payload.protocol === BraveWallet.FilecoinAddressProtocol.SECP256K1)
+    ? await keyringController.importFilecoinSECP256K1Account(payload.accountName, encodeKeyToHex(payload.privateKey), payload.network)
+    : await keyringController.importFilecoinBLSAccount(payload.accountName, payload.privateKey, extractPublicKeyForBLS(payload.privateKey), payload.network)
+
+  if (result.success) {
+    store.dispatch(WalletPageActions.setImportAccountError(false))
+    store.dispatch(WalletPageActions.setShowAddModal(false))
+  } else {
+    store.dispatch(WalletPageActions.setImportAccountError(true))
+  }
+})
+
 handler.on(WalletPageActions.importAccountFromJson.getType(), async (store: Store, payload: ImportAccountFromJsonPayloadType) => {
   const keyringController = getWalletPageApiProxy().keyringController
   const result = await keyringController.importAccountFromJson(payload.accountName, payload.password, payload.json)
@@ -148,7 +184,7 @@ handler.on(WalletPageActions.updateAccountName.getType(), async (store: Store, p
   return result.success
 })
 
-handler.on(WalletPageActions.addHardwareAccounts.getType(), async (store: Store, accounts: HardwareWalletAccount[]) => {
+handler.on(WalletPageActions.addHardwareAccounts.getType(), async (store: Store, accounts: BraveWallet.HardwareWalletAccount[]) => {
   const keyringController = getWalletPageApiProxy().keyringController
   keyringController.addHardwareAccounts(accounts)
   store.dispatch(WalletPageActions.setShowAddModal(false))
@@ -164,10 +200,10 @@ handler.on(WalletPageActions.checkWalletsToImport.getType(), async (store) => {
   const braveWalletService = getWalletPageApiProxy().braveWalletService
   const cwResult =
     await braveWalletService.isExternalWalletInitialized(
-      ExternalWalletType.CryptoWallets)
+      BraveWallet.ExternalWalletType.CryptoWallets)
   const mmResult =
     await braveWalletService.isExternalWalletInitialized(
-      ExternalWalletType.MetaMask)
+      BraveWallet.ExternalWalletType.MetaMask)
   store.dispatch(WalletPageActions.setCryptoWalletsInstalled(cwResult.initialized))
   store.dispatch(WalletActions.setMetaMaskInstalled(mmResult.initialized))
 })
@@ -177,7 +213,7 @@ handler.on(WalletPageActions.importFromCryptoWallets.getType(), async (store: St
   const keyringController = getWalletPageApiProxy().keyringController
   const result =
     await braveWalletService.importFromExternalWallet(
-      ExternalWalletType.CryptoWallets, payload.password, payload.newPassword)
+      BraveWallet.ExternalWalletType.CryptoWallets, payload.password, payload.newPassword)
   if (result.success) {
     keyringController.notifyWalletBackupComplete()
   }
@@ -192,7 +228,7 @@ handler.on(WalletPageActions.importFromMetaMask.getType(), async (store: Store, 
   const keyringController = getWalletPageApiProxy().keyringController
   const result =
     await braveWalletService.importFromExternalWallet(
-      ExternalWalletType.MetaMask, payload.password, payload.newPassword)
+      BraveWallet.ExternalWalletType.MetaMask, payload.password, payload.newPassword)
   if (result.success) {
     keyringController.notifyWalletBackupComplete()
   }

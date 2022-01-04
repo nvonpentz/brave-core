@@ -16,7 +16,9 @@ import {
   ConfirmTransactionPanel,
   ConnectHardwareWalletPanel,
   SitePermissions,
-  AddSuggestedTokenPanel
+  AddSuggestedTokenPanel,
+  TransactionsPanel,
+  TransactionDetailPanel
 } from '../components/extension'
 import {
   Send,
@@ -40,8 +42,8 @@ import store from './store'
 import * as WalletPanelActions from './actions/wallet_panel_actions'
 import * as WalletActions from '../common/actions/wallet_actions'
 import {
-  AppItem,
   AppsListType,
+  BraveWallet,
   WalletState,
   PanelState,
   PanelTypes,
@@ -49,18 +51,18 @@ import {
   WalletAccountType,
   BuySendSwapViewTypes,
   AccountAssetOptionType,
-  EthereumChain,
   ToOrFromType,
   WalletOrigin
 } from '../constants/types'
 import { AppsList } from '../options/apps-list-options'
 import LockPanel from '../components/extension/lock-panel'
-import { WyreAccountAssetOptions } from '../options/wyre-asset-options'
-import { BuyAssetUrl } from '../utils/buy-asset-url'
+import { GetBuyOrFaucetUrl } from '../utils/buy-asset-url'
 import { GetNetworkInfo } from '../utils/network-utils'
 import {
   findENSAddress,
   findUnstoppableDomainAddress,
+  getBuyAssets,
+  getChecksumEthAddress,
   getERC20Allowance
 } from '../common/async/lib'
 import { isHardwareAccount } from '../utils/address-utils'
@@ -104,7 +106,8 @@ function Container (props: Props) {
     connectedAccounts,
     activeOrigin,
     pendingTransactions,
-    defaultCurrencies
+    defaultCurrencies,
+    transactions
   } = props.wallet
 
   const {
@@ -125,15 +128,23 @@ function Container (props: Props) {
   // that loading indicator ASAP.
   const [selectedAccounts, setSelectedAccounts] = React.useState<WalletAccountType[]>([])
   const [filteredAppsList, setFilteredAppsList] = React.useState<AppsListType[]>(AppsList)
-  const [selectedWyreAsset, setSelectedWyreAsset] = React.useState<AccountAssetOptionType>(WyreAccountAssetOptions[0])
+  const [selectedTransaction, setSelectedTransaction] = React.useState<BraveWallet.TransactionInfo | undefined>()
   const [showSelectAsset, setShowSelectAsset] = React.useState<boolean>(false)
   const [buyAmount, setBuyAmount] = React.useState('')
 
   const {
     assetOptions,
     userVisibleTokenOptions,
-    sendAssetOptions
-  } = useAssets(selectedAccount, props.wallet.fullTokenList, props.wallet.userVisibleTokensInfo)
+    sendAssetOptions,
+    buyAssetOptions
+  } = useAssets(
+    selectedAccount,
+    props.wallet.fullTokenList,
+    props.wallet.userVisibleTokensInfo,
+    getBuyAssets
+  )
+
+  const [selectedWyreAsset, setSelectedWyreAsset] = React.useState<AccountAssetOptionType>(buyAssetOptions[0])
 
   const {
     exchangeRate,
@@ -182,10 +193,12 @@ function Container (props: Props) {
     toAddressOrUrl,
     toAddress,
     addressError,
+    addressWarning,
     selectedSendAsset
   } = useSend(
     findENSAddress,
     findUnstoppableDomainAddress,
+    getChecksumEthAddress,
     sendAssetOptions,
     selectedAccount,
     props.walletActions.sendERC20Transfer,
@@ -210,14 +223,15 @@ function Container (props: Props) {
   }
 
   const onSubmitBuy = () => {
-    const url = BuyAssetUrl(selectedNetwork.chainId, selectedWyreAsset, selectedAccount, buyAmount)
-    if (url) {
-      chrome.tabs.create({ url: url }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('tabs.create failed: ' + chrome.runtime.lastError.message)
-        }
+    GetBuyOrFaucetUrl(selectedNetwork.chainId, selectedWyreAsset, selectedAccount, buyAmount)
+      .then(url => {
+        chrome.tabs.create({ url }, () => {
+          if (chrome.runtime.lastError) {
+            console.error('tabs.create failed: ' + chrome.runtime.lastError.message)
+          }
+        })
       })
-    }
+      .catch(e => console.error(e))
   }
 
   const onChangeSendView = (view: BuySendSwapViewTypes) => {
@@ -318,7 +332,7 @@ function Container (props: Props) {
   const onSetup = () => {
     props.walletPanelActions.setupWallet()
   }
-  const addToFavorites = (app: AppItem) => {
+  const addToFavorites = (app: BraveWallet.AppItem) => {
     props.walletActions.addFavoriteApp(app)
   }
 
@@ -334,7 +348,7 @@ function Container (props: Props) {
     props.walletPanelActions.openWalletApps()
   }
 
-  const removeFromFavorites = (app: AppItem) => {
+  const removeFromFavorites = (app: BraveWallet.AppItem) => {
     props.walletActions.removeFavoriteApp(app)
   }
 
@@ -347,7 +361,7 @@ function Container (props: Props) {
     props.walletPanelActions.navigateTo('main')
   }
 
-  const onSelectNetwork = (network: EthereumChain) => () => {
+  const onSelectNetwork = (network: BraveWallet.EthereumChain) => () => {
     props.walletActions.selectNetwork(network)
     props.walletPanelActions.navigateTo('main')
   }
@@ -491,6 +505,37 @@ function Container (props: Props) {
     props.walletActions.expandWalletNetworks()
   }
 
+  const onClickInstructions = () => {
+    const url = 'https://support.brave.com/hc/en-us/articles/4409309138701'
+
+    chrome.tabs.create({ url }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('tabs.create failed: ' + chrome.runtime.lastError.message)
+      }
+    })
+  }
+
+  const onSelectTransaction = (transaction: BraveWallet.TransactionInfo) => {
+    setSelectedTransaction(transaction)
+    props.walletPanelActions.navigateTo('transactionDetails')
+  }
+
+  const onRetryTransaction = (transaction: BraveWallet.TransactionInfo) => {
+    props.walletActions.retryTransaction(transaction)
+  }
+
+  const onSpeedupTransaction = (transaction: BraveWallet.TransactionInfo) => {
+    props.walletActions.speedupTransaction(transaction)
+  }
+
+  const onCancelTransaction = (transaction: BraveWallet.TransactionInfo) => {
+    props.walletActions.cancelTransaction(transaction)
+  }
+
+  const onGoBackToTransactions = () => {
+    props.walletPanelActions.navigateTo('transactions')
+  }
+
   const isConnectedToSite = React.useMemo((): boolean => {
     if (activeOrigin === WalletOrigin) {
       return true
@@ -539,6 +584,7 @@ function Container (props: Props) {
             walletName={selectedAccount.name}
             hardwareWalletCode={props.panel.hardwareWalletCode}
             retryCallable={retryHardwareOperation}
+            onClickInstructions={onClickInstructions}
           />
         </StyledExtensionWrapper>
       </PanelWrapper>
@@ -647,7 +693,7 @@ function Container (props: Props) {
   if (showSelectAsset) {
     let assets: AccountAssetOptionType[]
     if (selectedPanel === 'buy') {
-      assets = WyreAccountAssetOptions
+      assets = buyAssetOptions
     } else if (selectedPanel === 'send') {
       assets = sendAssetOptions
     } else { // swap
@@ -766,6 +812,7 @@ function Container (props: Props) {
                 selectedAssetAmount={sendAmount}
                 selectedAssetBalance={sendAssetBalance}
                 addressError={addressError}
+                addressWarning={addressWarning}
                 toAddressOrUrl={toAddressOrUrl}
                 toAddress={toAddress}
               />
@@ -841,6 +888,54 @@ function Container (props: Props) {
                 onChangeSwapView={onChangeSwapView}
               />
             </SendWrapper>
+          </Panel>
+        </StyledExtensionWrapper>
+      </PanelWrapper>
+    )
+  }
+
+  if (selectedPanel === 'transactionDetails' && selectedTransaction) {
+    return (
+      <PanelWrapper isLonger={false}>
+        <SelectContainer>
+          <TransactionDetailPanel
+            onCancelTransaction={onCancelTransaction}
+            onRetryTransaction={onRetryTransaction}
+            onSpeedupTransaction={onSpeedupTransaction}
+            onBack={onGoBackToTransactions}
+            accounts={accounts}
+            defaultCurrencies={defaultCurrencies}
+            selectedNetwork={selectedNetwork}
+            transaction={selectedTransaction}
+            transactionSpotPrices={transactionSpotPrices}
+            visibleTokens={userVisibleTokenOptions}
+          />
+        </SelectContainer>
+      </PanelWrapper>
+    )
+  }
+
+  if (selectedPanel === 'transactions') {
+    return (
+      <PanelWrapper isLonger={false}>
+        <StyledExtensionWrapper>
+          <Panel
+            navAction={navigateTo}
+            title={panelTitle}
+            useSearch={false}
+          >
+            <ScrollContainer>
+              <TransactionsPanel
+                accounts={accounts}
+                defaultCurrencies={defaultCurrencies}
+                onSelectTransaction={onSelectTransaction}
+                selectedNetwork={selectedNetwork}
+                selectedAccount={selectedAccount}
+                visibleTokens={userVisibleTokenOptions}
+                transactionSpotPrices={transactionSpotPrices}
+                transactions={transactions}
+              />
+            </ScrollContainer>
           </Panel>
         </StyledExtensionWrapper>
       </PanelWrapper>

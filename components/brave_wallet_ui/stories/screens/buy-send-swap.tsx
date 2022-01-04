@@ -7,7 +7,7 @@ import {
   SlippagePresetObjectType,
   ExpirationPresetObjectType,
   ToOrFromType,
-  EthereumChain,
+  BraveWallet,
   BuySupportedChains,
   SwapSupportedChains,
   SwapValidationErrorType,
@@ -22,13 +22,13 @@ import {
 
 export interface Props {
   accounts: UserAccountType[]
-  networkList: EthereumChain[]
+  networkList: BraveWallet.EthereumChain[]
   orderType: OrderTypes
   selectedSendAsset: AccountAssetOptionType
   sendAssetBalance: string
   swapToAsset: AccountAssetOptionType
   swapFromAsset: AccountAssetOptionType
-  selectedNetwork: EthereumChain
+  selectedNetwork: BraveWallet.EthereumChain
   selectedAccount: UserAccountType
   selectedTab: BuySendSwapTypes
   exchangeRate: string
@@ -44,6 +44,7 @@ export interface Props {
   toAddressOrUrl: string
   toAddress: string
   addressError: string
+  addressWarning: string
   buyAssetOptions: AccountAssetOptionType[]
   sendAssetOptions: AccountAssetOptionType[]
   swapAssetOptions: AccountAssetOptionType[]
@@ -56,7 +57,7 @@ export interface Props {
   onSubmitSend: () => void
   onSubmitSwap: () => void
   flipSwapAssets: () => void
-  onSelectNetwork: (network: EthereumChain) => void
+  onSelectNetwork: (network: BraveWallet.EthereumChain) => void
   onSelectAccount: (account: UserAccountType) => void
   onToggleOrderType: () => void
   onSelectAsset: (asset: AccountAssetOptionType, toOrFrom: ToOrFromType) => void
@@ -95,6 +96,7 @@ function BuySendSwap (props: Props) {
     fromAmount,
     toAmount,
     addressError,
+    addressWarning,
     selectedSendAsset,
     sendAssetBalance,
     fromAssetBalance,
@@ -213,6 +215,7 @@ function BuySendSwap (props: Props) {
       {selectedTab === 'send' &&
         <Send
           addressError={addressError}
+          addressWarning={addressWarning}
           accounts={accounts}
           networkList={networkList}
           selectedAssetAmount={sendAmount}

@@ -5,10 +5,7 @@ import {
   AccountSettingsNavTypes,
   UpdateAccountNamePayloadType,
   AccountTransactions,
-  EthereumChain,
-  ERCToken,
-  AssetPrice,
-  TransactionInfo,
+  BraveWallet,
   DefaultCurrencies
 } from '../../../../constants/types'
 import { reduceAddress } from '../../../../utils/reduce-address'
@@ -61,9 +58,9 @@ export interface Props {
   accounts: WalletAccountType[]
   transactions: AccountTransactions
   privateKey: string
-  selectedNetwork: EthereumChain
-  userVisibleTokensInfo: ERCToken[]
-  transactionSpotPrices: AssetPrice[]
+  selectedNetwork: BraveWallet.EthereumChain
+  userVisibleTokensInfo: BraveWallet.ERCToken[]
+  transactionSpotPrices: BraveWallet.AssetPrice[]
   selectedAccount: WalletAccountType | undefined
   defaultCurrencies: DefaultCurrencies
   onViewPrivateKey: (address: string, isDefault: boolean) => void
@@ -74,11 +71,11 @@ export interface Props {
   onUpdateAccountName: (payload: UpdateAccountNamePayloadType) => { success: boolean }
   onRemoveAccount: (address: string, hardware: boolean) => void
   onSelectAccount: (account: WalletAccountType) => void
-  onSelectAsset: (token: ERCToken) => void
+  onSelectAsset: (token: BraveWallet.ERCToken) => void
   goBack: () => void
-  onRetryTransaction: (transaction: TransactionInfo) => void
-  onSpeedupTransaction: (transaction: TransactionInfo) => void
-  onCancelTransaction: (transaction: TransactionInfo) => void
+  onRetryTransaction: (transaction: BraveWallet.TransactionInfo) => void
+  onSpeedupTransaction: (transaction: BraveWallet.TransactionInfo) => void
+  onCancelTransaction: (transaction: BraveWallet.TransactionInfo) => void
 }
 
 function Accounts (props: Props) {
@@ -133,6 +130,20 @@ function Accounts (props: Props) {
 
   const [showEditModal, setShowEditModal] = React.useState<boolean>(false)
   const [editTab, setEditTab] = React.useState<AccountSettingsNavTypes>('details')
+
+  const sortAccountsByName = React.useCallback((accounts: WalletAccountType[]) => {
+    return [...accounts].sort(function (a: WalletAccountType, b: WalletAccountType) {
+      if (a.name < b.name) {
+        return -1
+      }
+
+      if (a.name > b.name) {
+        return 1
+      }
+
+      return 0
+    })
+  }, [])
 
   const onCopyToClipboard = async () => {
     if (selectedAccount) {
@@ -223,7 +234,7 @@ function Accounts (props: Props) {
           </SecondaryListContainer>
           {Object.keys(trezorAccounts).map(key =>
             <SecondaryListContainer key={key} isHardwareWallet={true}>
-              {trezorAccounts[key].map((account: WalletAccountType) =>
+              {sortAccountsByName(trezorAccounts[key]).map((account: WalletAccountType) =>
                 <AccountListItem
                   key={account.id}
                   isHardwareWallet={true}
@@ -236,7 +247,7 @@ function Accounts (props: Props) {
           )}
           {Object.keys(ledgerAccounts).map(key =>
             <SecondaryListContainer key={key} isHardwareWallet={true}>
-              {ledgerAccounts[key].map((account: WalletAccountType) =>
+              {sortAccountsByName(ledgerAccounts[key]).map((account: WalletAccountType) =>
                 <AccountListItem
                   key={account.id}
                   isHardwareWallet={true}

@@ -21,23 +21,15 @@ import {
   TransactionStatusChanged
 } from '../constants/action_types'
 import {
-  AppItem,
+  BraveWallet,
   ApproveERC20Params,
-  AssetPriceTimeframe,
   ER20TransferParams,
   ERC721TransferFromParams,
-  EthereumChain,
-  ExternalWalletType,
   SendTransactionParams,
   SwapErrorResponse,
-  SwapResponse,
-  TransactionInfo,
-  TxData,
-  TxData1559,
   WalletAccountType,
   WalletState,
-  WalletInfo,
-  TransactionStatus
+  WalletInfo
 } from '../../constants/types'
 import { toWeiHex } from '../../utils/format-balances'
 import { hexStrToNumberArray } from '../../utils/hex-utils'
@@ -87,7 +79,7 @@ async function refreshWalletInfo (store: Store) {
 
   const mmResult =
     await braveWalletService.isExternalWalletInstalled(
-      ExternalWalletType.MetaMask)
+      BraveWallet.ExternalWalletType.MetaMask)
   store.dispatch(WalletActions.setMetaMaskInstalled(mmResult.installed))
 
   await store.dispatch(refreshTransactionHistory())
@@ -130,6 +122,10 @@ handler.on(WalletActions.keyringCreated.getType(), async (store) => {
 
 handler.on(WalletActions.keyringRestored.getType(), async (store) => {
   await refreshWalletInfo(store)
+})
+
+handler.on(WalletActions.keyringReset.getType(), async (store) => {
+  window.location.reload()
 })
 
 handler.on(WalletActions.locked.getType(), async (store) => {
@@ -176,19 +172,19 @@ handler.on(WalletActions.unlockWallet.getType(), async (store: Store, payload: U
   store.dispatch(WalletActions.hasIncorrectPassword(!result.success))
 })
 
-handler.on(WalletActions.addFavoriteApp.getType(), async (store: Store, appItem: AppItem) => {
+handler.on(WalletActions.addFavoriteApp.getType(), async (store: Store, appItem: BraveWallet.AppItem) => {
   const walletHandler = getAPIProxy().walletHandler
   walletHandler.addFavoriteApp(appItem)
   await refreshWalletInfo(store)
 })
 
-handler.on(WalletActions.removeFavoriteApp.getType(), async (store: Store, appItem: AppItem) => {
+handler.on(WalletActions.removeFavoriteApp.getType(), async (store: Store, appItem: BraveWallet.AppItem) => {
   const walletHandler = getAPIProxy().walletHandler
   walletHandler.removeFavoriteApp(appItem)
   await refreshWalletInfo(store)
 })
 
-handler.on(WalletActions.selectNetwork.getType(), async (store: Store, payload: EthereumChain) => {
+handler.on(WalletActions.selectNetwork.getType(), async (store: Store, payload: BraveWallet.EthereumChain) => {
   const ethJsonRpcController = getAPIProxy().ethJsonRpcController
   await ethJsonRpcController.setNetwork(payload.chainId)
   await refreshWalletInfo(store)
@@ -264,7 +260,7 @@ handler.on(WalletActions.setUserAssetVisible.getType(), async (store: Store, pay
   await refreshBalancesPricesAndHistory(store)
 })
 
-handler.on(WalletActions.selectPortfolioTimeline.getType(), async (store: Store, payload: AssetPriceTimeframe) => {
+handler.on(WalletActions.selectPortfolioTimeline.getType(), async (store: Store, payload: BraveWallet.AssetPriceTimeframe) => {
   store.dispatch(WalletActions.portfolioTimelineUpdated(payload))
   await store.dispatch(refreshTokenPriceHistory(payload))
 })
@@ -302,10 +298,8 @@ handler.on(WalletActions.sendTransaction.getType(), async (store: Store, payload
         case 'Primary':
         case 'Secondary':
         case 'Ledger':
-          keyringSupportsEIP1559 = true
-          break
         case 'Trezor':
-          keyringSupportsEIP1559 = false
+          keyringSupportsEIP1559 = true
           break
         default:
           keyringSupportsEIP1559 = false
@@ -317,7 +311,7 @@ handler.on(WalletActions.sendTransaction.getType(), async (store: Store, payload
   const { chainId } = await apiProxy.ethJsonRpcController.getChainId()
 
   let addResult
-  const txData: TxData = {
+  const txData: BraveWallet.TxData = {
     nonce: '',
     // Estimated by eth_tx_controller if value is '' for legacy transactions
     gasPrice: isEIP1559 ? '' : payload.gasPrice || '',
@@ -329,7 +323,7 @@ handler.on(WalletActions.sendTransaction.getType(), async (store: Store, payload
   }
 
   if (isEIP1559) {
-    const txData1559: TxData1559 = {
+    const txData1559: BraveWallet.TxData1559 = {
       baseData: txData,
       chainId,
       // Estimated by eth_tx_controller if value is ''
@@ -416,13 +410,13 @@ handler.on(WalletActions.approveERC20Allowance.getType(), async (store: Store, p
   }))
 })
 
-handler.on(WalletActions.approveTransaction.getType(), async (store: Store, txInfo: TransactionInfo) => {
+handler.on(WalletActions.approveTransaction.getType(), async (store: Store, txInfo: BraveWallet.TransactionInfo) => {
   const apiProxy = getAPIProxy()
   await apiProxy.ethTxController.approveTransaction(txInfo.id)
   await store.dispatch(refreshTransactionHistory(txInfo.fromAddress))
 })
 
-handler.on(WalletActions.rejectTransaction.getType(), async (store: Store, txInfo: TransactionInfo) => {
+handler.on(WalletActions.rejectTransaction.getType(), async (store: Store, txInfo: BraveWallet.TransactionInfo) => {
   const apiProxy = getAPIProxy()
   await apiProxy.ethTxController.rejectTransaction(txInfo.id)
   await store.dispatch(refreshTransactionHistory(txInfo.fromAddress))
@@ -440,7 +434,7 @@ handler.on(WalletActions.rejectAllTransactions.getType(), async (store) => {
 // fetchSwapQuoteFactory creates a handler function that can be used with
 // both panel and page actions.
 export const fetchSwapQuoteFactory = (
-  setSwapQuote: SimpleActionCreator<SwapResponse>,
+  setSwapQuote: SimpleActionCreator<BraveWallet.SwapResponse>,
   setSwapError: SimpleActionCreator<SwapErrorResponse | undefined>
 ) => async (store: Store, payload: SwapParamsPayloadType) => {
   const { swapController, assetRatioController } = getAPIProxy()
@@ -611,12 +605,12 @@ handler.on(WalletActions.addSitePermission.getType(), async (store: Store, paylo
 
 handler.on(WalletActions.transactionStatusChanged.getType(), async (store: Store, payload: TransactionStatusChanged) => {
   const status = payload.txInfo.txStatus
-  if (status === TransactionStatus.Confirmed || status === TransactionStatus.Error) {
+  if (status === BraveWallet.TransactionStatus.Confirmed || status === BraveWallet.TransactionStatus.Error) {
     await refreshBalancesPricesAndHistory(store)
   }
 })
 
-handler.on(WalletActions.retryTransaction.getType(), async (store: Store, payload: TransactionInfo) => {
+handler.on(WalletActions.retryTransaction.getType(), async (store: Store, payload: BraveWallet.TransactionInfo) => {
   const { ethTxController } = getAPIProxy()
   const result = await ethTxController.retryTransaction(payload.id)
   if (!result.success) {
@@ -631,7 +625,7 @@ handler.on(WalletActions.retryTransaction.getType(), async (store: Store, payloa
   }
 })
 
-handler.on(WalletActions.speedupTransaction.getType(), async (store: Store, payload: TransactionInfo) => {
+handler.on(WalletActions.speedupTransaction.getType(), async (store: Store, payload: BraveWallet.TransactionInfo) => {
   const { ethTxController } = getAPIProxy()
   const result = await ethTxController.speedupOrCancelTransaction(payload.id, false)
   if (!result.success) {
@@ -646,7 +640,7 @@ handler.on(WalletActions.speedupTransaction.getType(), async (store: Store, payl
   }
 })
 
-handler.on(WalletActions.cancelTransaction.getType(), async (store: Store, payload: TransactionInfo) => {
+handler.on(WalletActions.cancelTransaction.getType(), async (store: Store, payload: BraveWallet.TransactionInfo) => {
   const { ethTxController } = getAPIProxy()
   const result = await ethTxController.speedupOrCancelTransaction(payload.id, true)
   if (!result.success) {

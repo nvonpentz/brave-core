@@ -7,7 +7,6 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators, Dispatch } from 'redux'
 import { Switch, Route, useHistory, useLocation } from 'react-router-dom'
-import { TransactionInfo } from 'gen/brave/components/brave_wallet/common/brave_wallet.mojom.m.js'
 import * as WalletPageActions from './actions/wallet_page_actions'
 import * as WalletActions from '../common/actions/wallet_actions'
 import store from './store'
@@ -26,16 +25,13 @@ import {
   OnboardingRestore
 } from '../components/desktop'
 import {
-  // NavTypes,
+  BraveWallet,
   WalletState,
   PageState,
   WalletPageState,
-  AssetPriceTimeframe,
   AccountAssetOptionType,
   WalletAccountType,
-  ERCToken,
   UpdateAccountNamePayloadType,
-  EthereumChain,
   WalletRoutes,
   BuySendSwapTypes
 } from '../constants/types'
@@ -44,23 +40,31 @@ import BuySendSwap from '../stories/screens/buy-send-swap'
 import Onboarding from '../stories/screens/onboarding'
 import BackupWallet from '../stories/screens/backup-wallet'
 import { formatWithCommasAndDecimals } from '../utils/format-prices'
-import { BuyAssetUrl } from '../utils/buy-asset-url'
+import { GetBuyOrFaucetUrl } from '../utils/buy-asset-url'
 import { mojoTimeDeltaToJSDate } from '../utils/datetime-utils'
-import { WyreAccountAssetOptions } from '../options/wyre-asset-options'
 
 import {
   findENSAddress,
   findUnstoppableDomainAddress,
   getBalance,
+  getChecksumEthAddress,
   getERC20Allowance,
   onConnectHardwareWallet,
-  isStrongPassword
+  isStrongPassword,
+  getERCTokenInfo,
+  getBuyAssets
 } from '../common/async/lib'
 
 import { formatBalance } from '../utils/format-balances'
-import { useSwap, useAssets, useBalance, useSend, usePreset } from '../common/hooks'
+import {
+  useSwap,
+  useAssets,
+  useBalance,
+  useSend,
+  usePreset,
+  useTokenInfo
+} from '../common/hooks'
 import { stripERC20TokenImageURL } from '../utils/string-utils'
-import { HardwareWalletAccount } from '../common/hardware/types'
 
 type Props = {
   wallet: WalletState
@@ -124,8 +128,19 @@ function Container (props: Props) {
     tokenOptions,
     assetOptions,
     userVisibleTokenOptions,
-    sendAssetOptions
-  } = useAssets(selectedAccount, props.wallet.fullTokenList, props.wallet.userVisibleTokensInfo)
+    sendAssetOptions,
+    buyAssetOptions
+  } = useAssets(
+    selectedAccount,
+    props.wallet.fullTokenList,
+    props.wallet.userVisibleTokensInfo,
+    getBuyAssets
+  )
+
+  const {
+    onFindTokenInfoByContractAddress,
+    foundTokenInfoByContractAddress
+  } = useTokenInfo(getERCTokenInfo, userVisibleTokenOptions, tokenOptions, selectedNetwork)
 
   const {
     exchangeRate,
@@ -172,10 +187,12 @@ function Container (props: Props) {
     toAddressOrUrl,
     toAddress,
     addressError,
+    addressWarning,
     selectedSendAsset
   } = useSend(
     findENSAddress,
     findUnstoppableDomainAddress,
+    getChecksumEthAddress,
     sendAssetOptions,
     selectedAccount,
     props.walletActions.sendERC20Transfer,
@@ -207,7 +224,7 @@ function Container (props: Props) {
     props.walletActions.selectAccount(account)
   }
 
-  const onSelectNetwork = (network: EthereumChain) => {
+  const onSelectNetwork = (network: BraveWallet.EthereumChain) => {
     props.walletActions.selectNetwork(network)
   }
 
@@ -270,7 +287,7 @@ function Container (props: Props) {
   }, [mnemonic])
 
   // This will scrape all of the user's accounts and combine the asset balances for a single asset
-  const fullAssetBalance = (asset: ERCToken): number | string => {
+  const fullAssetBalance = (asset: BraveWallet.ERCToken): number | string => {
     const amounts = accounts.map((account) => {
       let balance
       const found = account.tokens.find((token) => token.asset.contractAddress === asset.contractAddress)
@@ -286,7 +303,7 @@ function Container (props: Props) {
   }
 
   // This will scrape all of the user's accounts and combine the fiat value for a single asset
-  const fullAssetFiatBalance = (asset: ERCToken): number | string => {
+  const fullAssetFiatBalance = (asset: BraveWallet.ERCToken): number | string => {
     const amounts = accounts.map((account) => {
       let fiatBalance
       const found = account.tokens.find((token) => token.asset.contractAddress === asset.contractAddress)
@@ -310,7 +327,7 @@ function Container (props: Props) {
     }))
   }, [userVisibleTokenOptions, accounts])
 
-  const onSelectAsset = (asset: ERCToken) => {
+  const onSelectAsset = (asset: BraveWallet.ERCToken) => {
     props.walletPageActions.selectAsset({ asset: asset, timeFrame: selectedTimeline })
   }
 
@@ -329,7 +346,7 @@ function Container (props: Props) {
     return grandTotal !== undefined ? formatWithCommasAndDecimals(grandTotal?.toString()) : ''
   }, [userAssetList])
 
-  const onChangeTimeline = (timeline: AssetPriceTimeframe) => {
+  const onChangeTimeline = (timeline: BraveWallet.AssetPriceTimeframe) => {
     if (selectedAsset) {
       props.walletPageActions.selectAsset({ asset: selectedAsset, timeFrame: timeline })
     } else {
@@ -363,18 +380,21 @@ function Container (props: Props) {
   }
 
   const onSubmitBuy = (asset: AccountAssetOptionType) => {
-    const url = BuyAssetUrl(selectedNetwork.chainId, asset, selectedAccount, buyAmount)
-    if (url) {
-      window.open(url, '_blank')
-    }
+    GetBuyOrFaucetUrl(selectedNetwork.chainId, asset, selectedAccount, buyAmount)
+      .then(url => window.open(url, '_blank'))
+      .catch(e => console.error(e))
   }
 
-  const onAddHardwareAccounts = (selected: HardwareWalletAccount[]) => {
+  const onAddHardwareAccounts = (selected: BraveWallet.HardwareWalletAccount[]) => {
     props.walletPageActions.addHardwareAccounts(selected)
   }
 
   const onImportAccount = (accountName: string, privateKey: string) => {
     props.walletPageActions.importAccount({ accountName, privateKey })
+  }
+
+  const onImportFilecoinAccount = (accountName: string, privateKey: string, network: string, protocol: BraveWallet.FilecoinAddressProtocol) => {
+    props.walletPageActions.importFilecoinAccount({ accountName, privateKey, network, protocol })
   }
 
   const onImportAccountFromJson = (accountName: string, password: string, json: string) => {
@@ -426,11 +446,11 @@ function Container (props: Props) {
     props.walletPageActions.checkWalletsToImport()
   }
 
-  const onSetUserAssetVisible = (token: ERCToken, isVisible: boolean) => {
+  const onSetUserAssetVisible = (token: BraveWallet.ERCToken, isVisible: boolean) => {
     props.walletActions.setUserAssetVisible({ token, chainId: selectedNetwork.chainId, isVisible })
   }
 
-  const onAddUserAsset = (token: ERCToken) => {
+  const onAddUserAsset = (token: BraveWallet.ERCToken) => {
     props.walletActions.addUserAsset({
       token: {
         ...token,
@@ -440,7 +460,7 @@ function Container (props: Props) {
     })
   }
 
-  const onRemoveUserAsset = (token: ERCToken) => {
+  const onRemoveUserAsset = (token: BraveWallet.ERCToken) => {
     props.walletActions.removeUserAsset({ token, chainId: selectedNetwork.chainId })
   }
 
@@ -448,15 +468,15 @@ function Container (props: Props) {
     props.walletPageActions.openWalletSettings()
   }
 
-  const onRetryTransaction = (transaction: TransactionInfo) => {
+  const onRetryTransaction = (transaction: BraveWallet.TransactionInfo) => {
     props.walletActions.retryTransaction(transaction)
   }
 
-  const onSpeedupTransaction = (transaction: TransactionInfo) => {
+  const onSpeedupTransaction = (transaction: BraveWallet.TransactionInfo) => {
     props.walletActions.speedupTransaction(transaction)
   }
 
-  const onCancelTransaction = (transaction: TransactionInfo) => {
+  const onCancelTransaction = (transaction: BraveWallet.TransactionInfo) => {
     props.walletActions.cancelTransaction(transaction)
   }
 
@@ -608,6 +628,7 @@ function Container (props: Props) {
                 onConnectHardwareWallet={onConnectHardwareWallet}
                 onCreateAccount={onCreateAccount}
                 onImportAccount={onImportAccount}
+                onImportFilecoinAccount ={onImportFilecoinAccount}
                 isLoading={isFetchingPriceHistory}
                 showAddModal={showAddModal}
                 onHideAddModal={onHideAddModal}
@@ -639,6 +660,8 @@ function Container (props: Props) {
                 onCancelTransaction={onCancelTransaction}
                 onShowVisibleAssetsModal={onShowVisibleAssetsModal}
                 showVisibleAssetsModal={showVisibleAssetsModal}
+                onFindTokenInfoByContractAddress={onFindTokenInfoByContractAddress}
+                foundTokenInfoByContractAddress={foundTokenInfoByContractAddress}
               />
             }
           </Route>
@@ -662,13 +685,14 @@ function Container (props: Props) {
             fromAssetBalance={fromAssetBalance}
             toAmount={toAmount}
             addressError={addressError}
+            addressWarning={addressWarning}
             toAssetBalance={toAssetBalance}
             orderExpiration={orderExpiration}
             slippageTolerance={slippageTolerance}
             swapValidationError={swapValidationError}
             toAddressOrUrl={toAddressOrUrl}
             toAddress={toAddress}
-            buyAssetOptions={WyreAccountAssetOptions}
+            buyAssetOptions={buyAssetOptions}
             selectedSendAsset={selectedSendAsset}
             sendAssetBalance={sendAssetBalance}
             sendAssetOptions={sendAssetOptions}

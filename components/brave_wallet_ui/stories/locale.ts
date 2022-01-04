@@ -83,6 +83,7 @@ provideStrings({
   // Buttons
   braveWalletButtonContinue: 'Continue',
   braveWalletButtonCopy: 'Copy',
+  braveWalletButtonCopied: 'Copied',
   braveWalletButtonVerify: 'Verify',
 
   // Wallet Onboarding Welcome
@@ -93,7 +94,7 @@ provideStrings({
 
   // Backup Wallet Intro
   braveWalletBackupIntroTitle: 'Back up your crypto wallet',
-  braveWalletBackupIntroDescription: 'In the next step you’ll see a 12-word recovery phrase, which you can use to recover your primary crypto accounts. Save it someplace safe. Your recovery phrase is the only way to regain account access in case of forgotten password, lost or stolen device, or you want to switch wallets.',
+  braveWalletBackupIntroDescription: 'In the next step you’ll see a $1-word recovery phrase, which you can use to recover your primary crypto accounts. Save it someplace safe. Your recovery phrase is the only way to regain account access in case of forgotten password, lost or stolen device, or you want to switch wallets.',
   braveWalletBackupIntroTerms: 'I understand that if I lose my recovery words, I will not be able to access my crypto wallet.',
   braveWalletBackupButtonSkip: 'Skip',
   braveWalletBackupButtonCancel: 'Cancel',
@@ -188,6 +189,7 @@ provideStrings({
   braveWalletLedgerLiveDerivationPath: 'Ledger Live',
   braveWalletLedgerLegacyDerivationPath: 'Legacy (MEW/MyCrypto)',
   braveWalletUnknownInternalError: 'Unknown error, please reconnect your hardware wallet and try again.',
+  braveWalletConnectHardwareSearchNothingFound: 'No results found.',
 
   // Account Settings Modal
   braveWalletAccountSettingsDetails: 'Details',
@@ -377,6 +379,7 @@ provideStrings({
   braveWalletEditGasGwei: 'Gwei',
   braveWalletEditGasSetCustom: 'Set custom',
   braveWalletEditGasSetSuggested: 'Set suggested',
+  braveWalletEditGasZeroGasPriceWarning: 'Transaction may not be propagated in the network.',
 
   // Edit permissions
   braveWalletEditPermissionsTitle: 'Edit permissions',
@@ -391,6 +394,8 @@ provideStrings({
   braveWalletNotDomain: 'Domain is not registered',
   braveWalletSameAddressError: 'The receiving address is your own address',
   braveWalletContractAddressError: 'The receiving address is a tokens contract address',
+  braveWalletAddressMissingChecksumInfoWarning: 'Missing checksum information',
+  braveWalletNotValidChecksumAddressError: 'Invalid checksum information',
 
   // Transaction Queue Strings
   braveWalletQueueOf: 'of',
@@ -400,5 +405,22 @@ provideStrings({
 
   // Add Suggested Token Panel
   braveWalletAddSuggestedTokenTitle: 'Add suggested token',
-  braveWalletAddSuggestedTokenDescription: 'Would you like to import this token?'
+  braveWalletAddSuggestedTokenDescription: 'Would you like to import this token?',
+
+  // Transaction Detail Panel
+  braveWalletRecentTransactions: 'Recent transactions',
+  braveWalletTransactionDetails: 'Transaction details',
+  braveWalletTransactionDetailDate: 'Date',
+  braveWalletTransactionDetailSpeedUp: 'Speedup',
+  braveWalletTransactionDetailHash: 'Transaction hash',
+  braveWalletTransactionDetailNetwork: 'Network',
+  braveWalletTransactionDetailStatus: 'Status',
+
+  // Transactions Status
+  braveWalletTransactionStatusUnapproved: 'Unapproved',
+  braveWalletTransactionStatusApproved: 'Approved',
+  braveWalletTransactionStatusRejected: 'Rejected',
+  braveWalletTransactionStatusSubmitted: 'Submitted',
+  braveWalletTransactionStatusConfirmed: 'Confirmed',
+  braveWalletTransactionStatusError: 'Error'
 })

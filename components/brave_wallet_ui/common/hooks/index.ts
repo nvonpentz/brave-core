@@ -11,6 +11,8 @@ import { useTransactionParser, useTransactionFeesParser } from './transaction-pa
 import useAddressLabels from './address-labels'
 import usePricing from './pricing'
 import usePreset from './select-preset'
+import useTokenInfo from './token'
+import useExplorer from './explorer'
 
 export {
   useAssets,
@@ -21,5 +23,7 @@ export {
   usePricing,
   useAddressLabels,
   useSend,
-  usePreset
+  usePreset,
+  useTokenInfo,
+  useExplorer
 }

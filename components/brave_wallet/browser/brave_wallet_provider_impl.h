@@ -75,6 +75,9 @@ class BraveWalletProviderImpl final
   void SignMessage(const std::string& address,
                    const std::string& message,
                    SignMessageCallback callback) override;
+  void RecoverAddress(const std::string& address,
+                      const std::string& message,
+                      RecoverAddressCallback callback) override;
   void SignTypedMessage(const std::string& address,
                         const std::string& message,
                         const std::string& message_to_sign,
@@ -199,6 +202,7 @@ class BraveWalletProviderImpl final
   // KeyringControllerObserver
   void KeyringCreated() override {}
   void KeyringRestored() override {}
+  void KeyringReset() override {}
   void Locked() override;
   void Unlocked() override;
   void BackedUp() override {}

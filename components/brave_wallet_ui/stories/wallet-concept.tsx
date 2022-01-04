@@ -9,18 +9,15 @@ import {
 } from '../components/desktop'
 import {
   NavTypes,
-  AssetPriceTimeframe,
+  BraveWallet,
   PriceDataObjectType,
   AccountAssetOptionType,
-  AssetPrice,
   RPCResponseType,
   OrderTypes,
   UserAccountType,
   SlippagePresetObjectType,
   ExpirationPresetObjectType,
   ToOrFromType,
-  EthereumChain,
-  ERCToken,
   AccountTransactions,
   BuySendSwapTypes,
   WalletAccountType,
@@ -32,7 +29,6 @@ import CryptoStoryView from './screens/crypto-story-view'
 import './locale'
 // import { NavOptions } from '../options/side-nav-options'
 import { AccountAssetOptions, NewAssetOptions } from '../options/asset-options'
-import { WyreAccountAssetOptions } from '../options/wyre-asset-options'
 import { SlippagePresetOptions } from '../options/slippage-preset-options'
 import { ExpirationPresetOptions } from '../options/expiration-preset-options'
 import BuySendSwap from './screens/buy-send-swap'
@@ -42,13 +38,11 @@ import { CurrentPriceMockData } from './mock-data/current-price-data'
 import { PriceHistoryMockData } from './mock-data/price-history-data'
 import { mockUserWalletPreferences } from './mock-data/user-wallet-preferences'
 import { formatWithCommasAndDecimals } from '../utils/format-prices'
-import { BuyAssetUrl } from '../utils/buy-asset-url'
 import { getLocale } from '../../common/locale'
 import {
   HardwareWalletConnectOpts
 } from '../components/desktop/popup-modals/add-account-modal/hardware-wallet-connect/types'
 import { mockNetworks } from './mock-data/mock-networks'
-import { HardwareWalletAccount } from '../common/hardware/types'
 import { isStrongPassword } from '../utils/password-utils'
 export default {
   title: 'Wallet/Desktop',
@@ -58,7 +52,7 @@ export default {
   }
 }
 
-const transactionDummyData: AccountTransactions = {
+export const transactionDummyData: AccountTransactions = {
   [mockUserAccounts[0].id]: [
     {
       fromAddress: '0x7d66c9ddAED3115d93Bd1790332f3Cd06Cf52B14',
@@ -234,10 +228,10 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [inputValue, setInputValue] = React.useState<string>('')
   const [hasRestoreError, setHasRestoreError] = React.useState<boolean>(false)
   const [hasPasswordError, setHasPasswordError] = React.useState<boolean>(false)
-  const [selectedTimeline, setSelectedTimeline] = React.useState<AssetPriceTimeframe>(AssetPriceTimeframe.OneDay)
+  const [selectedTimeline, setSelectedTimeline] = React.useState<BraveWallet.AssetPriceTimeframe>(BraveWallet.AssetPriceTimeframe.OneDay)
   const [selectedAssetPriceHistory, setSelectedAssetPriceHistory] = React.useState<PriceDataObjectType[]>(PriceHistoryMockData.slice(15, 20))
-  const [selectedAsset, setSelectedAsset] = React.useState<ERCToken>()
-  const [selectedNetwork, setSelectedNetwork] = React.useState<EthereumChain>(mockNetworks[0])
+  const [selectedAsset, setSelectedAsset] = React.useState<BraveWallet.ERCToken>()
+  const [selectedNetwork, setSelectedNetwork] = React.useState<BraveWallet.EthereumChain>(mockNetworks[0])
   const [selectedAccount, setSelectedAccount] = React.useState<UserAccountType>(mockUserAccounts[0])
   const [showAddModal, setShowAddModal] = React.useState<boolean>(false)
   const [fromAsset, setFromAsset] = React.useState<AccountAssetOptionType>(AccountAssetOptions[0])
@@ -257,6 +251,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [selectedWidgetTab, setSelectedWidgetTab] = React.useState<BuySendSwapTypes>('buy')
   const [customTolerance, setCustomTolerance] = React.useState('')
   const [showVisibleAssetsModal, setShowVisibleAssetsModal] = React.useState<boolean>(false)
+  const [foundTokenInfo, setFoundTokenInfo] = React.useState<BraveWallet.ERCToken | undefined>()
 
   const onToggleRestore = () => {
     setIsRestoring(!isRestoring)
@@ -323,7 +318,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
       const data = CurrentPriceMockData.find((coin) => coin.symbol === selectedAsset.symbol)
       const usdValue = data ? data.usd : '0'
       const usdTimeframeChange = data ? data.usdTimeframeChange : '0'
-      const response: AssetPrice = {
+      const response: BraveWallet.AssetPrice = {
         price: usdValue,
         assetTimeframeChange: usdTimeframeChange,
         fromAsset: '',
@@ -339,7 +334,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
       const data = CurrentPriceMockData.find((coin) => coin.symbol === selectedAsset.symbol)
       const btcValue = data ? data.btc : '0'
       const btcTimeframeChange = data ? data.btcTimeframeChange : '0'
-      const response: AssetPrice = {
+      const response: BraveWallet.AssetPrice = {
         price: btcValue,
         assetTimeframeChange: btcTimeframeChange,
         fromAsset: '',
@@ -397,7 +392,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }, [selectedAsset, mockRPCResponse])
 
   // This will scrape all of the user's accounts and combine the balances for a single asset
-  const scrapedFullAssetBalance = (asset: ERCToken) => {
+  const scrapedFullAssetBalance = (asset: BraveWallet.ERCToken) => {
     const response = mockRPCResponse
     const amounts = response.map((account) => {
       const balance = account.assets.find((item) => item.id === asset.contractAddress)?.balance
@@ -410,7 +405,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }
 
   // This will scrape all of the user's accounts and combine the fiat value for a single asset
-  const scrapedFullAssetFiatBalance = (asset: ERCToken) => {
+  const scrapedFullAssetFiatBalance = (asset: BraveWallet.ERCToken) => {
     const fullBallance = scrapedFullAssetBalance(asset)
     const price = Number(CurrentPriceMockData.find((coin) => coin.symbol === asset?.symbol)?.usd)
     const value = price ? price * fullBallance : 0
@@ -441,33 +436,33 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }
 
   // This will change once we hit a real api for pricing
-  const timeline = (path: AssetPriceTimeframe) => {
+  const timeline = (path: BraveWallet.AssetPriceTimeframe) => {
     switch (path) {
-      case AssetPriceTimeframe.Live:
+      case BraveWallet.AssetPriceTimeframe.Live:
         return 17
-      case AssetPriceTimeframe.OneDay:
+      case BraveWallet.AssetPriceTimeframe.OneDay:
         return 15
-      case AssetPriceTimeframe.OneWeek:
+      case BraveWallet.AssetPriceTimeframe.OneWeek:
         return 12
-      case AssetPriceTimeframe.OneMonth:
+      case BraveWallet.AssetPriceTimeframe.OneMonth:
         return 10
-      case AssetPriceTimeframe.ThreeMonths:
+      case BraveWallet.AssetPriceTimeframe.ThreeMonths:
         return 8
-      case AssetPriceTimeframe.OneYear:
+      case BraveWallet.AssetPriceTimeframe.OneYear:
         return 4
-      case AssetPriceTimeframe.All:
+      case BraveWallet.AssetPriceTimeframe.All:
         return 0
     }
     return -1
   }
 
   // This updates the price chart timeline
-  const onChangeTimeline = (path: AssetPriceTimeframe) => {
+  const onChangeTimeline = (path: BraveWallet.AssetPriceTimeframe) => {
     setSelectedAssetPriceHistory(PriceHistoryMockData.slice(timeline(path), 20))
     setSelectedTimeline(path)
   }
 
-  const onSelectAsset = (asset: ERCToken) => {
+  const onSelectAsset = (asset: BraveWallet.ERCToken) => {
     setSelectedAsset(asset)
   }
 
@@ -476,6 +471,9 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }
 
   const onImportAccount = (name: string, key: string) => {
+    // doesnt do anything in storybook
+  }
+  const onImportFilecoinAccount = (accountName: string, privateKey: string, network: string, protocol: BraveWallet.FilecoinAddressProtocol) => {
     // doesnt do anything in storybook
   }
 
@@ -487,7 +485,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     setShowAddModal(!showAddModal)
   }
 
-  const onSelectNetwork = (network: EthereumChain) => {
+  const onSelectNetwork = (network: BraveWallet.EthereumChain) => {
     setSelectedNetwork(network)
   }
 
@@ -509,10 +507,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }
 
   const onSubmitBuy = (asset: AccountAssetOptionType) => {
-    const url = BuyAssetUrl(mockNetworks[0].chainId, asset, selectedAccount, buyAmount)
-    if (url) {
-      window.open(url, '_blank')
-    }
+    alert(`Buy ${asset.asset.symbol} asset`)
   }
 
   const onSwapQuoteRefresh = () => {
@@ -605,7 +600,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     alert('Will Remove Account')
   }
 
-  const onConnectHardwareWallet = (opts: HardwareWalletConnectOpts): Promise<HardwareWalletAccount[]> => {
+  const onConnectHardwareWallet = (opts: HardwareWalletConnectOpts): Promise<BraveWallet.HardwareWalletAccount[]> => {
     const makeDerivationPath = (index: number): string => `m/44'/60'/${index}'/0/0`
 
     return new Promise((resolve) => {
@@ -631,7 +626,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     }
   }
 
-  const onAddHardwareAccounts = (accounts: HardwareWalletAccount[]) => {
+  const onAddHardwareAccounts = (accounts: BraveWallet.HardwareWalletAccount[]) => {
     console.log(accounts)
   }
 
@@ -678,6 +673,11 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
 
   const onShowVisibleAssetsModal = (value: boolean) => {
     setShowVisibleAssetsModal(value)
+  }
+
+  const onFindTokenInfoByContractAddress = (contractAddress: string) => {
+    const foundToken = NewAssetOptions.find((token) => token.contractAddress.toLowerCase() === contractAddress.toLowerCase())
+    setFoundTokenInfo(foundToken)
   }
 
   return (
@@ -754,6 +754,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                               userAssetList={userAssetList}
                               onCreateAccount={onCreateAccount}
                               onImportAccount={onImportAccount}
+                              onImportFilecoinAccount={onImportFilecoinAccount}
                               onConnectHardwareWallet={onConnectHardwareWallet}
                               onAddHardwareAccounts={onAddHardwareAccounts}
                               getBalance={getBalance}
@@ -780,6 +781,8 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                               userVisibleTokensInfo={[]}
                               onShowVisibleAssetsModal={onShowVisibleAssetsModal}
                               showVisibleAssetsModal={showVisibleAssetsModal}
+                              onFindTokenInfoByContractAddress={onFindTokenInfoByContractAddress}
+                              foundTokenInfoByContractAddress={foundTokenInfo}
                             />
                           )}
                         </>
@@ -821,6 +824,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
             toAddressOrUrl={toAddress}
             toAddress={toAddress}
             addressError=''
+            addressWarning=''
             isFetchingSwapQuote={false}
             isSwapSubmitDisabled={false}
             customSlippageTolerance={customTolerance}
@@ -844,7 +848,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
             onSelectPresetFromAmount={onSelectPresetFromAmount}
             onSelectPresetSendAmount={onSelectPresetSendAmount}
             onSelectTab={setSelectedWidgetTab}
-            buyAssetOptions={WyreAccountAssetOptions}
+            buyAssetOptions={AccountAssetOptions}
             sendAssetOptions={AccountAssetOptions}
             swapAssetOptions={AccountAssetOptions}
             networkList={mockNetworks}

@@ -11,7 +11,9 @@ import {
   ConfirmTransactionPanel,
   ConnectHardwareWalletPanel,
   SitePermissions,
-  AddSuggestedTokenPanel
+  AddSuggestedTokenPanel,
+  TransactionsPanel,
+  TransactionDetailPanel
 } from '../components/extension'
 import { AppList } from '../components/shared'
 import {
@@ -22,24 +24,19 @@ import {
   SelectAccount
 } from '../components/buy-send-swap'
 import {
+  BraveWallet,
   WalletAccountType,
   PanelTypes,
-  AppItem,
   AppsListType,
   AccountAssetOptionType,
-  BuySendSwapViewTypes,
-  EthereumChain,
-  TransactionInfo,
-  TransactionType
+  BuySendSwapViewTypes
 } from '../constants/types'
 import {
   UpdateUnapprovedTransactionGasFieldsType,
   UpdateUnapprovedTransactionSpendAllowanceType
 } from '../common/constants/action_types'
 import { AppsList } from '../options/apps-list-options'
-import { WyreAccountAssetOptions } from '../options/wyre-asset-options'
 import { filterAppList } from '../utils/filter-app-list'
-import { BuyAssetUrl } from '../utils/buy-asset-url'
 import LockPanel from '../components/extension/lock-panel'
 import {
   StyledExtensionWrapperLonger,
@@ -51,6 +48,7 @@ import { mockNetworks } from './mock-data/mock-networks'
 import { AccountAssetOptions, NewAssetOptions } from '../options/asset-options'
 import { PanelTitles } from '../options/panel-titles'
 import './locale'
+import { transactionDummyData } from './wallet-concept'
 export default {
   title: 'Wallet/Extension/Panels',
   parameters: {
@@ -100,7 +98,7 @@ const mockDefaultCurrencies = {
 }
 
 export const _ConfirmTransaction = () => {
-  const transactionInfo: TransactionInfo = {
+  const transactionInfo: BraveWallet.TransactionInfo = {
     fromAddress: '0x7d66c9ddAED3115d93Bd1790332f3Cd06Cf52B14',
     id: '465a4d6646-kjlwf665',
     txArgs: ['0x0d8775f648430679a709e98d2b0cb6250d2887ef', '0x15ddf09c97b0000'],
@@ -121,7 +119,7 @@ export const _ConfirmTransaction = () => {
     txHash: '0xab834bab0000000000000000000000007be8076f4ea4a4ad08075c2508e481d6c946d12b00000000000000000000000073a29a1da971497',
     txStatus: 0,
     txParams: ['address', 'ammount'],
-    txType: TransactionType.ERC20Transfer,
+    txType: BraveWallet.TransactionType.ERC20Transfer,
     createdTime: { microseconds: BigInt(0) },
     submittedTime: { microseconds: BigInt(0) },
     confirmedTime: { microseconds: BigInt(0) }
@@ -322,6 +320,21 @@ _ConnectWithSite.story = {
 }
 
 export const _ConnectedPanel = (args: { locked: boolean }) => {
+  const transactionDummyAccounts: WalletAccountType[] = [
+    {
+      id: '1',
+      name: 'Account 1',
+      address: '1',
+      balance: '0.31178',
+      asset: 'eth',
+      fiatBalance: '0',
+      accountType: 'Primary',
+      tokens: []
+    }
+  ]
+  const transactionList = {
+    [transactionDummyAccounts[0].address]: [...transactionDummyData[1]].concat(...transactionDummyData[2])
+  }
   const { locked } = args
   const [inputValue, setInputValue] = React.useState<string>('')
   const [walletLocked, setWalletLocked] = React.useState<boolean>(locked)
@@ -330,28 +343,26 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
   const [selectedAccount, setSelectedAccount] = React.useState<WalletAccountType>(
     accounts[0]
   )
-  const [favoriteApps, setFavoriteApps] = React.useState<AppItem[]>([
+  const [favoriteApps, setFavoriteApps] = React.useState<BraveWallet.AppItem[]>([
     AppsList()[0].appList[0]
   ])
   const [filteredAppsList, setFilteredAppsList] = React.useState<AppsListType[]>(AppsList())
   const [hasPasswordError, setHasPasswordError] = React.useState<boolean>(false)
-  const [selectedNetwork, setSelectedNetwork] = React.useState<EthereumChain>(mockNetworks[0])
-  const [selectedWyreAsset, setSelectedWyreAsset] = React.useState<AccountAssetOptionType>(WyreAccountAssetOptions[0])
+  const [selectedNetwork, setSelectedNetwork] = React.useState<BraveWallet.EthereumChain>(mockNetworks[0])
+  const [selectedWyreAsset, setSelectedWyreAsset] = React.useState<AccountAssetOptionType>(AccountAssetOptions[0])
   const [selectedAsset, setSelectedAsset] = React.useState<AccountAssetOptionType>(AccountAssetOptions[0])
   const [showSelectAsset, setShowSelectAsset] = React.useState<boolean>(false)
   const [toAddress, setToAddress] = React.useState('')
   const [fromAmount, setFromAmount] = React.useState('')
   const [buyAmount, setBuyAmount] = React.useState('')
+  const [selectedTransaction, setSelectedTransaction] = React.useState<BraveWallet.TransactionInfo | undefined>(transactionList[1][0])
 
   const onSetBuyAmount = (value: string) => {
     setBuyAmount(value)
   }
 
   const onSubmitBuy = () => {
-    const url = BuyAssetUrl(mockNetworks[0].chainId, selectedWyreAsset, selectedAccount, buyAmount)
-    if (url) {
-      window.open(url, '_blank')
-    }
+    alert(`Buy ${selectedWyreAsset.asset.symbol} asset`)
   }
 
   const onChangeSendView = (view: BuySendSwapViewTypes) => {
@@ -364,7 +375,11 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
     setSelectedPanel('main')
   }
 
-  const onSelectNetwork = (network: EthereumChain) => () => {
+  const onBackToTransactions = () => {
+    navigateTo('transactions')
+  }
+
+  const onSelectNetwork = (network: BraveWallet.EthereumChain) => () => {
     setSelectedNetwork(network)
     setSelectedPanel('main')
   }
@@ -413,11 +428,11 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
     alert('Will expand to view more!')
   }
 
-  const addToFavorites = (app: AppItem) => {
+  const addToFavorites = (app: BraveWallet.AppItem) => {
     const newList = [...favoriteApps, app]
     setFavoriteApps(newList)
   }
-  const removeFromFavorites = (app: AppItem) => {
+  const removeFromFavorites = (app: BraveWallet.AppItem) => {
     const newList = favoriteApps.filter(
       (fav) => fav.name !== app.name
     )
@@ -482,7 +497,28 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
     alert('Will redirect to brave://wallet/crypto/portfolio/add-asset')
   }
 
+  const onClickRetryTransaction = () => {
+    // Does nothing in storybook
+    alert('Will retry transaction')
+  }
+
+  const onClickCancelTransaction = () => {
+    // Does nothing in storybook
+    alert('Will cancel transaction')
+  }
+
+  const onClickSpeedupTransaction = () => {
+    // Does nothing in storybook
+    alert('Will speedup transaction')
+  }
+
   const connectedAccounts = accounts.slice(0, 2)
+
+  const onSelectTransaction = (transaction: BraveWallet.TransactionInfo) => {
+    navigateTo('transactionDetails')
+    setSelectedTransaction(transaction)
+    console.log(selectedTransaction)
+  }
 
   return (
     <StyledExtensionWrapper>
@@ -542,8 +578,24 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
                   />
                 </SelectContainer>
               }
-              {!showSelectAsset && selectedPanel !== 'networks' && selectedPanel !== 'accounts' &&
-                <Panel
+              {selectedPanel === 'transactionDetails' && selectedTransaction &&
+                <SelectContainer>
+                  <TransactionDetailPanel
+                    transaction={selectedTransaction}
+                    onBack={onBackToTransactions}
+                    onCancelTransaction={onClickCancelTransaction}
+                    onRetryTransaction={onClickRetryTransaction}
+                    onSpeedupTransaction={onClickSpeedupTransaction}
+                    accounts={accounts}
+                    defaultCurrencies={mockDefaultCurrencies}
+                    selectedNetwork={mockNetworks[0]}
+                    visibleTokens={NewAssetOptions}
+                    transactionSpotPrices={[]}
+                  />
+                </SelectContainer>
+              }
+              {!showSelectAsset && selectedPanel !== 'networks' && selectedPanel !== 'accounts' && selectedPanel !== 'transactionDetails' &&
+                < Panel
                   navAction={navigateTo}
                   title={panelTitle}
                   useSearch={selectedPanel === 'apps'}
@@ -566,6 +618,7 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
                         onSelectPresetAmount={onSelectPresetAmount}
                         onSubmit={onSubmitSend}
                         addressError=''
+                        addressWarning=''
                         selectedAsset={selectedAsset}
                         selectedAssetAmount={fromAmount}
                         selectedAssetBalance={selectedAccount.balance.toString()}
@@ -597,14 +650,28 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
                         onAddAccount={onAddAccount}
                       />
                     }
+                    {selectedPanel === 'transactions' &&
+                      <TransactionsPanel
+                        accounts={transactionDummyAccounts}
+                        defaultCurrencies={mockDefaultCurrencies}
+                        onSelectTransaction={onSelectTransaction}
+                        selectedNetwork={mockNetworks[0]}
+                        selectedAccount={transactionDummyAccounts[0]}
+                        visibleTokens={NewAssetOptions}
+                        transactionSpotPrices={[]}
+                        transactions={transactionList}
+
+                      />
+                    }
                   </ScrollContainer>
                 </Panel>
               }
             </>
           )}
         </>
-      )}
-    </StyledExtensionWrapper>
+      )
+      }
+    </StyledExtensionWrapper >
   )
 }
 
@@ -645,12 +712,18 @@ export const _ConnectHardwareWallet = () => {
     // Doesn't do anything in storybook
   }
 
+  const onClickInstructions = () => {
+    // Open support link in new tab
+    window.open('https://support.brave.com/hc/en-us/articles/4409309138701', '_blank')
+  }
+
   return (
     <StyledExtensionWrapper>
       <ConnectHardwareWalletPanel
         walletName='Ledger 1'
         onCancel={onCancel}
         retryCallable={onConfirmTransaction}
+        onClickInstructions={onClickInstructions}
       />
     </StyledExtensionWrapper>
   )

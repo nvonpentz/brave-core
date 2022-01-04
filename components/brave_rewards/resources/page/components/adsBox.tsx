@@ -19,8 +19,9 @@ import {
 } from '../../ui/components'
 import { Grid, Column, Select, ControlWrapper } from 'brave-ui/components'
 
-import { ArrivingSoonMessage } from './arriving_soon_message'
-import { getDaysUntilRewardsPayment } from '../../shared/lib/pending_rewards'
+import { PaymentStatusView } from '../../shared/components/payment_status_view'
+
+import * as style from './style'
 
 // Utils
 import * as utils from '../utils'
@@ -271,8 +272,8 @@ class AdsBox extends React.Component<Props, State> {
     this.props.actions.toggleAdOptOut(category, action)
   }
 
-  onMenuSave = (creativeInstanceId: string, creativeSetId: string, saved: boolean) => {
-    this.props.actions.toggleSavedAd(creativeInstanceId, creativeSetId, saved)
+  onMenuSave = (adContent: Rewards.AdContent) => {
+    this.props.actions.toggleSavedAd(adContent)
   }
 
   onMenuFlag = (adContent: Rewards.AdContent) => {
@@ -338,9 +339,7 @@ class AdsBox extends React.Component<Props, State> {
       onThumbDownPress: () =>
         this.onThumbDownPress(adHistory.adContent),
       onMenuSave: () =>
-        this.onMenuSave(adHistory.adContent.creativeInstanceId,
-                        adHistory.adContent.creativeSetId,
-                        adHistory.adContent.savedAd),
+        this.onMenuSave(adHistory.adContent),
       onMenuFlag: () =>
         this.onMenuFlag(adHistory.adContent)
     }
@@ -385,10 +384,12 @@ class AdsBox extends React.Component<Props, State> {
     let adsReceivedThisMonth = 0
     let earningsThisMonth = 0
     let earningsLastMonth = 0
+    let adEarningsReceived = false
 
     const {
       adsData,
       adsHistory,
+      balanceReport,
       parameters
     } = this.props.rewardsData
 
@@ -403,6 +404,10 @@ class AdsBox extends React.Component<Props, State> {
       earningsLastMonth = adsData.adsEarningsLastMonth || 0
     }
 
+    if (balanceReport) {
+      adEarningsReceived = Number(balanceReport.ads || 0) > 0
+    }
+
     const enabled = adsEnabled && adsIsSupported
     const toggle = !(!adsUIEnabled || !adsIsSupported)
     const showDisabled = !toggle || !adsEnabled || !adsIsSupported
@@ -410,8 +415,6 @@ class AdsBox extends React.Component<Props, State> {
     const historyEntries = adsHistory || []
     const rows = this.getGroupedAdsHistory(historyEntries, savedOnly)
     const tokenString = getLocale('tokens')
-
-    const estimatedPendingDays = getDaysUntilRewardsPayment(nextPaymentDate)
 
     return (
       <>
@@ -429,13 +432,13 @@ class AdsBox extends React.Component<Props, State> {
           onSettingsClick={this.onSettingsToggle}
           attachedAlert={this.adsNotSupportedAlert(adsIsSupported)}
         >
-          {
-            earningsLastMonth > 0 && estimatedPendingDays &&
-              <ArrivingSoonMessage
-                earningsLastMonth={earningsLastMonth}
-                estimatedPendingDays={estimatedPendingDays}
-              />
-          }
+          <style.PaymentStatus>
+            <PaymentStatusView
+              earningsLastMonth={earningsLastMonth}
+              earningsReceived={adEarningsReceived}
+              nextPaymentDate={nextPaymentDate}
+            />
+          </style.PaymentStatus>
           <List title={getLocale('adsCurrentEarnings')}>
             <Tokens
               value={earningsThisMonth.toFixed(3)}
