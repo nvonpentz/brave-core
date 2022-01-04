@@ -10,7 +10,6 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
-#include "brave/components/skus/browser/skus_sdk_context_impl.h"
 #include "brave/components/skus/common/skus_sdk.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -27,6 +26,7 @@ class SharedURLLoaderFactory;
 namespace skus {
 
 struct CppSDK;
+class SkusContextImpl;
 
 // This is only intended to be used on account.brave.com and the dev / staging
 // counterparts. The accounts website will use this if present which allows a
@@ -81,14 +81,14 @@ class SkusService : public KeyedService, public mojom::SkusService {
   void PrepareCredentialsPresentation(
       const std::string& domain,
       const std::string& path,
-      skus::mojom::SkusService::PrepareCredentialsPresentationCallback
-          callback) override;
+      skus::mojom::SkusService::PrepareCredentialsPresentationCallback callback)
+      override;
   void CredentialSummary(
       const std::string& domain,
       skus::mojom::SkusService::CredentialSummaryCallback callback) override;
 
  private:
-  std::unique_ptr<skus::SkusSdkContextImpl> context_;
+  std::unique_ptr<skus::SkusContextImpl> context_;
   ::rust::Box<skus::CppSDK> sdk_;
   PrefService* prefs_;
   mojo::ReceiverSet<mojom::SkusService> receivers_;

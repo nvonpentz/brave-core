@@ -6,12 +6,12 @@
 static_library("browser") {
   sources = [
     "pref_names.h",
-    "skus_sdk_context_impl.cc",
-    "skus_sdk_context_impl.h",
-    "skus_sdk_fetcher_impl.cc",
-    "skus_sdk_fetcher_impl.h",
+    "skus_context_impl.cc",
+    "skus_context_impl.h",
     "skus_service.cc",
     "skus_service.h",
+    "skus_url_loader_impl.cc",
+    "skus_url_loader_impl.h",
     "skus_utils.cc",
     "skus_utils.h",
     "switches.h",

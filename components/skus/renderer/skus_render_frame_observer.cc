@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "brave/components/skus/renderer/sdk_render_frame_observer.h"
+#include "brave/components/skus/renderer/skus_render_frame_observer.h"
 
 #include <string>
 #include <vector>
@@ -17,25 +17,25 @@
 
 namespace skus {
 
-SdkRenderFrameObserver::SdkRenderFrameObserver(
-    content::RenderFrame * render_frame,
+SkusRenderFrameObserver::SkusRenderFrameObserver(
+    content::RenderFrame* render_frame,
     int32_t world_id)
-    : RenderFrameObserver(render_frame),
-    world_id_(world_id) {}
+    : RenderFrameObserver(render_frame), world_id_(world_id) {}
 
-SdkRenderFrameObserver::~SdkRenderFrameObserver() {}
+SkusRenderFrameObserver::~SkusRenderFrameObserver() {}
 
-void SdkRenderFrameObserver::DidCreateScriptContext(
+void SkusRenderFrameObserver::DidCreateScriptContext(
     v8::Local<v8::Context> context,
     int32_t world_id) {
   if (!render_frame()->IsMainFrame() || world_id_ != world_id)
     return;
 
-  if (!IsSkusSdkAllowed())
+  if (!IsAllowed())
     return;
 
   if (!native_javascript_handle_) {
-    native_javascript_handle_ = std::make_unique<SdkPageController>(render_frame());
+    native_javascript_handle_ =
+        std::make_unique<SkusPageController>(render_frame());
   } else {
     native_javascript_handle_->ResetRemote(render_frame());
   }
@@ -43,7 +43,7 @@ void SdkRenderFrameObserver::DidCreateScriptContext(
   native_javascript_handle_->AddJavaScriptObjectToFrame(context);
 }
 
-bool SdkRenderFrameObserver::IsSkusSdkAllowed() {
+bool SkusRenderFrameObserver::IsAllowed() {
   DCHECK(base::FeatureList::IsEnabled(skus::features::kSkusFeature));
   // NOTE: please open a security review when appending to this list.
   static base::NoDestructor<std::vector<blink::WebSecurityOrigin>> safe_origins{
@@ -64,7 +64,7 @@ bool SdkRenderFrameObserver::IsSkusSdkAllowed() {
   return false;
 }
 
-void SdkRenderFrameObserver::OnDestruct() {
+void SkusRenderFrameObserver::OnDestruct() {
   delete this;
 }
 

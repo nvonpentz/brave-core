@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "brave/components/skus/renderer/sdk_page_controller.h"
+#include "brave/components/skus/renderer/skus_page_controller.h"
 
 #include <utility>
 
@@ -24,12 +24,12 @@
 
 namespace skus {
 
-SdkPageController::SdkPageController(content::RenderFrame* render_frame)
+SkusPageController::SkusPageController(content::RenderFrame* render_frame)
     : render_frame_(render_frame) {}
 
-SdkPageController::~SdkPageController() = default;
+SkusPageController::~SkusPageController() = default;
 
-bool SdkPageController::EnsureConnected() {
+bool SkusPageController::EnsureConnected() {
   if (!skus_service_.is_bound()) {
     render_frame_->GetBrowserInterfaceBroker()->GetInterface(
         skus_service_.BindNewPipeAndPassReceiver());
@@ -38,7 +38,7 @@ bool SdkPageController::EnsureConnected() {
   return skus_service_.is_bound();
 }
 
-void SdkPageController::AddJavaScriptObjectToFrame(
+void SkusPageController::AddJavaScriptObjectToFrame(
     v8::Local<v8::Context> context) {
   v8::Isolate* isolate = blink::MainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -50,14 +50,14 @@ void SdkPageController::AddJavaScriptObjectToFrame(
   BindFunctionsToObject(isolate, context);
 }
 
-void SdkPageController::ResetRemote(content::RenderFrame* render_frame) {
+void SkusPageController::ResetRemote(content::RenderFrame* render_frame) {
   render_frame_ = render_frame;
   skus_service_.reset();
   EnsureConnected();
 }
 
-void SdkPageController::BindFunctionsToObject(v8::Isolate* isolate,
-                                              v8::Local<v8::Context> context) {
+void SkusPageController::BindFunctionsToObject(v8::Isolate* isolate,
+                                               v8::Local<v8::Context> context) {
   v8::Local<v8::Object> global = context->Global();
 
   // window.chrome
@@ -89,30 +89,30 @@ void SdkPageController::BindFunctionsToObject(v8::Isolate* isolate,
 
   // window.chrome.braveSkus.refresh_order
   BindFunctionToObject(isolate, skus_obj, "refresh_order",
-                       base::BindRepeating(&SdkPageController::RefreshOrder,
+                       base::BindRepeating(&SkusPageController::RefreshOrder,
                                            base::Unretained(this), isolate));
 
   // window.chrome.braveSkus.fetch_order_credentials
   BindFunctionToObject(
       isolate, skus_obj, "fetch_order_credentials",
-      base::BindRepeating(&SdkPageController::FetchOrderCredentials,
+      base::BindRepeating(&SkusPageController::FetchOrderCredentials,
                           base::Unretained(this), isolate));
 
   // window.chrome.braveSkus.prepare_credentials_presentation
   BindFunctionToObject(
       isolate, skus_obj, "prepare_credentials_presentation",
-      base::BindRepeating(&SdkPageController::PrepareCredentialsPresentation,
+      base::BindRepeating(&SkusPageController::PrepareCredentialsPresentation,
                           base::Unretained(this), isolate));
 
   // window.chrome.braveSkus.credential_summary
   BindFunctionToObject(
       isolate, skus_obj, "credential_summary",
-      base::BindRepeating(&SdkPageController::CredentialSummary,
+      base::BindRepeating(&SkusPageController::CredentialSummary,
                           base::Unretained(this), isolate));
 }
 
 template <typename Sig>
-void SdkPageController::BindFunctionToObject(
+void SkusPageController::BindFunctionToObject(
     v8::Isolate* isolate,
     v8::Local<v8::Object> javascript_object,
     const std::string& name,
@@ -126,9 +126,9 @@ void SdkPageController::BindFunctionToObject(
       .Check();
 }
 
-// window.brave.skus.refresh_order
-v8::Local<v8::Promise> SdkPageController::RefreshOrder(v8::Isolate* isolate,
-                                                       std::string order_id) {
+// window.chrome.braveSkus.refresh_order
+v8::Local<v8::Promise> SkusPageController::RefreshOrder(v8::Isolate* isolate,
+                                                        std::string order_id) {
   if (!EnsureConnected())
     return v8::Local<v8::Promise>();
 
@@ -145,14 +145,14 @@ v8::Local<v8::Promise> SdkPageController::RefreshOrder(v8::Isolate* isolate,
 
   skus_service_->RefreshOrder(
       order_id,
-      base::BindOnce(&SdkPageController::OnRefreshOrder, base::Unretained(this),
-                     std::move(promise_resolver), isolate,
-                     std::move(context_old)));
+      base::BindOnce(&SkusPageController::OnRefreshOrder,
+                     base::Unretained(this), std::move(promise_resolver),
+                     isolate, std::move(context_old)));
 
   return resolver.ToLocalChecked()->GetPromise();
 }
 
-void SdkPageController::OnRefreshOrder(
+void SkusPageController::OnRefreshOrder(
     v8::Global<v8::Promise::Resolver> promise_resolver,
     v8::Isolate* isolate,
     v8::Global<v8::Context> context_old,
@@ -192,8 +192,8 @@ void SdkPageController::OnRefreshOrder(
   ALLOW_UNUSED_LOCAL(resolver->Resolve(context, local_result));
 }
 
-// window.brave.skus.fetch_order_credentials
-v8::Local<v8::Promise> SdkPageController::FetchOrderCredentials(
+// window.chrome.braveSkus.fetch_order_credentials
+v8::Local<v8::Promise> SkusPageController::FetchOrderCredentials(
     v8::Isolate* isolate,
     std::string order_id) {
   if (!EnsureConnected())
@@ -212,14 +212,14 @@ v8::Local<v8::Promise> SdkPageController::FetchOrderCredentials(
 
   skus_service_->FetchOrderCredentials(
       order_id,
-      base::BindOnce(&SdkPageController::OnFetchOrderCredentials,
+      base::BindOnce(&SkusPageController::OnFetchOrderCredentials,
                      base::Unretained(this), std::move(promise_resolver),
                      isolate, std::move(context_old)));
 
   return resolver.ToLocalChecked()->GetPromise();
 }
 
-void SdkPageController::OnFetchOrderCredentials(
+void SkusPageController::OnFetchOrderCredentials(
     v8::Global<v8::Promise::Resolver> promise_resolver,
     v8::Isolate* isolate,
     v8::Global<v8::Context> context_old,
@@ -237,8 +237,8 @@ void SdkPageController::OnFetchOrderCredentials(
   ALLOW_UNUSED_LOCAL(resolver->Resolve(context, result));
 }
 
-// window.brave.skus.prepare_credentials_presentation
-v8::Local<v8::Promise> SdkPageController::PrepareCredentialsPresentation(
+// window.chrome.braveSkus.prepare_credentials_presentation
+v8::Local<v8::Promise> SkusPageController::PrepareCredentialsPresentation(
     v8::Isolate* isolate,
     std::string domain,
     std::string path) {
@@ -258,14 +258,14 @@ v8::Local<v8::Promise> SdkPageController::PrepareCredentialsPresentation(
 
   skus_service_->PrepareCredentialsPresentation(
       domain, path,
-      base::BindOnce(&SdkPageController::OnPrepareCredentialsPresentation,
+      base::BindOnce(&SkusPageController::OnPrepareCredentialsPresentation,
                      base::Unretained(this), std::move(promise_resolver),
                      isolate, std::move(context_old)));
 
   return resolver.ToLocalChecked()->GetPromise();
 }
 
-void SdkPageController::OnPrepareCredentialsPresentation(
+void SkusPageController::OnPrepareCredentialsPresentation(
     v8::Global<v8::Promise::Resolver> promise_resolver,
     v8::Isolate* isolate,
     v8::Global<v8::Context> context_old,
@@ -283,8 +283,8 @@ void SdkPageController::OnPrepareCredentialsPresentation(
   ALLOW_UNUSED_LOCAL(resolver->Resolve(context, result));
 }
 
-// window.brave.skus.credential_summary
-v8::Local<v8::Promise> SdkPageController::CredentialSummary(
+// window.chrome.braveSkus.credential_summary
+v8::Local<v8::Promise> SkusPageController::CredentialSummary(
     v8::Isolate* isolate,
     std::string domain) {
   if (!EnsureConnected())
@@ -303,14 +303,14 @@ v8::Local<v8::Promise> SdkPageController::CredentialSummary(
 
   skus_service_->CredentialSummary(
       domain,
-      base::BindOnce(&SdkPageController::OnCredentialSummary,
+      base::BindOnce(&SkusPageController::OnCredentialSummary,
                      base::Unretained(this), std::move(promise_resolver),
                      isolate, std::move(context_old)));
 
   return resolver.ToLocalChecked()->GetPromise();
 }
 
-void SdkPageController::OnCredentialSummary(
+void SkusPageController::OnCredentialSummary(
     v8::Global<v8::Promise::Resolver> promise_resolver,
     v8::Isolate* isolate,
     v8::Global<v8::Context> context_old,

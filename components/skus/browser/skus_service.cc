@@ -13,7 +13,7 @@
 #include "brave/components/skus/browser/pref_names.h"
 #include "brave/components/skus/browser/rs/cxx/src/lib.rs.h"
 #include "brave/components/skus/browser/rs/cxx/src/shim.h"
-#include "brave/components/skus/browser/skus_sdk_context_impl.h"
+#include "brave/components/skus/browser/skus_context_impl.h"
 #include "brave/components/skus/browser/skus_utils.h"
 #include "components/prefs/pref_service.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -84,7 +84,7 @@ namespace skus {
 SkusService::SkusService(
     PrefService* prefs,
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory)
-    : context_(std::make_unique<skus::SkusSdkContextImpl>(prefs,
+    : context_(std::make_unique<skus::SkusContextImpl>(prefs,
                                                           url_loader_factory)),
       sdk_(initialize_sdk(std::move(context_), skus::GetEnvironment())),
       prefs_(prefs),

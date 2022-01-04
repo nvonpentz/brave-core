@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "brave/components/skus/browser/skus_sdk_fetcher_impl.h"
+#include "brave/components/skus/browser/skus_url_loader_impl.h"
 
 #include <utility>
 #include <vector>
@@ -16,13 +16,13 @@
 
 namespace skus {
 
-SkusSdkFetcherImpl::SkusSdkFetcherImpl(
+SkusUrlLoaderImpl::SkusUrlLoaderImpl(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory)
     : url_loader_factory_(url_loader_factory) {}
 
-SkusSdkFetcherImpl::~SkusSdkFetcherImpl() {}
+SkusUrlLoaderImpl::~SkusUrlLoaderImpl() {}
 
-void SkusSdkFetcherImpl::BeginFetch(
+void SkusUrlLoaderImpl::BeginFetch(
     const skus::HttpRequest& req,
     rust::cxxbridge1::Fn<void(rust::cxxbridge1::Box<skus::HttpRoundtripContext>,
                               skus::HttpResponse)> callback,
@@ -45,13 +45,12 @@ void SkusSdkFetcherImpl::BeginFetch(
 
   simple_url_loader_->DownloadToStringOfUnboundedSizeUntilCrashAndDie(
       url_loader_factory_.get(),
-      base::BindOnce(&SkusSdkFetcherImpl::OnFetchComplete,
-                     base::Unretained(this), std::move(callback),
-                     std::move(ctx)));
+      base::BindOnce(&SkusUrlLoaderImpl::OnFetchComplete, base::Unretained(this),
+                     std::move(callback), std::move(ctx)));
 }
 
 const net::NetworkTrafficAnnotationTag&
-SkusSdkFetcherImpl::GetNetworkTrafficAnnotationTag() {
+SkusUrlLoaderImpl::GetNetworkTrafficAnnotationTag() {
   static const net::NetworkTrafficAnnotationTag network_traffic_annotation_tag =
       net::DefineNetworkTrafficAnnotation("sku_sdk_execute_request", R"(
       semantics {
@@ -71,7 +70,7 @@ SkusSdkFetcherImpl::GetNetworkTrafficAnnotationTag() {
   return network_traffic_annotation_tag;
 }
 
-void SkusSdkFetcherImpl::OnFetchComplete(
+void SkusUrlLoaderImpl::OnFetchComplete(
     rust::cxxbridge1::Fn<void(rust::cxxbridge1::Box<skus::HttpRoundtripContext>,
                               skus::HttpResponse)> callback,
     rust::cxxbridge1::Box<skus::HttpRoundtripContext> ctx,

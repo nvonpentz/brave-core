@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef BRAVE_COMPONENTS_SKUS_RENDERER_SDK_PAGE_CONTROLLER_H_
-#define BRAVE_COMPONENTS_SKUS_RENDERER_SDK_PAGE_CONTROLLER_H_
+#ifndef BRAVE_COMPONENTS_SKUS_RENDERER_SKUS_PAGE_CONTROLLER_H_
+#define BRAVE_COMPONENTS_SKUS_RENDERER_SKUS_PAGE_CONTROLLER_H_
 
 #include <memory>
 #include <string>
@@ -20,7 +20,7 @@
 namespace skus {
 
 // If present, this will inject a few methods (used by SKU SDK)
-// into window.brave.*
+// into window.chrome.braveSkus.*
 //
 // This is only intended to be used on account.brave.com and the dev / staging
 // counterparts. The accounts website will use this if present which allows a
@@ -34,12 +34,12 @@ namespace skus {
 //
 // TODO(bsclifton): trying to cleanup the gin.
 // Looking at chrome/renderer/net/net_error_page_controller.h as an example
-class SdkPageController {
+class SkusPageController {
  public:
-  explicit SdkPageController(content::RenderFrame* render_frame);
-  SdkPageController(const SdkPageController&) = delete;
-  SdkPageController& operator=(const SdkPageController&) = delete;
-  ~SdkPageController();
+  explicit SkusPageController(content::RenderFrame* render_frame);
+  SkusPageController(const SkusPageController&) = delete;
+  SkusPageController& operator=(const SkusPageController&) = delete;
+  ~SkusPageController();
 
   void AddJavaScriptObjectToFrame(v8::Local<v8::Context> context);
   void ResetRemote(content::RenderFrame* render_frame);
@@ -95,4 +95,4 @@ class SdkPageController {
 
 }  // namespace skus
 
-#endif  // BRAVE_COMPONENTS_SKUS_RENDERER_SDK_PAGE_CONTROLLER_H_
+#endif  // BRAVE_COMPONENTS_SKUS_RENDERER_SKUS_PAGE_CONTROLLER_H_
