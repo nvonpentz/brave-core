@@ -7,7 +7,7 @@
 
 #include "brave/ios/browser/api/skus/skus_sdk.mojom.objc+private.h"
 #include "brave/ios/browser/keyed_service/keyed_service_factory_wrapper+private.h"
-#include "brave/ios/browser/skus/sdk_controller_factory.h"
+#include "brave/ios/browser/skus/skus_service_factory.h"
 #include "ios/chrome/browser/browser_state/chrome_browser_state.h"
 
 #if !defined(__has_feature) || !__has_feature(objc_arc)
