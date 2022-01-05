@@ -115,3 +115,13 @@ chrome.braveRewards.onPromotionFinish.addListener((result: number, promotion: Ne
 chrome.braveRewards.onCompleteReset.addListener((properties: { success: boolean }) => {
   getActions().onCompleteReset(properties.success)
 })
+
+let w = window as any
+w.test_ = function() {
+  getInitialData()
+  .then((initialData) => {
+    console.log(initialData)
+    getActions().setInitialData(initialData)
+  })
+  console.log(11);
+}
