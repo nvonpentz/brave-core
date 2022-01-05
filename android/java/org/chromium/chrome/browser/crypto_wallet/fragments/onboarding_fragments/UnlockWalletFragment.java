@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,7 +25,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 
-import org.chromium.brave_wallet.mojom.KeyringController;
+import org.chromium.brave_wallet.mojom.KeyringService;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.crypto_wallet.activities.BraveWalletActivity;
 import org.chromium.chrome.browser.crypto_wallet.util.KeystoreHelper;
@@ -37,11 +38,12 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
     private Button mUnlockButton;
     private TextView mUnlockWalletRestoreButton;
     private TextView mUnlockWalletTitle;
+    private ImageView mBiometricUnlockWalletImage;
 
-    private KeyringController getKeyringController() {
+    private KeyringService getKeyringService() {
         Activity activity = getActivity();
         if (activity instanceof BraveWalletActivity) {
-            return ((BraveWalletActivity) activity).getKeyringController();
+            return ((BraveWalletActivity) activity).getKeyringService();
         }
 
         return null;
@@ -60,6 +62,7 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
         mUnlockButton = view.findViewById(R.id.btn_unlock);
         mUnlockWalletRestoreButton = view.findViewById(R.id.btn_unlock_wallet_restore);
         mUnlockWalletTitle = view.findViewById(R.id.unlock_wallet_title);
+        mBiometricUnlockWalletImage = view.findViewById(R.id.iv_biometric_unlock_wallet);
 
         mUnlockButton.setOnClickListener(v -> {
             if (TextUtils.isEmpty(mUnlockWalletPassword.getText())) {
@@ -67,9 +70,9 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
                 return;
             }
 
-            KeyringController keyringController = getKeyringController();
-            if (keyringController != null) {
-                keyringController.unlock(mUnlockWalletPassword.getText().toString(), result -> {
+            KeyringService keyringService = getKeyringService();
+            if (keyringService != null) {
+                keyringService.unlock(mUnlockWalletPassword.getText().toString(), result -> {
                     if (result) {
                         Utils.clearClipboard(mUnlockWalletPassword.getText().toString(), 0);
                         mUnlockWalletPassword.setText(null);
@@ -90,6 +93,13 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
                 onNextPage.gotoRestorePage();
             }
         });
+
+        mBiometricUnlockWalletImage.setOnClickListener(v -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                createBiometricPrompt();
+            }
+        });
+
         if (onNextPage != null && onNextPage.showBiometricPrompt()) {
             checkOnBiometric();
         } else if (onNextPage != null) {
@@ -125,9 +135,9 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
 
                                 return;
                             }
-                            KeyringController keyringController = getKeyringController();
-                            assert keyringController != null;
-                            keyringController.unlock(unlockWalletPassword, unlockResult -> {
+                            KeyringService keyringService = getKeyringService();
+                            assert keyringService != null;
+                            keyringService.unlock(unlockWalletPassword, unlockResult -> {
                                 if (unlockResult) {
                                     if (onNextPage != null) {
                                         onNextPage.gotoNextPage(true);
@@ -149,8 +159,10 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
                     public void onAuthenticationError(int errorCode, CharSequence errString) {
                         super.onAuthenticationError(errorCode, errString);
 
+                        if (!TextUtils.isEmpty(errString)) {
+                            Toast.makeText(getActivity(), errString, Toast.LENGTH_SHORT).show();
+                        }
                         // Even though we have an error, we still let to proceed
-                        Toast.makeText(getActivity(), errString, Toast.LENGTH_SHORT).show();
                         showPasswordRelatedControls();
                     }
                 };
@@ -178,5 +190,9 @@ public class UnlockWalletFragment extends CryptoOnboardingFragment {
         mUnlockButton.setVisibility(View.VISIBLE);
         mUnlockWalletRestoreButton.setVisibility(View.VISIBLE);
         mUnlockWalletTitle.setVisibility(View.VISIBLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                && KeystoreHelper.shouldUseBiometricOnUnlock()) {
+            mBiometricUnlockWalletImage.setVisibility(View.VISIBLE);
+        }
     }
 }

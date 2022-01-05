@@ -16,7 +16,7 @@ import {
 } from '../../constants/types'
 import * as WalletActions from '../actions/wallet_actions'
 import { GetNetworkInfo } from '../../utils/network-utils'
-import { GetTokenParam } from '../../utils/api-utils'
+import { GetTokenParam, GetFlattenedAccountBalances } from '../../utils/api-utils'
 import getAPIProxy from './bridge'
 import { Dispatch, State } from './types'
 import LedgerBridgeKeyring from '../../common/hardware/ledgerjs/eth_ledger_bridge_keyring'
@@ -30,8 +30,8 @@ export const getERC20Allowance = (
   spenderAddress: string
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    const controller = getAPIProxy().ethJsonRpcController
-    const result = await controller.getERC20TokenAllowance(
+    const service = getAPIProxy().jsonRpcService
+    const result = await service.getERC20TokenAllowance(
       contractAddress,
       ownerAddress,
       spenderAddress
@@ -63,8 +63,8 @@ export const onConnectHardwareWallet = (opts: HardwareWalletConnectOpts): Promis
 
 export const getBalance = (address: string): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    const controller = getAPIProxy().ethJsonRpcController
-    const result = await controller.getBalance(address)
+    const service = getAPIProxy().jsonRpcService
+    const result = await service.getBalance(address)
     if (result.error === BraveWallet.ProviderError.kSuccess) {
       resolve(formatBalance(result.balance, 18))
     } else {
@@ -74,28 +74,28 @@ export const getBalance = (address: string): Promise<string> => {
 }
 
 export async function getChecksumEthAddress (value: string) {
-  const { keyringController } = getAPIProxy()
-  return (await keyringController.getChecksumEthAddress(value))
+  const { keyringService } = getAPIProxy()
+  return (await keyringService.getChecksumEthAddress(value))
 }
 
 export async function isStrongPassword (value: string) {
   const apiProxy = getAPIProxy()
-  return (await apiProxy.keyringController.isStrongPassword(value)).result
+  return (await apiProxy.keyringService.isStrongPassword(value)).result
 }
 
 export async function findENSAddress (address: string) {
   const apiProxy = getAPIProxy()
-  return apiProxy.ethJsonRpcController.ensGetEthAddr(address)
+  return apiProxy.jsonRpcService.ensGetEthAddr(address)
 }
 
 export async function findUnstoppableDomainAddress (address: string) {
   const apiProxy = getAPIProxy()
-  return apiProxy.ethJsonRpcController.unstoppableDomainsGetEthAddr(address)
+  return apiProxy.jsonRpcService.unstoppableDomainsGetEthAddr(address)
 }
 
 export async function getERCTokenInfo (contractAddress: string): Promise<GetERCTokenInfoReturnInfo> {
   const apiProxy = getAPIProxy()
-  return (await apiProxy.assetRatioController.getTokenInfo(contractAddress))
+  return (await apiProxy.assetRatioService.getTokenInfo(contractAddress))
 }
 
 export async function findHardwareAccountInfo (address: string): Promise<AccountInfo | false> {
@@ -127,7 +127,7 @@ export function refreshBalances (currentNetwork: BraveWallet.EthereumChain) {
     const apiProxy = getAPIProxy()
     const { wallet: { accounts } } = getState()
 
-    const { braveWalletService, ethJsonRpcController } = apiProxy
+    const { braveWalletService, jsonRpcService } = apiProxy
 
     const visibleTokensInfo = await braveWalletService.getUserAssets(currentNetwork.chainId)
 
@@ -148,7 +148,7 @@ export function refreshBalances (currentNetwork: BraveWallet.EthereumChain) {
     await dispatch(WalletActions.setVisibleTokensInfo(visibleTokens))
 
     const getBalanceReturnInfos = await Promise.all(accounts.map(async (account) => {
-      const balanceInfo = await ethJsonRpcController.getBalance(account.address)
+      const balanceInfo = await jsonRpcService.getBalance(account.address)
       return balanceInfo
     }))
     const balancesAndPrice = {
@@ -160,9 +160,9 @@ export function refreshBalances (currentNetwork: BraveWallet.EthereumChain) {
     const getERCTokenBalanceReturnInfos = await Promise.all(accounts.map(async (account) => {
       return Promise.all(visibleTokens.map(async (token) => {
         if (token.isErc721) {
-          return ethJsonRpcController.getERC721TokenBalance(token.contractAddress, token.tokenId ?? '', account.address)
+          return jsonRpcService.getERC721TokenBalance(token.contractAddress, token.tokenId ?? '', account.address)
         }
-        return ethJsonRpcController.getERC20TokenBalance(token.contractAddress, account.address)
+        return jsonRpcService.getERC20TokenBalance(token.contractAddress, account.address)
       }))
     }))
 
@@ -178,10 +178,10 @@ export function refreshPrices () {
   return async (dispatch: Dispatch, getState: () => State) => {
     const apiProxy = getAPIProxy()
     const { wallet: { accounts, selectedPortfolioTimeline, selectedNetwork, userVisibleTokensInfo, defaultCurrencies } } = getState()
-    const { assetRatioController } = apiProxy
+    const { assetRatioService } = apiProxy
     const defaultFiatCurrency = defaultCurrencies.fiat.toLowerCase()
     // Update ETH Balances
-    const getNativeAssetPrice = await assetRatioController.getPrice([selectedNetwork.symbol.toLowerCase()], [defaultFiatCurrency], selectedPortfolioTimeline)
+    const getNativeAssetPrice = await assetRatioService.getPrice([selectedNetwork.symbol.toLowerCase()], [defaultFiatCurrency], selectedPortfolioTimeline)
     const nativeAssetPrice = getNativeAssetPrice.success ? getNativeAssetPrice.values.find((i) => i.toAsset === defaultFiatCurrency)?.price ?? '' : ''
     const getBalanceReturnInfos = accounts.map((account) => {
       const balanceInfo = {
@@ -203,20 +203,26 @@ export function refreshPrices () {
       return
     }
 
-    const getTokenPrices = await Promise.all(userVisibleTokensInfo.map(async (token) => {
+    const getTokenPrices = await Promise.all(GetFlattenedAccountBalances(accounts).map(async (token) => {
       const emptyPrice = {
-        assetTimeframeChange: '',
-        fromAsset: token.symbol,
+        fromAsset: token.token.symbol,
+        toAsset: defaultFiatCurrency,
         price: '',
-        toAsset: defaultFiatCurrency
+        assetTimeframeChange: ''
       }
-      const price = await assetRatioController.getPrice([GetTokenParam(selectedNetwork, token)], [defaultFiatCurrency], selectedPortfolioTimeline)
+
+      // If a tokens balance is 0 we do not make an unnecessary api call for the price of that token
+      const price = token.balance > 0 && token.token.isErc20
+        ? await assetRatioService.getPrice([GetTokenParam(selectedNetwork, token.token)], [defaultFiatCurrency], selectedPortfolioTimeline)
+        : { values: [{ ...emptyPrice, price: '0' }], success: true }
+
       const tokenPrice = {
         ...price.values[0],
-        fromAsset: token.symbol.toLowerCase()
+        fromAsset: token.token.symbol.toLowerCase()
       }
       return price.success ? tokenPrice : emptyPrice
     }))
+
     const getERCTokenBalanceReturnInfos = accounts.map((account) => {
       return account.tokens.map((token) => {
         const balanceInfo = {
@@ -240,28 +246,37 @@ export function refreshPrices () {
 export function refreshTokenPriceHistory (selectedPortfolioTimeline: BraveWallet.AssetPriceTimeframe) {
   return async (dispatch: Dispatch, getState: () => State) => {
     const apiProxy = getAPIProxy()
-    const { assetRatioController } = apiProxy
+    const { assetRatioService } = apiProxy
 
     const { wallet: { accounts, defaultCurrencies, selectedNetwork } } = getState()
-    const result = await Promise.all(accounts.map(async (account) => {
-      return Promise.all(account.tokens.filter((t) => !t.asset.isErc721).map(async (token) => {
-        return {
-          token: token,
-          history: await assetRatioController.getPriceHistory(
-            GetTokenParam(selectedNetwork, token.asset), defaultCurrencies.fiat.toLowerCase(), selectedPortfolioTimeline
-          )
-        }
-      }))
+
+    // If a tokens balance is 0 we do not make an unnecessary api call for price history of that token
+    const priceHistory = await Promise.all(GetFlattenedAccountBalances(accounts).filter((t) => !t.token.isErc721 && t.balance > 0).map(async (token) => {
+      return {
+        contractAddress: token.token.contractAddress,
+        history: await assetRatioService.getPriceHistory(
+          GetTokenParam(selectedNetwork, token.token), defaultCurrencies.fiat.toLowerCase(), selectedPortfolioTimeline
+        )
+      }
     }))
 
-    dispatch(WalletActions.portfolioPriceHistoryUpdated(result))
+    const priceHistoryWithBalances = accounts.map((account) => {
+      return (account.tokens.filter((t) => !t.asset.isErc721).map((token) => {
+        return {
+          token: token,
+          history: priceHistory.find((t) => token.asset.contractAddress === t.contractAddress)?.history ?? { success: true, values: [] }
+        }
+      }))
+    })
+
+    dispatch(WalletActions.portfolioPriceHistoryUpdated(priceHistoryWithBalances))
   }
 }
 
 export function refreshTransactionHistory (address?: string) {
   return async (dispatch: Dispatch, getState: () => State) => {
     const apiProxy = getAPIProxy()
-    const { ethTxController } = apiProxy
+    const { ethTxService } = apiProxy
 
     const { wallet: { accounts, transactions } } = getState()
 
@@ -271,7 +286,7 @@ export function refreshTransactionHistory (address?: string) {
 
     const freshTransactions: AccountTransactions = await accountsToUpdate.reduce(
       async (acc, account) => acc.then(async (obj) => {
-        const { transactionInfos } = await ethTxController.getAllTransactionInfo(account.address)
+        const { transactionInfos } = await ethTxService.getAllTransactionInfo(account.address)
         obj[account.address] = transactionInfos
         return obj
       }), Promise.resolve({}))
@@ -286,11 +301,11 @@ export function refreshTransactionHistory (address?: string) {
 export function refreshNetworkInfo () {
   return async (dispatch: Dispatch) => {
     const apiProxy = getAPIProxy()
-    const { ethJsonRpcController } = apiProxy
+    const { jsonRpcService } = apiProxy
 
-    const networkList = await ethJsonRpcController.getAllNetworks()
+    const networkList = await jsonRpcService.getAllNetworks()
     dispatch(WalletActions.setAllNetworks(networkList))
-    const chainId = await ethJsonRpcController.getChainId()
+    const chainId = await jsonRpcService.getChainId()
     const currentNetwork = GetNetworkInfo(chainId.chainId, networkList.networks)
     dispatch(WalletActions.setNetwork(currentNetwork))
     return currentNetwork
@@ -300,7 +315,7 @@ export function refreshNetworkInfo () {
 export function refreshKeyringInfo () {
   return async (dispatch: Dispatch) => {
     const apiProxy = getAPIProxy()
-    const { keyringController, walletHandler } = apiProxy
+    const { keyringService, walletHandler } = apiProxy
 
     const walletInfoBase = await walletHandler.getWalletInfo()
     const walletInfo = { ...walletInfoBase, visibleTokens: [], selectedAccount: '' }
@@ -312,7 +327,7 @@ export function refreshKeyringInfo () {
     }
 
     // Get selectedAccountAddress
-    const getSelectedAccount = await keyringController.getSelectedAccount()
+    const getSelectedAccount = await keyringService.getSelectedAccount()
     const selectedAddress = getSelectedAccount.address
 
     // Fallback account address if selectedAccount returns null
@@ -320,7 +335,7 @@ export function refreshKeyringInfo () {
 
     // If selectedAccount is null will setSelectedAccount to fallback address
     if (!selectedAddress) {
-      await keyringController.setSelectedAccount(fallbackAddress)
+      await keyringService.setSelectedAccount(fallbackAddress)
       walletInfo.selectedAccount = fallbackAddress
     } else {
       // If a user has already created an wallet but then chooses to restore
@@ -330,7 +345,7 @@ export function refreshKeyringInfo () {
       // payload, if not it will setSelectedAccount to the fallback address
       if (!walletInfo.accountInfos.find((account) => account.address.toLowerCase() === selectedAddress?.toLowerCase())) {
         walletInfo.selectedAccount = fallbackAddress
-        await keyringController.setSelectedAccount(fallbackAddress)
+        await keyringService.setSelectedAccount(fallbackAddress)
       } else {
         walletInfo.selectedAccount = selectedAddress
       }
