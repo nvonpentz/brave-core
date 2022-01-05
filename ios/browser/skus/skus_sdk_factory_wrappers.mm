@@ -14,13 +14,13 @@
 #error "This file requires ARC support."
 #endif
 
-@implementation SkusSdkControllerFactory
+@implementation SkusSkusServiceFactory
 + (nullable id)serviceForBrowserState:(ChromeBrowserState*)browserState {
-  auto* controller =
-      skus::SdkControllerFactory::GetForBrowserState(browserState);
-  if (!controller) {
+  auto* service =
+      skus::SkusServiceFactory::GetForBrowserState(browserState);
+  if (!service) {
     return nil;
   }
-  return [[SkusSdkControllerImpl alloc] initWithSdkController:controller];
+  return [[SkusSkusServiceImpl alloc] initWithSkusService:service];
 }
 @end
