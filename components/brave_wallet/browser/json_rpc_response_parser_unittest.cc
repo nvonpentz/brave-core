@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "brave/components/brave_wallet/browser/eth_response_parser.h"
+#include "brave/components/brave_wallet/browser/json_rpc_response_parser.h"
 #include "brave/components/ipfs/ipfs_utils.h"
 #include "components/grit/brave_components_strings.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -15,7 +15,7 @@
 
 namespace brave_wallet {
 
-TEST(EthResponseParserUnitTest, ParseEthGetBalance) {
+TEST(JsonRpcResponseParserUnitTest, ParseEthGetBalance) {
   std::string json(
       R"({
     "id":1,
@@ -29,13 +29,13 @@ TEST(EthResponseParserUnitTest, ParseEthGetBalance) {
       "0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331");
 }
 
-TEST(EthResponseParserUnitTest, ParseEthGetBalanceInvalidJSON) {
+TEST(JsonRpcResponseParserUnitTest, ParseEthGetBalanceInvalidJSON) {
   std::string json("invalid JSON");
   std::string balance;
   ASSERT_FALSE(ParseEthGetBalance(json, &balance));
 }
 
-TEST(EthResponseParserUnitTest, ParseEthGetBalanceError) {
+TEST(JsonRpcResponseParserUnitTest, ParseEthGetBalanceError) {
   std::string json(
       R"({
     code: 3,
@@ -46,7 +46,7 @@ TEST(EthResponseParserUnitTest, ParseEthGetBalanceError) {
   ASSERT_FALSE(ParseEthGetBalance(json, &balance));
 }
 
-TEST(EthResponseParserUnitTest, ParseEthGetBlockNumber) {
+TEST(JsonRpcResponseParserUnitTest, ParseEthGetBlockNumber) {
   const std::string json(R"({
     "id":83,
     "jsonrpc": "2.0",
@@ -57,7 +57,7 @@ TEST(EthResponseParserUnitTest, ParseEthGetBlockNumber) {
   EXPECT_EQ(block_num, uint256_t(1207));
 }
 
-TEST(EthResponseParserUnitTest, ParseEthCall) {
+TEST(JsonRpcResponseParserUnitTest, ParseEthCall) {
   std::string json(
       R"({
     "id":1,
@@ -69,7 +69,7 @@ TEST(EthResponseParserUnitTest, ParseEthCall) {
   ASSERT_EQ(result, "0x0");
 }
 
-TEST(EthResponseParserUnitTest, ParseEthGetTransactionReceipt) {
+TEST(JsonRpcResponseParserUnitTest, ParseEthGetTransactionReceipt) {
   std::string json(
       R"({
       "id": 1,
@@ -105,7 +105,8 @@ TEST(EthResponseParserUnitTest, ParseEthGetTransactionReceipt) {
   EXPECT_TRUE(receipt.status);
 }
 
-TEST(EthResponseParserUnitTest, ParseEthGetTransactionReceiptNullContractAddr) {
+TEST(JsonRpcResponseParserUnitTest,
+     ParseEthGetTransactionReceiptNullContractAddr) {
   std::string json(
       R"({
       "id": 1,
@@ -140,7 +141,7 @@ TEST(EthResponseParserUnitTest, ParseEthGetTransactionReceiptNullContractAddr) {
   EXPECT_TRUE(receipt.status);
 }
 
-TEST(EthResponseParserUnitTest, ParseAddressResult) {
+TEST(JsonRpcResponseParserUnitTest, ParseAddressResult) {
   std::string json =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x0000000000000000000000004976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41\"}";
@@ -158,7 +159,7 @@ TEST(EthResponseParserUnitTest, ParseAddressResult) {
   EXPECT_TRUE(addr.empty());
 }
 
-TEST(EthResponseParserUnitTest, ParseEnsResolverContentHash) {
+TEST(JsonRpcResponseParserUnitTest, ParseEnsResolverContentHash) {
   std::string json =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x00000000000000000000000000000000000000000000000000000000000000200000"
@@ -181,7 +182,7 @@ TEST(EthResponseParserUnitTest, ParseEnsResolverContentHash) {
   EXPECT_TRUE(content_hash.empty());
 }
 
-TEST(EthResponseParserUnitTest, ParseUnstoppableDomainsProxyReaderGetMany) {
+TEST(JsonRpcResponseParserUnitTest, ParseUnstoppableDomainsProxyReaderGetMany) {
   std::string json =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       // offset for array
@@ -239,7 +240,7 @@ TEST(EthResponseParserUnitTest, ParseUnstoppableDomainsProxyReaderGetMany) {
   EXPECT_TRUE(values.empty());
 }
 
-TEST(EthResponseParserUnitTest, ParseUnstoppableDomainsProxyReaderGet) {
+TEST(JsonRpcResponseParserUnitTest, ParseUnstoppableDomainsProxyReaderGet) {
   std::string json =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       // offset to string
@@ -261,7 +262,7 @@ TEST(EthResponseParserUnitTest, ParseUnstoppableDomainsProxyReaderGet) {
   EXPECT_TRUE(value.empty());
 }
 
-TEST(EthResponseParserUnitTest, ParseBoolResult) {
+TEST(JsonRpcResponseParserUnitTest, ParseBoolResult) {
   std::string json =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x0000000000000000000000000000000000000000000000000000000000000001\"}";
