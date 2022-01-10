@@ -793,4 +793,21 @@ TEST_F(LedgerDatabaseMigrationTest, Migration_33) {
   EXPECT_FALSE(GetDB()->DoesColumnExist("pending_contribution", "processor"));
 }
 
+TEST_F(LedgerDatabaseMigrationTest, Migration_34) {
+  DatabaseMigration::SetTargetVersionForTesting(34);
+  InitializeDatabaseAtVersion(33);
+  InitializeLedger();
+
+  sql::Statement sql(GetDB()->GetUniqueStatement(R"sql(
+      SELECT step, retry_count FROM contribution_info
+  )sql"));
+
+  ASSERT_TRUE(sql.Step());
+
+  EXPECT_EQ(
+      sql.ColumnInt(0),
+      static_cast<int>(mojom::ContributionStep::STEP_EXTERNAL_TRANSACTION));
+  EXPECT_EQ(sql.ColumnInt(1), 0);
+}
+
 }  // namespace ledger
