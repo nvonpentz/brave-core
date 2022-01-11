@@ -513,6 +513,7 @@ Config.prototype.buildArgs = function () {
   if (process.platform === 'win32') {
     args.cc_wrapper = path.join(this.srcDir, 'brave', 'buildtools', 'win', 'redirect-cc', 'bin', 'redirect-cc.exe')
   } else {
+    args.cc_wrapper = path.join(this.srcDir, 'out', 'Release_arm64', 'redirect-cc')
     args.cc_wrapper = path.join(this.srcDir, 'brave', 'script', 'redirect-cc.py')
   }
   return args

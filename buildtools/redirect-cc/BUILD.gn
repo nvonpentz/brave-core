@@ -1,0 +1,17 @@
+if (current_toolchain == host_toolchain) {
+  executable("redirect-cc") {
+    sources = [
+      "redirect-cc.cc",
+    ]
+
+    deps = [
+      "//base",
+    ]
+
+    # Always build release since this is a build tool.
+    if (is_debug) {
+      configs -= [ "//build/config:debug" ]
+      configs += [ "//build/config:release" ]
+    }
+  }
+}
