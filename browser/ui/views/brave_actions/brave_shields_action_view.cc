@@ -110,7 +110,7 @@ BraveShieldsActionView::GetImageSource() {
       badge_text = count > 99 ? "99+" : std::to_string(count);
     }
 
-    is_enabled = shields_data_ctrlr->GetIsBraveShieldsEnabled();
+    is_enabled = shields_data_ctrlr->IsBraveShieldsEnabled();
 
     if (!badge_text.empty()) {
       badge = std::make_unique<IconWithBadgeImageSource::Badge>(
