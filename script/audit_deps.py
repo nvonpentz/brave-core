@@ -25,6 +25,15 @@ NPM_EXCLUDE_PATHS = [
 # Tag @sec-team before adding any advisory to this list
 # Ignore these rust advisories
 IGNORED_CARGO_ADVISORIES = [
+    # Added 2020-0071 and 2020-0159 after discussion
+    # at https://github.com/brave/security/issues/697#issuecomment-1010246737
+    # - feed-rs depends on chrono but does not use any of the vulnerable chrono
+    # functions.
+    # Remove when:
+    # https://github.com/chronotope/chrono/issues/602 is resolved
+    # Tracking issue: https://github.com/brave/brave-browser/issues/18838
+    'RUSTSEC-2020-0071',
+    'RUSTSEC-2020-0159'
 ]
 
 # Use only these (sub)paths for cargo audit.
