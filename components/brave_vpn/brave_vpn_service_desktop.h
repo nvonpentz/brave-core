@@ -18,6 +18,7 @@
 #include "brave/components/brave_vpn/brave_vpn_data_types.h"
 #include "brave/components/brave_vpn/brave_vpn_os_connection_api.h"
 #include "brave/components/brave_vpn/brave_vpn_service.h"
+#include "brave/components/skus/browser/skus_service.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -26,10 +27,6 @@
 namespace base {
 class Value;
 }  // namespace base
-
-namespace skus {
-class SkusService;
-}  // namespace skus
 
 class PrefService;
 
@@ -44,7 +41,7 @@ class BraveVpnServiceDesktop
   BraveVpnServiceDesktop(
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
       PrefService* prefs,
-      skus::SkusService* skus_service);
+      mojo::PendingRemote<skus::mojom::SkusService> pending_skus_service);
   ~BraveVpnServiceDesktop() override;
 
   BraveVpnServiceDesktop(const BraveVpnServiceDesktop&) = delete;
@@ -129,6 +126,7 @@ class BraveVpnServiceDesktop
   std::unique_ptr<brave_vpn::Hostname> PickBestHostname(
       const std::vector<brave_vpn::Hostname>& hostnames);
 
+  void OnSkusRemoteDisconnect();
   void OnSkusVPNCredentialUpdated();
   void OnGetSubscriberCredential(const std::string& subscriber_credential,
                                  bool success);
@@ -146,7 +144,7 @@ class BraveVpnServiceDesktop
   PrefService* prefs_ = nullptr;
   PrefChangeRegistrar pref_change_registrar_;
   std::string skus_credential_;
-  skus::SkusService* skus_service_ = nullptr;
+  mojo::Remote<skus::mojom::SkusService> skus_service_;
   std::vector<brave_vpn::mojom::Region> regions_;
   brave_vpn::mojom::Region device_region_;
   brave_vpn::mojom::Region selected_region_;

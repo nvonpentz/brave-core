@@ -11,6 +11,10 @@
 
 namespace skus {
 
+// These domain prefixes are passed in as part of a full domain (see GetDomain)
+// A domain with product is used by the following SKU methods:
+// - `credential_summary`
+// - `prepare_credentials_presentation`
 constexpr char kProductTalk[] = "talk";
 constexpr char kProductVPN[] = "vpn";
 

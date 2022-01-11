@@ -315,7 +315,7 @@ constexpr char kNavigatorConnectionAttributeDescription[] =
     {"skus-sdk",                                       \
      flag_descriptions::kBraveSkusSdkName,             \
      flag_descriptions::kBraveSkusSdkDescription,      \
-     kOsMac | kOsWin,                                  \
+     kOsMac | kOsWin | kOsAndroid,                     \
      FEATURE_VALUE_TYPE(skus::features::kSkusFeature)},
 
 #if BUILDFLAG(ENABLE_SIDEBAR)

@@ -34,9 +34,6 @@ class SkusServiceFactory : public BrowserContextKeyedServiceFactory {
   SkusServiceFactory();
   ~SkusServiceFactory() override;
 
-  // Used by BraveVpnServiceFactory
-  static SkusService* GetForContextPrivate(content::BrowserContext* context);
-
   // BrowserContextKeyedServiceFactory overrides:
   KeyedService* BuildServiceInstanceFor(
       content::BrowserContext* context) const override;

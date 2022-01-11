@@ -29,13 +29,6 @@ mojo::PendingRemote<mojom::SkusService> SkusServiceFactory::GetForContext(
 }
 
 // static
-SkusService* SkusServiceFactory::GetForContextPrivate(
-    content::BrowserContext* context) {
-  return static_cast<skus::SkusService*>(
-      GetInstance()->GetServiceForBrowserContext(context, true));
-}
-
-// static
 void SkusServiceFactory::BindForContext(
     content::BrowserContext* context,
     mojo::PendingReceiver<skus::mojom::SkusService> receiver) {

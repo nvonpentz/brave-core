@@ -22,7 +22,6 @@
 #include "brave/components/brave_vpn/pref_names.h"
 #include "brave/components/brave_vpn/switches.h"
 #include "brave/components/skus/browser/pref_names.h"
-#include "brave/components/skus/browser/skus_service.h"
 #include "brave/components/skus/browser/skus_utils.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -66,6 +65,12 @@ bool IsValidRegion(const brave_vpn::mojom::Region& region) {
   return true;
 }
 
+// On desktop, the environment is tied to SKUs because you would purchase it
+// from `account.brave.com` (or similar, based on env). The credentials for VPN
+// will always be in the same environment as the SKU environment.
+//
+// When the vendor receives a credential from us during auth, it also includes
+// the environment. The vendor then can do a lookup using Payment Service.
 std::string GetBraveVPNPaymentsEnv() {
   const std::string env = skus::GetEnvironment();
   if (env == skus::kEnvProduction)
@@ -88,11 +93,14 @@ std::string GetBraveVPNPaymentsEnv() {
 BraveVpnServiceDesktop::BraveVpnServiceDesktop(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
     PrefService* prefs,
-    skus::SkusService* skus_service)
+    mojo::PendingRemote<skus::mojom::SkusService> pending_skus_service)
     : BraveVpnService(url_loader_factory),
-      prefs_(prefs),
-      skus_service_(skus_service) {
+      prefs_(prefs) {
   DCHECK(brave_vpn::IsBraveVPNEnabled());
+
+  skus_service_.Bind(std::move(pending_skus_service));
+  skus_service_.set_disconnect_handler(base::BindOnce(
+      &BraveVpnServiceDesktop::OnSkusRemoteDisconnect, base::Unretained(this)));
   DCHECK(skus_service_);
 
   auto* cmd = base::CommandLine::ForCurrentProcess();
@@ -431,11 +439,11 @@ void BraveVpnServiceDesktop::OnPrepareCredentialsPresentation(
   net::ParsedCookie credential_cookie(credential_as_cookie, &status);
   // TODO(bsclifton): have a better check / logging.
   if (!credential_cookie.IsValid()) {
-    LOG(ERROR) << "FAILED credential_cookie.IsValid";
+    VLOG(2) << __func__ << " : FAILED credential_cookie.IsValid";
     return;
   }
   if (!status.IsInclude()) {
-    LOG(ERROR) << "FAILED status.IsInclude";
+    VLOG(2) << __func__ << " : FAILED status.IsInclude";
     return;
   }
 
@@ -867,6 +875,10 @@ void BraveVpnServiceDesktop::SetPurchasedState(PurchasedState state) {
     obs->OnPurchasedStateChanged(purchased_state_);
 
   ScheduleFetchRegionDataIfNeeded();
+}
+
+void BraveVpnServiceDesktop::OnSkusRemoteDisconnect() {
+  skus_service_.reset();
 }
 
 void BraveVpnServiceDesktop::OnSkusVPNCredentialUpdated() {
