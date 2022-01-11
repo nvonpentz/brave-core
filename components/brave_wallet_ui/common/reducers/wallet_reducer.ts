@@ -10,15 +10,16 @@ import {
   BraveWallet,
   GetAllNetworksList,
   GetAllTokensReturnInfo,
-  GetERC20TokenBalanceAndPriceReturnInfo,
-  GetNativeAssetBalancesPriceReturnInfo,
+  GetBlockchainTokenBalanceReturnInfo,
+  GetNativeAssetBalancesReturnInfo,
   GetPriceHistoryReturnInfo,
   PortfolioTokenHistoryAndInfo,
   WalletAccountType,
   WalletState,
   WalletInfoBase,
   WalletInfo,
-  DefaultCurrencies
+  DefaultCurrencies,
+  GetPriceReturnInfo
 } from '../../constants/types'
 import {
   ActiveOriginChanged,
@@ -32,6 +33,7 @@ import { mojoTimeDeltaToJSDate } from '../../utils/datetime-utils'
 import * as WalletActions from '../actions/wallet_actions'
 import { formatFiatBalance } from '../../utils/format-balances'
 import { sortTransactionByDate } from '../../utils/tx-utils'
+import { normalizeNumericValue } from '../../utils/bn-utils'
 
 const defaultState: WalletState = {
   hasInitialized: false,
@@ -92,7 +94,6 @@ reducer.on(WalletActions.initialized, (state: any, payload: WalletInfo) => {
       name: info.name,
       address: info.address,
       balance: '',
-      fiatBalance: '',
       asset: 'eth',
       accountType: getAccountType(info),
       deviceId: info.hardware ? info.hardware.deviceId : '',
@@ -136,7 +137,7 @@ reducer.on(WalletActions.setNetwork, (state: any, payload: BraveWallet.EthereumC
   }
 })
 
-reducer.on(WalletActions.setVisibleTokensInfo, (state: any, payload: BraveWallet.ERCToken[]) => {
+reducer.on(WalletActions.setVisibleTokensInfo, (state: any, payload: BraveWallet.BlockchainToken[]) => {
   return {
     ...state,
     userVisibleTokensInfo: payload
@@ -157,15 +158,12 @@ reducer.on(WalletActions.setAllTokensList, (state: any, payload: GetAllTokensRet
   }
 })
 
-reducer.on(WalletActions.nativeAssetBalancesUpdated, (state: any, payload: GetNativeAssetBalancesPriceReturnInfo) => {
+reducer.on(WalletActions.nativeAssetBalancesUpdated, (state: any, payload: GetNativeAssetBalancesReturnInfo) => {
   let accounts: WalletAccountType[] = [...state.accounts]
 
   accounts.forEach((account, index) => {
     if (payload.balances[index].error === BraveWallet.ProviderError.kSuccess) {
-      accounts[index].balance = payload.balances[index].balance
-      accounts[index].fiatBalance = payload.fiatPrice !== ''
-        ? formatFiatBalance(payload.balances[index].balance, state.selectedNetwork.decimals, payload.fiatPrice).toString()
-        : ''
+      accounts[index].balance = normalizeNumericValue(payload.balances[index].balance)
     }
   })
   return {
@@ -174,55 +172,45 @@ reducer.on(WalletActions.nativeAssetBalancesUpdated, (state: any, payload: GetNa
   }
 })
 
-reducer.on(WalletActions.tokenBalancesUpdated, (state: any, payload: GetERC20TokenBalanceAndPriceReturnInfo) => {
-  const userTokens: BraveWallet.ERCToken[] = state.userVisibleTokensInfo
+reducer.on(WalletActions.tokenBalancesUpdated, (state: any, payload: GetBlockchainTokenBalanceReturnInfo) => {
+  const userTokens: BraveWallet.BlockchainToken[] = state.userVisibleTokensInfo
   const userVisibleTokensInfo = userTokens.map((token) => {
     return {
       ...token,
       logo: `chrome://erc-token-images/${token.logo}`
     }
   })
-  const prices = payload.prices
-  const findTokenPrice = (symbol: string) => {
-    if (prices.success) {
-      return prices.values.find((value) => value.fromAsset === symbol.toLowerCase())?.price ?? ''
-    } else {
-      return ''
-    }
-  }
+
   let accounts: WalletAccountType[] = [...state.accounts]
   accounts.forEach((account, accountIndex) => {
     payload.balances[accountIndex].forEach((info, tokenIndex) => {
       let assetBalance = ''
-      let fiatBalance = ''
 
       if (userVisibleTokensInfo[tokenIndex].contractAddress === '') {
         assetBalance = account.balance
-        fiatBalance = account.fiatBalance
       } else if (info.error === BraveWallet.ProviderError.kSuccess && userVisibleTokensInfo[tokenIndex].isErc721) {
         assetBalance = info.balance
-        fiatBalance = '' // TODO: support estimated market value.
       } else if (info.error === BraveWallet.ProviderError.kSuccess) {
-        const tokenPrice = findTokenPrice(userVisibleTokensInfo[tokenIndex].symbol)
         assetBalance = info.balance
-        fiatBalance = tokenPrice !== ''
-          ? formatFiatBalance(info.balance, userVisibleTokensInfo[tokenIndex].decimals, findTokenPrice(userVisibleTokensInfo[tokenIndex].symbol))
-          : ''
       } else if (account.tokens[tokenIndex]) {
         assetBalance = account.tokens[tokenIndex].assetBalance
-        fiatBalance = account.tokens[tokenIndex].fiatBalance
       }
       account.tokens.splice(tokenIndex, 1, {
         asset: userVisibleTokensInfo[tokenIndex],
-        assetBalance,
-        fiatBalance
+        assetBalance: normalizeNumericValue(assetBalance)
       })
     })
   })
   return {
     ...state,
-    transactionSpotPrices: prices.values,
     accounts
+  }
+})
+
+reducer.on(WalletActions.pricesUpdated, (state: WalletState, payload: GetPriceReturnInfo) => {
+  return {
+    ...state,
+    transactionSpotPrices: payload.success ? payload.values : state.transactionSpotPrices
   }
 })
 

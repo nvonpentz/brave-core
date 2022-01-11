@@ -11,7 +11,11 @@ import {
 // Utils
 import { toProperCase } from '../../../utils/string-utils'
 import { mojoTimeDeltaToJSDate, formatDateAsRelative } from '../../../utils/datetime-utils'
-import { formatFiatAmountWithCommasAndDecimals } from '../../../utils/format-prices'
+import {
+  formatFiatAmountWithCommasAndDecimals,
+  formatTokenAmountWithCommasAndDecimals
+} from '../../../utils/format-prices'
+import { formatBalance } from '../../../utils/format-balances'
 
 // Hooks
 import { useExplorer, useTransactionParser } from '../../../common/hooks'
@@ -50,12 +54,12 @@ export interface Props {
   transaction: BraveWallet.TransactionInfo
   account: WalletAccountType | undefined
   accounts: WalletAccountType[]
-  visibleTokens: BraveWallet.ERCToken[]
+  visibleTokens: BraveWallet.BlockchainToken[]
   transactionSpotPrices: BraveWallet.AssetPrice[]
   displayAccountName: boolean
   defaultCurrencies: DefaultCurrencies
   onSelectAccount: (account: WalletAccountType) => void
-  onSelectAsset: (asset: BraveWallet.ERCToken) => void
+  onSelectAsset: (asset: BraveWallet.BlockchainToken) => void
   onRetryTransaction: (transaction: BraveWallet.TransactionInfo) => void
   onSpeedupTransaction: (transaction: BraveWallet.TransactionInfo) => void
   onCancelTransaction: (transaction: BraveWallet.TransactionInfo) => void
@@ -305,13 +309,13 @@ const PortfolioTransactionItem = (props: Props) => {
       <DetailRow>
         <BalanceColumn>
           <DetailTextDark>{/* We need to return a Transaction Time Stamp to calculate Fiat value here */}{formatFiatAmountWithCommasAndDecimals(transactionDetails.fiatValue, defaultCurrencies.fiat)}</DetailTextDark>
-          <DetailTextLight>{transactionDetails.nativeCurrencyTotal} {selectedNetwork.symbol}</DetailTextLight>
+          <DetailTextLight>{formatTokenAmountWithCommasAndDecimals(transactionDetails.nativeCurrencyTotal, selectedNetwork.symbol)}</DetailTextLight>
         </BalanceColumn>
         <TransactionFeesTooltip
           text={
             <>
               <TransactionFeeTooltipTitle>{getLocale('braveWalletAllowSpendTransactionFee')}</TransactionFeeTooltipTitle>
-              <TransactionFeeTooltipBody>{transactionDetails.gasFee} {selectedNetwork.symbol}</TransactionFeeTooltipBody>
+              <TransactionFeeTooltipBody>{formatTokenAmountWithCommasAndDecimals(formatBalance(transactionDetails.gasFee, selectedNetwork.decimals), selectedNetwork.symbol)}</TransactionFeeTooltipBody>
               <TransactionFeeTooltipBody>{formatFiatAmountWithCommasAndDecimals(transactionDetails.gasFeeFiat, defaultCurrencies.fiat)}</TransactionFeeTooltipBody>
             </>
           }

@@ -7,7 +7,6 @@
 
 #include <utility>
 
-#include "brave/components/brave_wallet/browser/eth_tx_service.h"
 #include "brave/components/brave_wallet/browser/pref_names.h"
 #include "brave/components/brave_wallet/factory/eth_tx_service_factory_helper.h"
 #include "brave/ios/browser/brave_wallet/asset_ratio_service_factory.h"
@@ -21,7 +20,15 @@
 namespace brave_wallet {
 
 // static
-mojom::EthTxService* EthTxServiceFactory::GetForBrowserState(
+mojo::PendingRemote<mojom::EthTxService>
+EthTxServiceFactory::GetForBrowserState(ChromeBrowserState* browser_state) {
+  return static_cast<EthTxService*>(
+             GetInstance()->GetServiceForBrowserState(browser_state, true))
+      ->MakeRemote();
+}
+
+// static
+EthTxService* EthTxServiceFactory::GetServiceForState(
     ChromeBrowserState* browser_state) {
   return static_cast<EthTxService*>(
       GetInstance()->GetServiceForBrowserState(browser_state, true));

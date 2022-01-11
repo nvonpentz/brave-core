@@ -7,6 +7,7 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators, Dispatch } from 'redux'
 import { Switch, Route, useHistory, useLocation } from 'react-router-dom'
+
 import * as WalletPageActions from './actions/wallet_page_actions'
 import * as WalletActions from '../common/actions/wallet_actions'
 import store from './store'
@@ -39,9 +40,13 @@ import {
 import BuySendSwap from '../stories/screens/buy-send-swap'
 import Onboarding from '../stories/screens/onboarding'
 import BackupWallet from '../stories/screens/backup-wallet'
+
+// Utils
 import { formatWithCommasAndDecimals } from '../utils/format-prices'
 import { GetBuyOrFaucetUrl } from '../utils/buy-asset-url'
 import { mojoTimeDeltaToJSDate } from '../utils/datetime-utils'
+import { stripERC20TokenImageURL } from '../utils/string-utils'
+import { addNumericValues } from '../utils/bn-utils'
 
 import {
   findENSAddress,
@@ -51,20 +56,20 @@ import {
   getERC20Allowance,
   onConnectHardwareWallet,
   isStrongPassword,
-  getERCTokenInfo,
+  getBlockchainTokenInfo,
   getBuyAssets
 } from '../common/async/lib'
 
-import { formatBalance } from '../utils/format-balances'
+// Hooks
 import {
   useSwap,
   useAssets,
   useBalance,
   useSend,
   usePreset,
-  useTokenInfo
+  useTokenInfo,
+  usePricing
 } from '../common/hooks'
-import { stripERC20TokenImageURL } from '../utils/string-utils'
 
 type Props = {
   wallet: WalletState
@@ -131,16 +136,18 @@ function Container (props: Props) {
     sendAssetOptions,
     buyAssetOptions
   } = useAssets(
+    accounts,
     selectedAccount,
     props.wallet.fullTokenList,
     props.wallet.userVisibleTokensInfo,
+    transactionSpotPrices,
     getBuyAssets
   )
 
   const {
     onFindTokenInfoByContractAddress,
     foundTokenInfoByContractAddress
-  } = useTokenInfo(getERCTokenInfo, userVisibleTokenOptions, tokenOptions, selectedNetwork)
+  } = useTokenInfo(getBlockchainTokenInfo, userVisibleTokenOptions, tokenOptions, selectedNetwork)
 
   const {
     exchangeRate,
@@ -201,10 +208,11 @@ function Container (props: Props) {
     props.wallet.fullTokenList
   )
 
-  const getSelectedAccountBalance = useBalance(selectedAccount)
-  const { assetBalance: sendAssetBalance } = getSelectedAccountBalance(selectedSendAsset)
-  const { assetBalance: fromAssetBalance } = getSelectedAccountBalance(fromAsset)
-  const { assetBalance: toAssetBalance } = getSelectedAccountBalance(toAsset)
+  const { computeFiatAmount } = usePricing(transactionSpotPrices)
+  const getAccountBalance = useBalance(selectedNetwork)
+  const sendAssetBalance = getAccountBalance(selectedAccount, selectedSendAsset?.asset)
+  const fromAssetBalance = getAccountBalance(selectedAccount, fromAsset?.asset)
+  const toAssetBalance = getAccountBalance(selectedAccount, toAsset?.asset)
 
   const onSelectPresetAmountFactory = usePreset(selectedAccount, fromAsset, selectedSendAsset, onSetFromAmount, onSetSendAmount)
 
@@ -286,65 +294,51 @@ function Container (props: Props) {
     return (mnemonic || '').split(' ')
   }, [mnemonic])
 
-  // This will scrape all of the user's accounts and combine the asset balances for a single asset
-  const fullAssetBalance = (asset: BraveWallet.ERCToken): number | string => {
-    const amounts = accounts.map((account) => {
-      let balance
-      const found = account.tokens.find((token) => token.asset.contractAddress === asset.contractAddress)
-      if (found) {
-        balance = Number(formatBalance(found.assetBalance, found.asset.decimals))
-      }
-      return balance
-    })
-    const grandTotal = amounts.reduce(function (a, b) {
-      return a !== undefined && b !== undefined ? a + b : undefined
-    })
-    return grandTotal ?? ''
-  }
+  // This will scrape all the user's accounts and combine the asset balances for a single asset
+  const fullAssetBalance = React.useCallback((asset: BraveWallet.BlockchainToken) => {
+    const amounts = accounts.map((account) =>
+      getAccountBalance(account, asset))
 
-  // This will scrape all of the user's accounts and combine the fiat value for a single asset
-  const fullAssetFiatBalance = (asset: BraveWallet.ERCToken): number | string => {
-    const amounts = accounts.map((account) => {
-      let fiatBalance
-      const found = account.tokens.find((token) => token.asset.contractAddress === asset.contractAddress)
-      if (found && found.fiatBalance !== '') {
-        fiatBalance = Number(found.fiatBalance)
-      }
-      return fiatBalance
+    return amounts.reduce(function (a, b) {
+      return a !== '' && b !== ''
+        ? addNumericValues(a, b)
+        : ''
     })
-    const grandTotal = amounts.reduce(function (a, b) {
-      return a !== undefined && b !== undefined ? a + b : undefined
-    })
-    return grandTotal ?? ''
-  }
+  }, [accounts, getAccountBalance])
 
   // This looks at the users asset list and returns the full balance for each asset
   const userAssetList = React.useMemo(() => {
     return userVisibleTokenOptions.map((asset) => ({
       asset: asset,
-      assetBalance: fullAssetBalance(asset)?.toString(),
-      fiatBalance: fullAssetFiatBalance(asset)?.toString()
-    }))
-  }, [userVisibleTokenOptions, accounts])
+      assetBalance: fullAssetBalance(asset)
+    }) as AccountAssetOptionType)
+  }, [userVisibleTokenOptions, fullAssetBalance])
 
-  const onSelectAsset = (asset: BraveWallet.ERCToken) => {
+  const onSelectAsset = (asset: BraveWallet.BlockchainToken) => {
     props.walletPageActions.selectAsset({ asset: asset, timeFrame: selectedTimeline })
   }
 
   // This will scrape all of the user's accounts and combine the fiat value for every asset
   const fullPortfolioBalance = React.useMemo(() => {
-    const filteredList = userAssetList.filter((token) => token.asset.visible && !token.asset.isErc721)
-    const amountList = filteredList.map((item) => {
-      return fullAssetFiatBalance(item.asset) !== '' ? fullAssetFiatBalance(item.asset) : undefined
-    })
-    if (amountList.length === 0) {
+    const visibleAssetOptions = userAssetList
+      .filter((token) => token.asset.visible && !token.asset.isErc721)
+
+    if (visibleAssetOptions.length === 0) {
       return ''
     }
-    const grandTotal = amountList.reduce(function (a, b) {
-      return a !== undefined && b !== undefined ? Number(a) + Number(b) : undefined
+
+    const visibleAssetFiatBalances = visibleAssetOptions
+      .map((item) => {
+        return computeFiatAmount(item.assetBalance, item.asset.symbol, item.asset.decimals)
+      })
+
+    const grandTotal = visibleAssetFiatBalances.reduce(function (a, b) {
+      return a !== '' && b !== ''
+        ? addNumericValues(a, b)
+        : ''
     })
-    return grandTotal !== undefined ? formatWithCommasAndDecimals(grandTotal?.toString()) : ''
-  }, [userAssetList])
+    return formatWithCommasAndDecimals(grandTotal)
+  }, [userAssetList, fullAssetBalance, computeFiatAmount])
 
   const onChangeTimeline = (timeline: BraveWallet.AssetPriceTimeframe) => {
     if (selectedAsset) {
@@ -354,14 +348,14 @@ function Container (props: Props) {
     }
   }
 
-  const formatedPriceHistory = React.useMemo(() => {
-    const formated = selectedAssetPriceHistory.map((obj) => {
+  const formattedPriceHistory = React.useMemo(() => {
+    const formatted = selectedAssetPriceHistory.map((obj) => {
       return {
         date: mojoTimeDeltaToJSDate(obj.date),
         close: Number(obj.price)
       }
     })
-    return formated
+    return formatted
   }, [selectedAssetPriceHistory])
 
   const onShowAddModal = () => {
@@ -446,11 +440,11 @@ function Container (props: Props) {
     props.walletPageActions.checkWalletsToImport()
   }
 
-  const onSetUserAssetVisible = (token: BraveWallet.ERCToken, isVisible: boolean) => {
+  const onSetUserAssetVisible = (token: BraveWallet.BlockchainToken, isVisible: boolean) => {
     props.walletActions.setUserAssetVisible({ token, chainId: selectedNetwork.chainId, isVisible })
   }
 
-  const onAddUserAsset = (token: BraveWallet.ERCToken) => {
+  const onAddUserAsset = (token: BraveWallet.BlockchainToken) => {
     props.walletActions.addUserAsset({
       token: {
         ...token,
@@ -460,7 +454,7 @@ function Container (props: Props) {
     })
   }
 
-  const onRemoveUserAsset = (token: BraveWallet.ERCToken) => {
+  const onRemoveUserAsset = (token: BraveWallet.BlockchainToken) => {
     props.walletActions.removeUserAsset({ token, chainId: selectedNetwork.chainId })
   }
 
@@ -618,7 +612,7 @@ function Container (props: Props) {
                 selectedAsset={selectedAsset}
                 selectedAssetFiatPrice={selectedAssetFiatPrice}
                 selectedAssetCryptoPrice={selectedAssetCryptoPrice}
-                selectedAssetPriceHistory={formatedPriceHistory}
+                selectedAssetPriceHistory={formattedPriceHistory}
                 portfolioPriceHistory={portfolioPriceHistory}
                 selectedTimeline={selectedTimeline}
                 selectedPortfolioTimeline={selectedPortfolioTimeline}
@@ -628,7 +622,7 @@ function Container (props: Props) {
                 onConnectHardwareWallet={onConnectHardwareWallet}
                 onCreateAccount={onCreateAccount}
                 onImportAccount={onImportAccount}
-                onImportFilecoinAccount ={onImportFilecoinAccount}
+                onImportFilecoinAccount={onImportFilecoinAccount}
                 isLoading={isFetchingPriceHistory}
                 showAddModal={showAddModal}
                 onHideAddModal={onHideAddModal}

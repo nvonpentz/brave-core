@@ -11,13 +11,13 @@ import { HardwareWalletResponseCodeType } from '../common/hardware/types'
 // path of generated mojom files.
 export { BraveWallet }
 export { Url } from 'gen/url/mojom/url.mojom.m.js'
+export { TimeDelta }
 
 export interface WalletAccountType {
   id: string
   name: string
   address: string
   balance: string
-  fiatBalance: string
   asset: string
   accountType: 'Primary' | 'Secondary' | 'Ledger' | 'Trezor'
   tokens: AccountAssetOptionType[]
@@ -40,19 +40,16 @@ export interface AssetOptionType {
 export interface UserAssetOptionType {
   asset: AssetOptionType
   assetBalance: number
-  fiatBalance: number
 }
 
 export interface AccountAssetOptionType {
-  asset: BraveWallet.ERCToken
+  asset: BraveWallet.BlockchainToken
   assetBalance: string
-  fiatBalance: string
 }
 
 export interface UserWalletObject {
   name: string
   address: string
-  fiatBalance: string
   assetBalance: number
 }
 
@@ -195,8 +192,8 @@ export interface WalletState {
   selectedNetwork: BraveWallet.EthereumChain
   accounts: WalletAccountType[]
   transactions: AccountTransactions
-  userVisibleTokensInfo: BraveWallet.ERCToken[]
-  fullTokenList: BraveWallet.ERCToken[]
+  userVisibleTokensInfo: BraveWallet.BlockchainToken[]
+  fullTokenList: BraveWallet.BlockchainToken[]
   portfolioPriceHistory: PriceDataObjectType[]
   pendingTransactions: BraveWallet.TransactionInfo[]
   knownTransactions: BraveWallet.TransactionInfo[]
@@ -226,7 +223,7 @@ export interface PanelState {
   signMessageData: BraveWallet.SignMessageRequest[]
   switchChainRequest: BraveWallet.SwitchChainRequest
   hardwareWalletCode?: HardwareWalletResponseCodeType
-  suggestedToken?: BraveWallet.ERCToken
+  suggestedToken?: BraveWallet.BlockchainToken
 }
 
 export interface PageState {
@@ -234,7 +231,7 @@ export interface PageState {
   showRecoveryPhrase: boolean
   invalidMnemonic: boolean
   selectedTimeline: BraveWallet.AssetPriceTimeframe
-  selectedAsset: BraveWallet.ERCToken | undefined
+  selectedAsset: BraveWallet.BlockchainToken | undefined
   selectedAssetFiatPrice: BraveWallet.AssetPrice | undefined
   selectedAssetCryptoPrice: BraveWallet.AssetPrice | undefined
   selectedAssetPriceHistory: GetPriceHistoryReturnInfo[]
@@ -317,25 +314,19 @@ export interface GetPriceHistoryReturnObjectInfo {
 }
 
 export interface GetAllTokensReturnInfo {
-  tokens: BraveWallet.ERCToken[]
+  tokens: BraveWallet.BlockchainToken[]
 }
 
-export type GetBalanceReturnInfo = BraveWallet.JsonRpcService_GetBalance_ResponseParams
-
-export interface GetNativeAssetBalancesPriceReturnInfo {
-  fiatPrice: string
-  balances: GetBalanceReturnInfo[]
+export interface GetNativeAssetBalancesReturnInfo {
+  balances: BraveWallet.JsonRpcService_GetBalance_ResponseParams[]
 }
 
-export type GetERCTokenBalanceReturnInfo = BraveWallet.JsonRpcService_GetERC20TokenBalance_ResponseParams
-
-export interface GetERC20TokenBalanceAndPriceReturnInfo {
-  balances: GetERCTokenBalanceReturnInfo[][]
-  prices: GetPriceReturnInfo
+export interface GetBlockchainTokenBalanceReturnInfo {
+  balances: BraveWallet.JsonRpcService_GetERC20TokenBalance_ResponseParams[][]
 }
 
 export interface GetFlattenedAccountBalancesReturnInfo {
-  token: BraveWallet.ERCToken
+  token: BraveWallet.BlockchainToken
   balance: number
 }
 
@@ -384,8 +375,8 @@ export type AccountTransactions = {
 
 export type GetEthAddrReturnInfo = BraveWallet.JsonRpcService_EnsGetEthAddr_ResponseParams
 
-export interface GetERCTokenInfoReturnInfo {
-  token: BraveWallet.ERCToken | null
+export interface GetBlockchainTokenInfoReturnInfo {
+  token: BraveWallet.BlockchainToken | null
 }
 
 export type GetIsStrongPassswordReturnInfo = BraveWallet.KeyringService_IsStrongPassword_ResponseParams
@@ -457,7 +448,7 @@ export type TransactionDataType = {
 export type AllowSpendReturnPayload = {
   siteUrl: string
   contractAddress: string
-  erc20Token: BraveWallet.ERCToken
+  erc20Token: BraveWallet.BlockchainToken
   transactionFeeWei: string
   transactionFeeFiat: string
   transactionData: TransactionDataType
@@ -489,7 +480,7 @@ export type TransactionPanelPayload = {
   transactionAmount: string
   transactionGas: string
   toAddress: string
-  erc20Token: BraveWallet.ERCToken
+  erc20Token: BraveWallet.BlockchainToken
   ethPrice: string
   tokenPrice: string
   transactionData: TransactionDataType
@@ -529,3 +520,15 @@ export type BlockExplorerUrlTypes =
   | 'tx'
   | 'address'
   | 'token'
+
+export type CreateAccountType =
+  | 'ethereum'
+  | 'filecoin'
+  | 'solana'
+
+export interface CreateAccountOptionsType {
+  name: string
+  description: string
+  network: CreateAccountType
+  icon: string
+}

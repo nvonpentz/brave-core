@@ -575,7 +575,8 @@ public class BraveNewTabPageLayout
         }
         int appOpenCount = SharedPreferencesManager.getInstance().readInt(
                 BravePreferenceKeys.BRAVE_APP_OPEN_COUNT);
-        if (appOpenCount == 1 && !NTPWidgetManager.getInstance().hasUpdatedUserPrefForBinance()
+        if ((appOpenCount == 0 || appOpenCount == 1)
+                && !NTPWidgetManager.getInstance().hasUpdatedUserPrefForBinance()
                 && !BinanceWidgetManager.getInstance().isUserAuthenticatedForBinance()) {
             NTPWidgetManager.getInstance().setWidget(NTPWidgetManager.PREF_BINANCE, -1);
             NTPWidgetManager.getInstance().setUpdatedUserPrefForBinance();
@@ -1262,6 +1263,8 @@ public class BraveNewTabPageLayout
                         BraveActivity.getBraveActivity().inflateNewsSettingsBar();
                         mSettingsBar =
                                 (LinearLayout) mCompositorView.findViewById(R.id.news_settings_bar);
+                        mNewContentButton = (RelativeLayout) mCompositorView.findViewById(
+                                R.id.new_content_layout_id);
                     }
 
                     getFeed();
@@ -1505,8 +1508,7 @@ public class BraveNewTabPageLayout
         public void bgWallpaperRetrieved(Bitmap bgWallpaper) {
             if (ChromeFeatureList.isEnabled(BraveFeatureList.BRAVE_NEWS)) {
                 if (BraveActivity.getBraveActivity() != null) {
-                    BitmapDrawable bgWallpaperDrawable = new BitmapDrawable(bgWallpaper);
-                    BraveActivity.getBraveActivity().setBackground(bgWallpaperDrawable);
+                    BraveActivity.getBraveActivity().setBackground(bgWallpaper);
                 }
 
                 mParentScrollView = (ScrollView) mNtpContent.getParent();

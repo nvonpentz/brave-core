@@ -48,7 +48,7 @@ export const mockNetwork: BraveWallet.EthereumChain = {
   isEip1559: true
 }
 
-export const mockERC20Token: BraveWallet.ERCToken = {
+export const mockERC20Token: BraveWallet.BlockchainToken = {
   contractAddress: 'mockContractAddress',
   name: 'Dog Coin',
   symbol: 'DOG',
@@ -64,8 +64,7 @@ export const mockAccount: WalletAccountType = {
   id: 'mockId',
   name: 'mockAccountName',
   address: 'mockAddress',
-  balance: '123.456',
-  fiatBalance: '17.34',
+  balance: '123456',
   asset: 'mockAsset', // FIXME: This is probably a useless field
   accountType: 'Primary',
   tokens: []

@@ -27,7 +27,7 @@ constexpr int32_t kAutoLockMinutesMin = 1;
 constexpr int32_t kAutoLockMinutesMax = 10080;
 
 // List of assets from Wyre, available to buy
-static base::NoDestructor<std::vector<mojom::ERCToken>> kBuyTokens(
+static base::NoDestructor<std::vector<mojom::BlockchainToken>> kBuyTokens(
     {{"0x0D8775F648430679A709E98d2b0Cb6250d2887EF", "Basic Attention Token",
       "bat.png", true, false, "BAT", 18, true, ""},
      {"", "Ethereum", "", false, false, "ETH", 18, true, ""},
@@ -169,6 +169,8 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
     {"braveWalletWalletPopupSettings", IDS_BRAVE_WALLET_WALLET_POPUP_SETTINGS},
     {"braveWalletWalletPopupLock", IDS_BRAVE_WALLET_WALLET_POPUP_LOCK},
     {"braveWalletWalletPopupBackup", IDS_BRAVE_WALLET_WALLET_POPUP_BACKUP},
+    {"braveWalletWalletPopupConnectedSites",
+     IDS_BRAVE_WALLET_WALLET_POPUP_CONNECTED_SITES},
     {"braveWalletBackupWarningText", IDS_BRAVE_WALLET_BACKUP_WARNING_TEXT},
     {"braveWalletBackupButton", IDS_BRAVE_WALLET_BACKUP_BUTTON},
     {"braveWalletDismissButton", IDS_BRAVE_WALLET_DISMISS_BUTTON},
@@ -184,6 +186,8 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
     {"braveWalletToolTipCopyToClipboard",
      IDS_BRAVE_WALLET_TOOL_TIP_COPY_TO_CLIPBOARD},
     {"braveWalletAccountsPrimary", IDS_BRAVE_WALLET_ACCOUNTS_PRIMARY},
+    {"braveWalletAccountsPrimaryDisclaimer",
+     IDS_BRAVE_WALLET_ACCOUNTS_PRIMARY_DISCLAIMER},
     {"braveWalletAccountsSecondary", IDS_BRAVE_WALLET_ACCOUNTS_SECONDARY},
     {"braveWalletAccountsSecondaryDisclaimer",
      IDS_BRAVE_WALLET_ACCOUNTS_SECONDARY_DISCLAIMER},
@@ -191,8 +195,20 @@ constexpr webui::LocalizedString kLocalizedStrings[] = {
     {"braveWalletAccountsEditVisibleAssets",
      IDS_BRAVE_WALLET_ACCOUNTS_EDIT_VISIBLE_ASSETS},
     {"braveWalletAddAccountCreate", IDS_BRAVE_WALLET_ADD_ACCOUNT_CREATE},
+    {"braveWalletCreateAccount", IDS_BRAVE_WALLET_CREATE_ACCOUNT},
     {"braveWalletCreateAccountButton", IDS_BRAVE_WALLET_CREATE_ACCOUNT_BUTTON},
+    {"braveWalletCreateAccountImportAccount",
+     IDS_BRAVE_WALLET_CREATE_ACCOUNT_IMPORT_ACCOUNT},
+    {"braveWalletCreateAccountTitle", IDS_BRAVE_WALLET_CREATE_ACCOUNT_TITLE},
+    {"braveWalletCreateAccountEthereumDescription",
+     IDS_BRAVE_WALLET_CREATE_ACCOUNT_ETHEREUM_DESCRIPTION},
+    {"braveWalletCreateAccountSolanaDescription",
+     IDS_BRAVE_WALLET_CREATE_ACCOUNT_SOLANA_DESCRIPTION},
+    {"braveWalletCreateAccountFilecoinDescription",
+     IDS_BRAVE_WALLET_CREATE_ACCOUNT_FILECOIN_DESCRIPTION},
     {"braveWalletAddAccountImport", IDS_BRAVE_WALLET_ADD_ACCOUNT_IMPORT},
+    {"braveWalletAddAccountImportHardware",
+     IDS_BRAVE_WALLET_ADD_ACCOUNT_IMPORT_HARDWARE},
     {"braveWalletAddAccountHardware", IDS_BRAVE_WALLET_ADD_ACCOUNT_HARDWARE},
     {"braveWalletAddAccountConnect", IDS_BRAVE_WALLET_ADD_ACCOUNT_CONNECT},
     {"braveWalletAddAccountPlaceholder",

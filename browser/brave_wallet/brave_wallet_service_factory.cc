@@ -6,8 +6,11 @@
 #include "brave/browser/brave_wallet/brave_wallet_service_factory.h"
 
 #include <memory>
+#include <utility>
 
 #include "brave/browser/brave_wallet/brave_wallet_context_utils.h"
+#include "brave/browser/brave_wallet/eth_tx_service_factory.h"
+#include "brave/browser/brave_wallet/json_rpc_service_factory.h"
 #include "brave/browser/brave_wallet/keyring_service_factory.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_service.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_service_delegate.h"
@@ -44,6 +47,17 @@ BraveWalletService* BraveWalletServiceFactory::GetServiceForContext(
       GetInstance()->GetServiceForBrowserContext(context, true));
 }
 
+// static
+void BraveWalletServiceFactory::BindForContext(
+    content::BrowserContext* context,
+    mojo::PendingReceiver<mojom::BraveWalletService> receiver) {
+  auto* brave_wallet_service =
+      BraveWalletServiceFactory::GetServiceForContext(context);
+  if (brave_wallet_service) {
+    brave_wallet_service->Bind(std::move(receiver));
+  }
+}
+
 BraveWalletServiceFactory::BraveWalletServiceFactory()
     : BrowserContextKeyedServiceFactory(
           "BraveWalletService",
@@ -58,6 +72,8 @@ KeyedService* BraveWalletServiceFactory::BuildServiceInstanceFor(
   return new BraveWalletService(
       BraveWalletServiceDelegate::Create(context),
       KeyringServiceFactory::GetServiceForContext(context),
+      JsonRpcServiceFactory::GetServiceForContext(context),
+      EthTxServiceFactory::GetServiceForContext(context),
       user_prefs::UserPrefs::Get(context));
 }
 

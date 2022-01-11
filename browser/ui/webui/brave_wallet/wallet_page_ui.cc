@@ -19,9 +19,9 @@
 #include "brave/browser/ui/webui/navigation_bar_data_provider.h"
 #include "brave/common/webui_url_constants.h"
 #include "brave/components/brave_wallet/browser/asset_ratio_service.h"
+#include "brave/components/brave_wallet/browser/blockchain_registry.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_service.h"
-#include "brave/components/brave_wallet/browser/erc_token_registry.h"
 #include "brave/components/brave_wallet/browser/eth_tx_service.h"
 #include "brave/components/brave_wallet/browser/json_rpc_service.h"
 #include "brave/components/brave_wallet/browser/keyring_service.h"
@@ -56,7 +56,7 @@ WalletPageUI::WalletPageUI(content::WebUI* web_ui)
   source->AddString("braveWalletTrezorBridgeUrl", kUntrustedTrezorURL);
   auto* profile = Profile::FromWebUI(web_ui);
   content::WebUIDataSource::Add(profile, source);
-  brave_wallet::AddERCTokenImageSource(profile);
+  brave_wallet::AddBlockchainTokenImageSource(profile);
 }
 
 WalletPageUI::~WalletPageUI() = default;
@@ -81,8 +81,8 @@ void WalletPageUI::CreatePageHandler(
         asset_ratio_service_receiver,
     mojo::PendingReceiver<brave_wallet::mojom::KeyringService>
         keyring_service_receiver,
-    mojo::PendingReceiver<brave_wallet::mojom::ERCTokenRegistry>
-        erc_token_registry_receiver,
+    mojo::PendingReceiver<brave_wallet::mojom::BlockchainRegistry>
+        blockchain_registry_receiver,
     mojo::PendingReceiver<brave_wallet::mojom::EthTxService>
         eth_tx_service_receiver,
     mojo::PendingReceiver<brave_wallet::mojom::BraveWalletService>
@@ -96,44 +96,21 @@ void WalletPageUI::CreatePageHandler(
   wallet_handler_ =
       std::make_unique<WalletHandler>(std::move(wallet_receiver), profile);
 
-  auto* json_rpc_service =
-      brave_wallet::JsonRpcServiceFactory::GetServiceForContext(profile);
-  if (json_rpc_service) {
-    json_rpc_service->Bind(std::move(json_rpc_service_receiver));
-  }
+  brave_wallet::JsonRpcServiceFactory::BindForContext(
+      profile, std::move(json_rpc_service_receiver));
+  brave_wallet::SwapServiceFactory::BindForContext(
+      profile, std::move(swap_service_receiver));
+  brave_wallet::AssetRatioServiceFactory::BindForContext(
+      profile, std::move(asset_ratio_service_receiver));
+  brave_wallet::KeyringServiceFactory::BindForContext(
+      profile, std::move(keyring_service_receiver));
+  brave_wallet::EthTxServiceFactory::BindForContext(
+      profile, std::move(eth_tx_service_receiver));
+  brave_wallet::BraveWalletServiceFactory::BindForContext(
+      profile, std::move(brave_wallet_service_receiver));
 
-  auto* swap_service =
-      brave_wallet::SwapServiceFactory::GetServiceForContext(profile);
-  if (swap_service) {
-    swap_service->Bind(std::move(swap_service_receiver));
-  }
-
-  auto* asset_ratio_service =
-      brave_wallet::AssetRatioServiceFactory::GetServiceForContext(profile);
-  if (asset_ratio_service) {
-    asset_ratio_service->Bind(std::move(asset_ratio_service_receiver));
-  }
-
-  auto* keyring_service =
-      brave_wallet::KeyringServiceFactory::GetServiceForContext(profile);
-  if (keyring_service) {
-    keyring_service->Bind(std::move(keyring_service_receiver));
-  }
-
-  auto* erc_token_registry = brave_wallet::ERCTokenRegistry::GetInstance();
-  if (erc_token_registry) {
-    erc_token_registry->Bind(std::move(erc_token_registry_receiver));
-  }
-
-  auto* eth_tx_service =
-      brave_wallet::EthTxServiceFactory::GetServiceForContext(profile);
-  if (eth_tx_service) {
-    eth_tx_service->Bind(std::move(eth_tx_service_receiver));
-  }
-
-  auto* brave_wallet_service =
-      brave_wallet::BraveWalletServiceFactory::GetServiceForContext(profile);
-  if (brave_wallet_service) {
-    brave_wallet_service->Bind(std::move(brave_wallet_service_receiver));
+  auto* blockchain_registry = brave_wallet::BlockchainRegistry::GetInstance();
+  if (blockchain_registry) {
+    blockchain_registry->Bind(std::move(blockchain_registry_receiver));
   }
 }

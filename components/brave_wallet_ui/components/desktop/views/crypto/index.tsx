@@ -10,7 +10,8 @@ import {
   WalletAccountType,
   UpdateAccountNamePayloadType,
   WalletRoutes,
-  DefaultCurrencies
+  DefaultCurrencies,
+  AddAccountNavTypes
 } from '../../../../constants/types'
 import { TopNavOptions } from '../../../../options/top-nav-options'
 import { TopTabNav, WalletBanner, AddAccountModal } from '../../'
@@ -29,7 +30,7 @@ export interface Props {
   onLockWallet: () => void
   onShowBackup: () => void
   onChangeTimeline: (path: BraveWallet.AssetPriceTimeframe) => void
-  onSelectAsset: (asset: BraveWallet.ERCToken | undefined) => void
+  onSelectAsset: (asset: BraveWallet.BlockchainToken | undefined) => void
   onCreateAccount: (name: string) => void
   onImportAccount: (accountName: string, privateKey: string) => void
   onImportFilecoinAccount: (accountName: string, key: string, network: string, protocol: BraveWallet.FilecoinAddressProtocol) => void
@@ -45,17 +46,17 @@ export interface Props {
   onDoneViewingPrivateKey: () => void
   onImportAccountFromJson: (accountName: string, password: string, json: string) => void
   onSetImportError: (error: boolean) => void
-  onAddUserAsset: (token: BraveWallet.ERCToken) => void
-  onSetUserAssetVisible: (token: BraveWallet.ERCToken, isVisible: boolean) => void
-  onRemoveUserAsset: (token: BraveWallet.ERCToken) => void
+  onAddUserAsset: (token: BraveWallet.BlockchainToken) => void
+  onSetUserAssetVisible: (token: BraveWallet.BlockchainToken, isVisible: boolean) => void
+  onRemoveUserAsset: (token: BraveWallet.BlockchainToken) => void
   onOpenWalletSettings: () => void
   defaultCurrencies: DefaultCurrencies
   addUserAssetError: boolean
   hasImportError: boolean
   transactionSpotPrices: BraveWallet.AssetPrice[]
   privateKey: string
-  fullAssetList: BraveWallet.ERCToken[]
-  userVisibleTokensInfo: BraveWallet.ERCToken[]
+  fullAssetList: BraveWallet.BlockchainToken[]
+  userVisibleTokensInfo: BraveWallet.BlockchainToken[]
   needsBackup: boolean
   accounts: WalletAccountType[]
   networkList: BraveWallet.EthereumChain[]
@@ -65,7 +66,7 @@ export interface Props {
   selectedAssetPriceHistory: PriceDataObjectType[]
   selectedAssetFiatPrice: BraveWallet.AssetPrice | undefined
   selectedAssetCryptoPrice: BraveWallet.AssetPrice | undefined
-  selectedAsset: BraveWallet.ERCToken | undefined
+  selectedAsset: BraveWallet.BlockchainToken | undefined
   portfolioBalance: string
   transactions: AccountTransactions
   userAssetList: AccountAssetOptionType[]
@@ -81,7 +82,7 @@ export interface Props {
   onShowVisibleAssetsModal: (showModal: boolean) => void
   showVisibleAssetsModal: boolean
   onFindTokenInfoByContractAddress: (contractAddress: string) => void
-  foundTokenInfoByContractAddress?: BraveWallet.ERCToken
+  foundTokenInfoByContractAddress?: BraveWallet.BlockchainToken
 }
 
 const CryptoView = (props: Props) => {
@@ -148,10 +149,12 @@ const CryptoView = (props: Props) => {
   const [showBackupWarning, setShowBackupWarning] = React.useState<boolean>(needsBackup)
   const [showDefaultWalletBanner, setShowDefaultWalletBanner] = React.useState<boolean>(needsBackup)
   const [selectedAccount, setSelectedAccount] = React.useState<WalletAccountType>()
+  const [showMore, setShowMore] = React.useState<boolean>(false)
+  const [addAccountModalTab, setAddAccountModalTab] = React.useState<AddAccountNavTypes>('create')
 
   let { category, id } = useParams<ParamsType>()
 
-  const tabTo = (path: TopTabNavTypes) => {
+  const onSelectTab = (path: TopTabNavTypes) => {
     history.push(`/crypto/${path}`)
   }
 
@@ -203,15 +206,21 @@ const CryptoView = (props: Props) => {
     onHideAddModal()
   }
 
-  const onClickAddAccount = () => {
-    history.push(`${WalletRoutes.AddAccountModal}`)
+  const onClickAddAccount = (tabId: AddAccountNavTypes) => () => {
+    if (tabId === 'create') {
+      history.push(`${WalletRoutes.AddAccountModal}`)
+      setAddAccountModalTab(tabId)
+      return
+    }
+    setAddAccountModalTab(tabId)
+    onShowAddModal()
   }
 
   const onRouteBack = () => {
     history.push(`${WalletRoutes.Accounts}`)
   }
 
-  const selectAsset = (asset: BraveWallet.ERCToken | undefined) => {
+  const selectAsset = (asset: BraveWallet.BlockchainToken | undefined) => {
     if (asset) {
       history.push(`${WalletRoutes.Portfolio}/${asset.symbol}`)
     } else {
@@ -232,16 +241,38 @@ const CryptoView = (props: Props) => {
     }
   }
 
+  const onClickSettings = () => {
+    chrome.tabs.create({ url: 'chrome://settings/wallet' }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('tabs.create failed: ' + chrome.runtime.lastError.message)
+      }
+    })
+  }
+
+  const onClickShowMore = () => {
+    setShowMore(true)
+  }
+
+  const onClickHideMore = () => {
+    if (showMore) {
+      setShowMore(false)
+    }
+  }
+
   return (
-    <StyledWrapper>
+    <StyledWrapper onClick={onClickHideMore}>
       {!hideNav &&
         <>
           <TopTabNav
-            tabList={TopNavOptions()}
             selectedTab={category}
-            onSubmit={tabTo}
+            showMore={showMore}
             hasMoreButtons={true}
-            onLockWallet={onLockWallet}
+            onSelectTab={onSelectTab}
+            tabList={TopNavOptions()}
+            onClickLock={onLockWallet}
+            onClickBackup={onShowBackup}
+            onClickSettings={onClickSettings}
+            onClickMore={onClickShowMore}
           />
           {(defaultWallet !== BraveWallet.DefaultWallet.BraveWallet &&
             (defaultWallet !== BraveWallet.DefaultWallet.BraveWalletPreferExtension || (defaultWallet === BraveWallet.DefaultWallet.BraveWalletPreferExtension && isMetaMaskInstalled))) &&
@@ -311,7 +342,6 @@ const CryptoView = (props: Props) => {
           defaultCurrencies={defaultCurrencies}
           toggleNav={toggleNav}
           accounts={accounts}
-          onClickBackup={onShowBackup}
           onClickAddAccount={onClickAddAccount}
           onUpdateAccountName={onUpdateAccountName}
           onRemoveAccount={onRemoveAccount}
@@ -335,7 +365,6 @@ const CryptoView = (props: Props) => {
       {showAddModal &&
         <AddAccountModal
           accounts={accounts}
-          title={getLocale('braveWalletAddAccount')}
           onClose={onCloseAddModal}
           onRouteBackToAccounts={onRouteBack}
           onCreateAccount={onCreateAccount}
@@ -347,6 +376,7 @@ const CryptoView = (props: Props) => {
           onImportAccountFromJson={onImportAccountFromJson}
           hasImportError={hasImportError}
           onSetImportError={onSetImportError}
+          tab={addAccountModalTab}
         />
       }
     </StyledWrapper>

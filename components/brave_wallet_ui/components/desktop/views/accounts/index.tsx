@@ -6,13 +6,13 @@ import {
   UpdateAccountNamePayloadType,
   AccountTransactions,
   BraveWallet,
-  DefaultCurrencies
+  DefaultCurrencies,
+  AddAccountNavTypes
 } from '../../../../constants/types'
 import { reduceAddress } from '../../../../utils/reduce-address'
 import { copyToClipboard } from '../../../../utils/copy-to-clipboard'
 import { create } from 'ethereum-blockies'
 import { getLocale } from '../../../../../common/locale'
-import { formatBalance } from '../../../../utils/format-balances'
 import { sortTransactionByDate } from '../../../../utils/tx-utils'
 
 // Styled Components
@@ -20,15 +20,9 @@ import {
   StyledWrapper,
   SectionTitle,
   PrimaryListContainer,
-  PrimaryRow,
   SecondaryListContainer,
   DisclaimerText,
   SubDivider,
-  BackupIcon,
-  ButtonsRow,
-  SettingsIcon,
-  BackupButton,
-  BackupButtonText,
   Button,
   TopRow,
   WalletInfoRow,
@@ -39,7 +33,12 @@ import {
   QRCodeIcon,
   EditIcon,
   SubviewSectionTitle,
-  TransactionPlaceholderContainer
+  TransactionPlaceholderContainer,
+  ButtonRow,
+  StyledButton,
+  HardwareIcon,
+  ButtonText,
+  WalletIcon
 } from './style'
 
 import { TransactionPlaceholderText, Spacer } from '../portfolio/style'
@@ -59,19 +58,18 @@ export interface Props {
   transactions: AccountTransactions
   privateKey: string
   selectedNetwork: BraveWallet.EthereumChain
-  userVisibleTokensInfo: BraveWallet.ERCToken[]
+  userVisibleTokensInfo: BraveWallet.BlockchainToken[]
   transactionSpotPrices: BraveWallet.AssetPrice[]
   selectedAccount: WalletAccountType | undefined
   defaultCurrencies: DefaultCurrencies
   onViewPrivateKey: (address: string, isDefault: boolean) => void
   onDoneViewingPrivateKey: () => void
   toggleNav: () => void
-  onClickBackup: () => void
-  onClickAddAccount: () => void
+  onClickAddAccount: (tabId: AddAccountNavTypes) => () => void
   onUpdateAccountName: (payload: UpdateAccountNamePayloadType) => { success: boolean }
   onRemoveAccount: (address: string, hardware: boolean) => void
   onSelectAccount: (account: WalletAccountType) => void
-  onSelectAsset: (token: BraveWallet.ERCToken) => void
+  onSelectAsset: (token: BraveWallet.BlockchainToken) => void
   goBack: () => void
   onRetryTransaction: (transaction: BraveWallet.TransactionInfo) => void
   onSpeedupTransaction: (transaction: BraveWallet.TransactionInfo) => void
@@ -94,7 +92,6 @@ function Accounts (props: Props) {
     onViewPrivateKey,
     onDoneViewingPrivateKey,
     toggleNav,
-    onClickBackup,
     onClickAddAccount,
     onUpdateAccountName,
     onRemoveAccount,
@@ -151,14 +148,6 @@ function Accounts (props: Props) {
     }
   }
 
-  const onClickSettings = () => {
-    chrome.tabs.create({ url: 'chrome://settings/wallet' }, () => {
-      if (chrome.runtime.lastError) {
-        console.error('tabs.create failed: ' + chrome.runtime.lastError.message)
-      }
-    })
-  }
-
   const onChangeTab = (id: AccountSettingsNavTypes) => {
     setEditTab(id)
   }
@@ -195,18 +184,9 @@ function Accounts (props: Props) {
       }
       {!selectedAccount ? (
         <>
-          <PrimaryRow>
-            <SectionTitle>{getLocale('braveWalletAccountsPrimary')}</SectionTitle>
-            <ButtonsRow>
-              <BackupButton onClick={onClickBackup}>
-                <BackupIcon />
-                <BackupButtonText>{getLocale('braveWalletBackupButton')}</BackupButtonText>
-              </BackupButton>
-              <Button onClick={onClickSettings}>
-                <SettingsIcon />
-              </Button>
-            </ButtonsRow>
-          </PrimaryRow>
+          <SectionTitle>{getLocale('braveWalletAccountsPrimary')}</SectionTitle>
+          <DisclaimerText>{getLocale('braveWalletAccountsPrimaryDisclaimer')}</DisclaimerText>
+          <SubDivider />
           <PrimaryListContainer>
             {primaryAccounts.map((account) =>
               <AccountListItem
@@ -218,6 +198,13 @@ function Accounts (props: Props) {
               />
             )}
           </PrimaryListContainer>
+          <ButtonRow>
+            <AddButton
+              buttonType='secondary'
+              onSubmit={onClickAddAccount('create')}
+              text={getLocale('braveWalletCreateAccountButton')}
+            />
+          </ButtonRow>
           <SectionTitle>{getLocale('braveWalletAccountsSecondary')}</SectionTitle>
           <DisclaimerText>{getLocale('braveWalletAccountsSecondaryDisclaimer')}</DisclaimerText>
           <SubDivider />
@@ -258,11 +245,16 @@ function Accounts (props: Props) {
               )}
             </SecondaryListContainer>
           )}
-          <AddButton
-            buttonType='secondary'
-            onSubmit={onClickAddAccount}
-            text={getLocale('braveWalletAddAccount')}
-          />
+          <ButtonRow>
+            <StyledButton onClick={onClickAddAccount('import')}>
+              <WalletIcon />
+              <ButtonText>{getLocale('braveWalletAddAccountImport')}</ButtonText>
+            </StyledButton>
+            <StyledButton onClick={onClickAddAccount('hardware')}>
+              <HardwareIcon />
+              <ButtonText>{getLocale('braveWalletAddAccountImportHardware')}</ButtonText>
+            </StyledButton>
+          </ButtonRow>
         </>
       ) : (
         <>
@@ -285,10 +277,10 @@ function Accounts (props: Props) {
           <SubDivider />
           {selectedAccount.tokens.filter((token) => !token.asset.isErc721).map((item) =>
             <PortfolioAssetItem
+              spotPrices={transactionSpotPrices}
               defaultCurrencies={defaultCurrencies}
               key={item.asset.contractAddress}
-              assetBalance={formatBalance(item.assetBalance, item.asset.decimals)}
-              fiatBalance={item.fiatBalance}
+              assetBalance={item.assetBalance}
               token={item.asset}
             />
           )}
@@ -299,10 +291,10 @@ function Accounts (props: Props) {
               <SubDivider />
               {erc271Tokens?.map((item) =>
                 <PortfolioAssetItem
+                  spotPrices={transactionSpotPrices}
                   defaultCurrencies={defaultCurrencies}
                   key={item.asset.contractAddress}
-                  assetBalance={formatBalance(item.assetBalance, item.asset.decimals)}
-                  fiatBalance={item.fiatBalance}
+                  assetBalance={item.assetBalance}
                   token={item.asset}
                 />
               )}

@@ -67,7 +67,6 @@ import {
 } from '../common/async/lib'
 import { isHardwareAccount } from '../utils/address-utils'
 import { useAssets, useBalance, useSwap, useSend, usePreset } from '../common/hooks'
-import { formatBalance } from '../utils/format-balances'
 
 type Props = {
   panel: PanelState
@@ -137,11 +136,14 @@ function Container (props: Props) {
     assetOptions,
     userVisibleTokenOptions,
     sendAssetOptions,
-    buyAssetOptions
+    buyAssetOptions,
+    panelUserAssetList
   } = useAssets(
+    accounts,
     selectedAccount,
     props.wallet.fullTokenList,
     props.wallet.userVisibleTokensInfo,
+    transactionSpotPrices,
     getBuyAssets
   )
 
@@ -212,10 +214,10 @@ function Container (props: Props) {
     setSelectedAccounts([selectedAccount])
   }, [selectedAccount])
 
-  const getSelectedAccountBalance = useBalance(selectedAccount)
-  const { assetBalance: sendAssetBalance } = getSelectedAccountBalance(selectedSendAsset)
-  const { assetBalance: fromAssetBalance } = getSelectedAccountBalance(fromAsset)
-  const { assetBalance: toAssetBalance } = getSelectedAccountBalance(toAsset)
+  const getSelectedAccountBalance = useBalance(selectedNetwork)
+  const sendAssetBalance = getSelectedAccountBalance(selectedAccount, selectedSendAsset?.asset)
+  const fromAssetBalance = getSelectedAccountBalance(selectedAccount, fromAsset?.asset)
+  const toAssetBalance = getSelectedAccountBalance(selectedAccount, toAsset?.asset)
 
   const onSelectPresetAmountFactory = usePreset(selectedAccount, fromAsset, selectedSendAsset, onSetFromAmount, onSetSendAmount)
 
@@ -430,7 +432,7 @@ function Container (props: Props) {
     props.walletActions.rejectAllTransactions()
   }
 
-  const onQueueNextTransction = () => {
+  const onQueueNextTransaction = () => {
     props.walletActions.queueNextTransaction()
   }
   const retryHardwareOperation = () => {
@@ -545,22 +547,6 @@ function Container (props: Props) {
     }
   }, [connectedAccounts, selectedAccount, activeOrigin])
 
-  const userAssetList = React.useMemo(() => {
-    // selectedAccount.tokens can be undefined
-    if (selectedAccount.tokens) {
-      const formatedList = selectedAccount?.tokens?.map((asset) => ({
-        asset: asset.asset,
-        assetBalance: formatBalance(asset.assetBalance, asset.asset.decimals),
-        fiatBalance: asset.fiatBalance
-      })).sort(function (a, b) { return Number(b.fiatBalance) - Number(a.fiatBalance) }) // Sorting by Fiat Value
-
-      // Do not show an asset unless the selectedAccount has a balance
-      return formatedList.filter((token) => parseFloat(token.assetBalance) !== 0)
-    }
-    return []
-    // Using accounts as a dependency here to trigger balance changes
-  }, [selectedAccount, accounts])
-
   if (!hasInitialized || !accounts) {
     return null
   }
@@ -618,7 +604,7 @@ function Container (props: Props) {
             onConfirm={onConfirmTransaction}
             onReject={onRejectTransaction}
             onRejectAllTransactions={onRejectAllTransactions}
-            onQueueNextTransction={onQueueNextTransction}
+            onQueueNextTransaction={onQueueNextTransaction}
             transactionQueueNumber={pendingTransactions.findIndex(tx => tx.id === selectedPendingTransaction.id) + 1}
             transactionsQueueLength={pendingTransactions.length}
             accounts={accounts}
@@ -988,6 +974,7 @@ function Container (props: Props) {
     <PanelWrapper isLonger={false}>
       <ConnectedPanel
         defaultCurrencies={defaultCurrencies}
+        spotPrices={transactionSpotPrices}
         selectedAccount={selectedAccount}
         selectedNetwork={GetNetworkInfo(selectedNetwork.chainId, networkList)}
         isConnected={isConnectedToSite}
@@ -995,7 +982,7 @@ function Container (props: Props) {
         onLockWallet={onLockWallet}
         onOpenSettings={onOpenSettings}
         activeOrigin={activeOrigin}
-        userAssetList={userAssetList}
+        userAssetList={panelUserAssetList}
       />
     </PanelWrapper>
   )

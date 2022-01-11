@@ -230,7 +230,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [hasPasswordError, setHasPasswordError] = React.useState<boolean>(false)
   const [selectedTimeline, setSelectedTimeline] = React.useState<BraveWallet.AssetPriceTimeframe>(BraveWallet.AssetPriceTimeframe.OneDay)
   const [selectedAssetPriceHistory, setSelectedAssetPriceHistory] = React.useState<PriceDataObjectType[]>(PriceHistoryMockData.slice(15, 20))
-  const [selectedAsset, setSelectedAsset] = React.useState<BraveWallet.ERCToken>()
+  const [selectedAsset, setSelectedAsset] = React.useState<BraveWallet.BlockchainToken>()
   const [selectedNetwork, setSelectedNetwork] = React.useState<BraveWallet.EthereumChain>(mockNetworks[0])
   const [selectedAccount, setSelectedAccount] = React.useState<UserAccountType>(mockUserAccounts[0])
   const [showAddModal, setShowAddModal] = React.useState<boolean>(false)
@@ -251,7 +251,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [selectedWidgetTab, setSelectedWidgetTab] = React.useState<BuySendSwapTypes>('buy')
   const [customTolerance, setCustomTolerance] = React.useState('')
   const [showVisibleAssetsModal, setShowVisibleAssetsModal] = React.useState<boolean>(false)
-  const [foundTokenInfo, setFoundTokenInfo] = React.useState<BraveWallet.ERCToken | undefined>()
+  const [foundTokenInfo, setFoundTokenInfo] = React.useState<BraveWallet.BlockchainToken | undefined>()
 
   const onToggleRestore = () => {
     setIsRestoring(!isRestoring)
@@ -350,14 +350,6 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     return account.assets.find((a) => a.symbol === selectedAsset?.symbol)
   }
 
-  // This calculates the fiat value of a single accounts asset balance
-  const singleAccountFiatBalance = (account: RPCResponseType) => {
-    const asset = assetInfo(account)
-    const data = CurrentPriceMockData.find((coin) => coin.symbol === asset?.symbol)
-    const value = data ? asset ? Number(asset.balance) * Number(data.usd) : 0 : 0
-    return formatWithCommasAndDecimals(value.toString())
-  }
-
   // This returns the balance of a single accounts asset
   const singleAccountBalance = (account: RPCResponseType) => {
     const balance = assetInfo(account)?.balance
@@ -382,7 +374,6 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
         name: name,
         address: wallet.address,
         balance: singleAccountBalance(wallet),
-        fiatBalance: singleAccountFiatBalance(wallet),
         asset: selectedAsset ? selectedAsset.symbol : '',
         accountType: 'Primary',
         tokens: []
@@ -392,7 +383,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }, [selectedAsset, mockRPCResponse])
 
   // This will scrape all of the user's accounts and combine the balances for a single asset
-  const scrapedFullAssetBalance = (asset: BraveWallet.ERCToken) => {
+  const scrapedFullAssetBalance = (asset: BraveWallet.BlockchainToken) => {
     const response = mockRPCResponse
     const amounts = response.map((account) => {
       const balance = account.assets.find((item) => item.id === asset.contractAddress)?.balance
@@ -405,7 +396,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   }
 
   // This will scrape all of the user's accounts and combine the fiat value for a single asset
-  const scrapedFullAssetFiatBalance = (asset: BraveWallet.ERCToken) => {
+  const scrapedFullAssetFiatBalance = (asset: BraveWallet.BlockchainToken) => {
     const fullBallance = scrapedFullAssetBalance(asset)
     const price = Number(CurrentPriceMockData.find((coin) => coin.symbol === asset?.symbol)?.usd)
     const value = price ? price * fullBallance : 0
@@ -418,8 +409,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     return newList.map((asset) => {
       return {
         asset: asset,
-        assetBalance: scrapedFullAssetBalance(asset).toString(),
-        fiatBalance: scrapedFullAssetFiatBalance(asset).toString()
+        assetBalance: scrapedFullAssetBalance(asset).toString()
       }
     })
   }, [mockUserWalletPreferences.viewableAssets])
@@ -462,7 +452,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     setSelectedTimeline(path)
   }
 
-  const onSelectAsset = (asset: BraveWallet.ERCToken) => {
+  const onSelectAsset = (asset: BraveWallet.BlockchainToken) => {
     setSelectedAsset(asset)
   }
 
