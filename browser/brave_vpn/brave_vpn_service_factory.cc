@@ -18,7 +18,11 @@
 // TODO(bsclifton) or TODO(shong):
 // We should be able to consolidate this integration into one implementation
 // which we can share between Android and Desktop.
-// See https://github.com/brave/brave-browser/issues/20374
+//
+// As seen below, Desktop returns BraveVpnServiceDesktop and Android
+// returns BraveVpnService.
+//
+// See https://github.com/brave/brave-browser/issues/20374 for more info.
 #if defined(OS_WIN) || defined(OS_MAC)
 #include "brave/components/brave_vpn/brave_vpn_service_desktop.h"
 #include "brave/components/brave_vpn/brave_vpn_utils.h"
@@ -49,7 +53,7 @@ BraveVpnService* BraveVpnServiceFactory::GetForProfile(Profile* profile) {
 #endif
 
 // TODO(bsclifton) or TODO(shong):
-// BraveVpnServiceFactory is currently only used on Desktop,
+// BraveVpnServiceDesktop is currently only used on Desktop,
 // which is why there are only OS guards for Windows and macOS.
 // Consolidating the Android/Desktop behaviors is captured with:
 // https://github.com/brave/brave-browser/issues/20374
