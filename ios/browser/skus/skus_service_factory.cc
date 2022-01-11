@@ -5,9 +5,11 @@
 
 #include "brave/ios/browser/skus/skus_service_factory.h"
 
+#include "brave/components/skus/browser/skus_utils.h"
 #include "brave/components/skus/browser/skus_service.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/keyed_service/ios/browser_state_dependency_manager.h"
+#include "components/pref_registry/pref_registry_syncable.h"
 #include "ios/chrome/browser/browser_state/browser_state_otr_helper.h"
 #include "ios/chrome/browser/browser_state/chrome_browser_state.h"
 #include "ios/web/public/browser_state.h"
@@ -43,6 +45,11 @@ std::unique_ptr<KeyedService> SkusServiceFactory::BuildServiceInstanceFor(
   std::unique_ptr<SkusService> sku_service(new SkusService(
       browser_state->GetPrefs(), browser_state->GetSharedURLLoaderFactory()));
   return sku_service;
+}
+
+void SkusServiceFactory::RegisterBrowserStatePrefs(
+    user_prefs::PrefRegistrySyncable* registry) {
+  skus::RegisterProfilePrefs(registry);
 }
 
 bool SkusServiceFactory::ServiceIsNULLWhileTesting() const {

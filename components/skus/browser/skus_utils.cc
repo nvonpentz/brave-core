@@ -7,7 +7,9 @@
 
 #include "base/command_line.h"
 #include "base/notreached.h"
+#include "brave/components/skus/browser/pref_names.h"
 #include "brave/components/skus/browser/switches.h"
+#include "components/pref_registry/pref_registry_syncable.h"
 
 namespace skus {
 
@@ -50,6 +52,11 @@ std::string GetDomain(std::string prefix) {
   NOTREACHED();
 
   return "";
+}
+
+void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
+  registry->RegisterDictionaryPref(prefs::kSkusState);
+  registry->RegisterBooleanPref(prefs::kSkusVPNHasCredential, false);
 }
 
 }  // namespace skus

@@ -6,7 +6,7 @@
 #include "brave/browser/skus/skus_service_factory.h"
 
 #include "brave/browser/profiles/profile_util.h"
-#include "brave/components/skus/browser/pref_names.h"
+#include "brave/components/skus/browser/skus_utils.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/pref_registry/pref_registry_syncable.h"
@@ -61,8 +61,7 @@ KeyedService* SkusServiceFactory::BuildServiceInstanceFor(
 
 void SkusServiceFactory::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
-  registry->RegisterDictionaryPref(prefs::kSkusState);
-  registry->RegisterBooleanPref(prefs::kSkusVPNHasCredential, false);
+  skus::RegisterProfilePrefs(registry);
 }
 
 }  // namespace skus
