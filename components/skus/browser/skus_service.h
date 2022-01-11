@@ -10,12 +10,12 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
+#include "brave/components/skus/browser/rs/cxx/src/shim.h"
 #include "brave/components/skus/common/skus_sdk.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote_set.h"
-#include "third_party/rust/cxx/v1/crate/include/cxx.h"
 
 class PrefService;
 
@@ -27,6 +27,7 @@ namespace skus {
 
 struct CppSDK;
 class SkusContextImpl;
+//class CredentialSummaryCallbackState;
 
 // This is only intended to be used on account.brave.com and the dev / staging
 // counterparts. The accounts website will use this if present which allows a
@@ -88,6 +89,11 @@ class SkusService : public KeyedService, public mojom::SkusService {
       skus::mojom::SkusService::CredentialSummaryCallback callback) override;
 
  private:
+  void OnCredentialSummary(
+      const std::string& domain,
+      mojom::SkusService::CredentialSummaryCallback callback,
+      const std::string& summary_string);
+
   std::unique_ptr<skus::SkusContextImpl> context_;
   ::rust::Box<skus::CppSDK> sdk_;
   PrefService* prefs_;

@@ -12,7 +12,6 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "brave/components/skus/browser/pref_names.h"
 #include "brave/components/skus/browser/rs/cxx/src/lib.rs.h"
-#include "brave/components/skus/browser/rs/cxx/src/shim.h"
 #include "brave/components/skus/browser/skus_context_impl.h"
 #include "brave/components/skus/browser/skus_utils.h"
 #include "components/prefs/pref_service.h"
@@ -52,27 +51,8 @@ void OnPrepareCredentialsPresentation(
 void OnCredentialSummary(skus::CredentialSummaryCallbackState* callback_state,
                          skus::SkusResult result,
                          rust::cxxbridge1::Str summary) {
-  std::string summary_string = static_cast<std::string>(summary);
-  base::JSONReader::ValueWithError value_with_error =
-      base::JSONReader::ReadAndReturnValueWithError(
-          summary_string, base::JSONParserOptions::JSON_PARSE_RFC);
-  absl::optional<base::Value>& records_v = value_with_error.value;
-
-  if (records_v && callback_state->prefs) {
-    if (callback_state->domain == "vpn.brave.com" ||
-        callback_state->domain == "vpn.bravesoftware.com" ||
-        callback_state->domain == "vpn.brave.software") {
-      const base::Value* active = records_v->FindKey("active");
-      if (active) {
-        bool has_credential = active && active->is_bool() && active->GetBool();
-        callback_state->prefs->SetBoolean(skus::prefs::kSkusVPNHasCredential,
-                                          has_credential);
-      }
-    }
-  }
-
   if (callback_state->cb) {
-    std::move(callback_state->cb).Run(summary_string);
+    std::move(callback_state->cb).Run(static_cast<std::string>(summary));
   }
   delete callback_state;
 }
@@ -117,7 +97,6 @@ void SkusService::FetchOrderCredentials(
   std::unique_ptr<skus::FetchOrderCredentialsCallbackState> cbs(
       new skus::FetchOrderCredentialsCallbackState);
   cbs->cb = std::move(callback);
-  cbs->order_id = order_id;
 
   sdk_->fetch_order_credentials(OnFetchOrderCredentials, std::move(cbs),
                                 order_id);
@@ -130,8 +109,6 @@ void SkusService::PrepareCredentialsPresentation(
   std::unique_ptr<skus::PrepareCredentialsPresentationCallbackState> cbs(
       new skus::PrepareCredentialsPresentationCallbackState);
   cbs->cb = std::move(callback);
-  cbs->domain = domain;
-  cbs->prefs = prefs_;
 
   sdk_->prepare_credentials_presentation(OnPrepareCredentialsPresentation,
                                          std::move(cbs), domain, path);
@@ -142,11 +119,36 @@ void SkusService::CredentialSummary(
     mojom::SkusService::CredentialSummaryCallback callback) {
   std::unique_ptr<skus::CredentialSummaryCallbackState> cbs(
       new skus::CredentialSummaryCallbackState);
-  cbs->cb = std::move(callback);
-  cbs->domain = domain;
-  cbs->prefs = prefs_;
+  cbs->cb = base::BindOnce(&SkusService::OnCredentialSummary,
+                           base::Unretained(this), domain, std::move(callback));
 
-  sdk_->credential_summary(OnCredentialSummary, std::move(cbs), domain);
+  sdk_->credential_summary(::OnCredentialSummary, std::move(cbs), domain);
+}
+
+void SkusService::OnCredentialSummary(
+    const std::string& domain,
+    mojom::SkusService::CredentialSummaryCallback callback,
+    const std::string& summary_string) {
+  base::JSONReader::ValueWithError value_with_error =
+      base::JSONReader::ReadAndReturnValueWithError(
+          summary_string, base::JSONParserOptions::JSON_PARSE_RFC);
+  absl::optional<base::Value>& records_v = value_with_error.value;
+
+  // TODO(bsclifton): pull out to a separate method
+  if (records_v && prefs_) {
+    if (domain == "vpn.brave.com" || domain == "vpn.bravesoftware.com" ||
+        domain == "vpn.brave.software") {
+      const base::Value* active = records_v->FindKey("active");
+      if (active) {
+        bool has_credential = active && active->is_bool() && active->GetBool();
+        prefs_->SetBoolean(skus::prefs::kSkusVPNHasCredential, has_credential);
+      }
+    }
+  }
+
+  if (callback) {
+    std::move(callback).Run(summary_string);
+  }
 }
 
 }  // namespace skus
