@@ -7,6 +7,7 @@
 
 #include "base/feature_list.h"
 #include "brave/browser/skus/skus_service_factory.h"
+#include "brave/components/brave_vpn/brave_vpn_service.h"
 #include "brave/components/skus/common/features.h"
 #include "chrome/browser/profiles/incognito_helpers.h"
 #include "chrome/browser/profiles/profile.h"
@@ -26,8 +27,6 @@
 #if defined(OS_WIN) || defined(OS_MAC)
 #include "brave/components/brave_vpn/brave_vpn_service_desktop.h"
 #include "brave/components/brave_vpn/brave_vpn_utils.h"
-#elif defined(OS_ANDROID)
-#include "brave/components/brave_vpn/brave_vpn_service.h"
 #endif
 
 // static
@@ -77,12 +76,14 @@ KeyedService* BraveVpnServiceFactory::BuildServiceInstanceFor(
 // TODO(bsclifton) or TODO(shong):
 // see same notes above
 #if defined(OS_WIN) || defined(OS_MAC)
-  mojo::PendingRemote<skus::mojom::SkusService> pending =
-      skus::SkusServiceFactory::GetForContext(context);
-  DCHECK(pending);
+  auto callback = base::BindRepeating(
+      [](content::BrowserContext* context) {
+        return skus::SkusServiceFactory::GetForContext(context);
+      },
+      context);
   return new BraveVpnServiceDesktop(
       shared_url_loader_factory, user_prefs::UserPrefs::Get(context),
-      std::move(pending));
+      callback);
 #elif defined(OS_ANDROID)
   return new BraveVpnService(shared_url_loader_factory);
 #endif

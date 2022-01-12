@@ -93,14 +93,14 @@ std::string GetBraveVPNPaymentsEnv() {
 BraveVpnServiceDesktop::BraveVpnServiceDesktop(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
     PrefService* prefs,
-    mojo::PendingRemote<skus::mojom::SkusService> skus_service)
-    : BraveVpnService(url_loader_factory), prefs_(prefs) {
+    base::RepeatingCallback<mojo::PendingRemote<skus::mojom::SkusService>()>
+        skus_service_getter)
+    : BraveVpnService(url_loader_factory),
+      prefs_(prefs),
+      skus_service_getter_(skus_service_getter) {
   DCHECK(brave_vpn::IsBraveVPNEnabled());
 
-  skus_service_.Bind(std::move(skus_service));
-  skus_service_.set_disconnect_handler(base::BindOnce(
-      &BraveVpnServiceDesktop::OnSkusDisconnect, base::Unretained(this)));
-  DCHECK(skus_service_);
+  EnsureMojoConnected();
 
   auto* cmd = base::CommandLine::ForCurrentProcess();
   is_simulation_ = cmd->HasSwitch(brave_vpn::switches::kBraveVPNSimulation);
@@ -147,6 +147,7 @@ void BraveVpnServiceDesktop::ScheduleFetchRegionDataIfNeeded() {
 }
 
 void BraveVpnServiceDesktop::Shutdown() {
+  skus_service_.reset();
   BraveVpnService::Shutdown();
 
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -492,7 +493,7 @@ void BraveVpnServiceDesktop::LoadPurchasedState() {
     return;
   }
 
-  SkusEnsureConnected();
+  EnsureMojoConnected();
 
   // if a credential is ready, we can present it
   skus_service_->PrepareCredentialsPresentation(
@@ -878,20 +879,19 @@ void BraveVpnServiceDesktop::SetPurchasedState(PurchasedState state) {
   ScheduleFetchRegionDataIfNeeded();
 }
 
-void BraveVpnServiceDesktop::SkusEnsureConnected() {
-  // TODO(bsclifton): finish me
-  // if (!skus_service_) {
-  //   auto pending = skus::SkusServiceFactory::GetForContext();
-  //   skus_service_.Bind(std::move(pending));
-  // }
-  // DCHECK(skus_service_);
-  // skus_service_.set_disconnect_handler(base::BindOnce(
-  //     &BraveVpnServiceDesktop::OnSkusDisconnect, base::Unretained(this)));
+void BraveVpnServiceDesktop::EnsureMojoConnected() {
+  if (!skus_service_) {
+    auto pending = skus_service_getter_.Run();
+    skus_service_.Bind(std::move(pending));
+  }
+  DCHECK(skus_service_);
+  skus_service_.set_disconnect_handler(base::BindOnce(
+      &BraveVpnServiceDesktop::OnMojoConnectionError, base::Unretained(this)));
 }
 
-void BraveVpnServiceDesktop::OnSkusDisconnect() {
+void BraveVpnServiceDesktop::OnMojoConnectionError() {
   skus_service_.reset();
-  SkusEnsureConnected();
+  EnsureMojoConnected();
 }
 
 void BraveVpnServiceDesktop::OnSkusVPNCredentialUpdated() {
