@@ -334,7 +334,7 @@ void JsonRpcService::GetBlockNumber(GetBlockNumberCallback callback) {
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetBlockNumber,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_blockNumber(), true, std::move(internal_callback));
+  return Request(eth::eth_blockNumber(), true, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetBlockNumber(
@@ -365,7 +365,7 @@ void JsonRpcService::GetBalance(const std::string& address,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetBalance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_getBalance(address, "latest"), true,
+  return Request(eth::eth_getBalance(address, "latest"), true,
                  std::move(internal_callback));
 }
 
@@ -397,7 +397,7 @@ void JsonRpcService::GetTransactionCount(const std::string& address,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetTransactionCount,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_getTransactionCount(address, "latest"), true,
+  return Request(eth::eth_getTransactionCount(address, "latest"), true,
                  std::move(internal_callback));
 }
 
@@ -429,7 +429,7 @@ void JsonRpcService::GetTransactionReceipt(const std::string& tx_hash,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetTransactionReceipt,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_getTransactionReceipt(tx_hash), true,
+  return Request(eth::eth_getTransactionReceipt(tx_hash), true,
                  std::move(internal_callback));
 }
 
@@ -461,7 +461,7 @@ void JsonRpcService::SendRawTransaction(const std::string& signed_tx,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnSendRawTransaction,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_sendRawTransaction(signed_tx), true,
+  return Request(eth::eth_sendRawTransaction(signed_tx), true,
                  std::move(internal_callback));
 }
 
@@ -503,7 +503,7 @@ void JsonRpcService::GetERC20TokenBalance(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC20TokenBalance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  Request(eth_call("", contract, "", "", "", data, "latest"), true,
+  Request(eth::eth_call("", contract, "", "", "", data, "latest"), true,
           std::move(internal_callback));
 }
 
@@ -545,7 +545,7 @@ void JsonRpcService::GetERC20TokenAllowance(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC20TokenAllowance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  Request(eth_call("", contract_address, "", "", "", data, "latest"), true,
+  Request(eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
           std::move(internal_callback));
 }
 
@@ -601,8 +601,9 @@ void JsonRpcService::EnsRegistryGetResolver(const std::string& chain_id,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEnsRegistryGetResolver,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(eth_call("", contract_address, "", "", "", data, "latest"),
-                  true, network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
+      network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnEnsRegistryGetResolver(
@@ -671,8 +672,9 @@ void JsonRpcService::ContinueEnsResolverGetContentHash(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEnsResolverGetContentHash,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(eth_call("", resolver_address, "", "", "", data, "latest"),
-                  true, network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_call("", resolver_address, "", "", "", data, "latest"), true,
+      network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnEnsResolverGetContentHash(
@@ -737,7 +739,7 @@ void JsonRpcService::ContinueEnsGetEthAddr(const std::string& domain,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEnsGetEthAddr,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  Request(eth_call("", resolver_address, "", "", "", data, "latest"), true,
+  Request(eth::eth_call("", resolver_address, "", "", "", data, "latest"), true,
           std::move(internal_callback));
 }
 
@@ -799,8 +801,9 @@ void JsonRpcService::UnstoppableDomainsProxyReaderGetMany(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnUnstoppableDomainsProxyReaderGetMany,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(eth_call("", contract_address, "", "", "", data, "latest"),
-                  true, network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
+      network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnUnstoppableDomainsProxyReaderGetMany(
@@ -857,7 +860,7 @@ void JsonRpcService::UnstoppableDomainsGetEthAddr(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnUnstoppableDomainsGetEthAddr,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  Request(eth_call("", contract_address, "", "", "", data, "latest"), true,
+  Request(eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
           std::move(internal_callback));
 }
 
@@ -908,8 +911,8 @@ void JsonRpcService::GetEstimateGas(const std::string& from_address,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetEstimateGas,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_estimateGas(from_address, to_address, gas, gas_price,
-                                 value, data, "latest"),
+  return Request(eth::eth_estimateGas(from_address, to_address, gas, gas_price,
+                                      value, data, "latest"),
                  true, std::move(internal_callback));
 }
 
@@ -941,7 +944,7 @@ void JsonRpcService::GetGasPrice(GetGasPriceCallback callback) {
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetGasPrice,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_gasPrice(), true, std::move(internal_callback));
+  return Request(eth::eth_gasPrice(), true, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetGasPrice(
@@ -972,7 +975,7 @@ void JsonRpcService::GetIsEip1559(GetIsEip1559Callback callback) {
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetIsEip1559,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  return Request(eth_getBlockByNumber("latest", false), true,
+  return Request(eth::eth_getBlockByNumber("latest", false), true,
                  std::move(internal_callback));
 }
 
@@ -1036,7 +1039,7 @@ void JsonRpcService::GetERC721OwnerOf(const std::string& contract,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC721OwnerOf,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  Request(eth_call("", contract, "", "", "", data, "latest"), true,
+  Request(eth::eth_call("", contract, "", "", "", data, "latest"), true,
           std::move(internal_callback));
 }
 
@@ -1121,7 +1124,7 @@ void JsonRpcService::GetSupportsInterface(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetSupportsInterface,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  Request(eth_call("", contract_address, "", "", "", data, "latest"), true,
+  Request(eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
           std::move(internal_callback));
 }
 
