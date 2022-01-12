@@ -531,3 +531,25 @@ export interface CreateAccountOptionsType {
   network: CreateAccountType
   icon: string
 }
+
+// This is mostly speculative
+// will likely change once we have an api for getting
+// nft metadata
+export interface NFTMetadataReturnType {
+  chain: string
+  chainName: string
+  tokenType: string
+  tokenID: string
+  imageURL: string
+  floorFiatPrice: string
+  floorCryptoPrice: string
+  contractInformation: {
+    address: string
+    name: string
+    description: string
+    website: string
+    twitter: string
+    facebook: string
+    logo: string
+  }
+}
