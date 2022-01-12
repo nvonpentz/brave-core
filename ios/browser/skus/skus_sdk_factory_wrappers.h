@@ -12,7 +12,7 @@
 @protocol SkusSkusService;
 
 OBJC_EXPORT
-NS_SWIFT_NAME(Skus.SkusService)
+NS_SWIFT_NAME(Skus.SkusServiceFactory)
 @interface SkusSkusServiceFactory
     : KeyedServiceFactoryWrapper < id <SkusSkusService>
 > @end
