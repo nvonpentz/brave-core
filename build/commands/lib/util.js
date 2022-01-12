@@ -578,13 +578,16 @@ const util = {
     ]
 
     if (config.use_goma) {
+      options.env.GOMA_COMPILER_PROXY_BINARY = path.join(config.goma_dir, 'compiler_proxy')
       const gomaLoginInfo = util.runProcess('goma_auth', ['info'], options)
       if (gomaLoginInfo.status !== 0) {
         console.log('Login required for using Goma. This is only needed once')
         util.run('goma_auth', ['login'], options)
       }
       util.run('goma_ctl', ['ensure_start'], options)
-      ninjaOpts.push('-j', config.gomaJValue)
+      if (!ninjaOpts.find(val => typeof val === 'string' && val.startsWith('-j'))) {
+        ninjaOpts.push('-j', config.gomaJValue)
+      }
     }
 
     util.run('autoninja', ninjaOpts, options)

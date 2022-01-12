@@ -338,6 +338,7 @@ Config.prototype.buildArgs = function () {
     args.allow_runtime_configurable_key_storage = true
     if (this.use_goma && this.gomaServerHost) {
       args.use_system_xcode = false
+      args.goma_dir = this.goma_dir
     }
   }
 
@@ -631,6 +632,11 @@ Config.prototype.update = function (options) {
 
   if (options.use_goma) {
     this.use_goma = true
+    if (process.env.GOMA_DIR !== undefined) {
+      this.goma_dir = process.env.GOMA_DIR
+    } else {
+      this.goma_dir = path.join(this.depotToolsDir, '.cipd_bin')
+    }
   } else {
     this.use_goma = false
   }
@@ -891,7 +897,7 @@ Object.defineProperty(Config.prototype, 'defaultOptions', {
     }
 
     if (this.use_goma && this.gomaServerHost) {
-      env.CC_WRAPPER = path.join(this.depotToolsDir, '.cipd_bin', 'gomacc')
+      env.CC_WRAPPER = path.join(this.goma_dir, 'gomacc')
       env.GOMA_SERVER_HOST = this.gomaServerHost
       // env.NINJA_REMOTE_NUM_JOBS = this.gomaJValue
       // console.log('ninja remote jobs number is ' + env.NINJA_REMOTE_NUM_JOBS)
