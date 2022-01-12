@@ -71,6 +71,8 @@ SkusService::SkusService(
 
 SkusService::~SkusService() {}
 
+void SkusService::Shutdown() {}
+
 mojo::PendingRemote<mojom::SkusService> SkusService::MakeRemote() {
   mojo::PendingRemote<mojom::SkusService> remote;
   receivers_.Add(this, remote.InitWithNewPipeAndPassReceiver());

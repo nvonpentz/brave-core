@@ -5,8 +5,10 @@
 
 #include "brave/ios/browser/skus/skus_service_factory.h"
 
-#include "brave/components/skus/browser/skus_utils.h"
+#include "base/feature_list.h"
 #include "brave/components/skus/browser/skus_service.h"
+#include "brave/components/skus/browser/skus_utils.h"
+#include "brave/components/skus/common/features.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/keyed_service/ios/browser_state_dependency_manager.h"
 #include "components/pref_registry/pref_registry_syncable.h"
@@ -20,6 +22,11 @@ namespace skus {
 // static
 mojom::SkusService* SkusServiceFactory::GetForBrowserState(
     ChromeBrowserState* browser_state) {
+  // Return null if feature is disabled
+  if (!base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
+    return nullptr;
+  }
+
   return static_cast<skus::SkusService*>(
       GetInstance()->GetServiceForBrowserState(browser_state, true));
 }
@@ -38,6 +45,11 @@ SkusServiceFactory::~SkusServiceFactory() = default;
 
 std::unique_ptr<KeyedService> SkusServiceFactory::BuildServiceInstanceFor(
     web::BrowserState* context) const {
+  // Return null if feature is disabled
+  if (!base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
+    return nullptr;
+  }
+
   auto* browser_state = ChromeBrowserState::FromBrowserState(context);
   if (browser_state->IsOffTheRecord()) {
     return nullptr;

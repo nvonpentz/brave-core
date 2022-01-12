@@ -41,7 +41,7 @@ class BraveVpnServiceDesktop
   BraveVpnServiceDesktop(
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
       PrefService* prefs,
-      mojo::PendingRemote<skus::mojom::SkusService> pending_skus_service);
+      mojo::PendingRemote<skus::mojom::SkusService> skus_service);
   ~BraveVpnServiceDesktop() override;
 
   BraveVpnServiceDesktop(const BraveVpnServiceDesktop&) = delete;
@@ -126,7 +126,8 @@ class BraveVpnServiceDesktop
   std::unique_ptr<brave_vpn::Hostname> PickBestHostname(
       const std::vector<brave_vpn::Hostname>& hostnames);
 
-  void OnSkusRemoteDisconnect();
+  void SkusEnsureConnected();
+  void OnSkusDisconnect();
   void OnSkusVPNCredentialUpdated();
   void OnGetSubscriberCredential(const std::string& subscriber_credential,
                                  bool success);

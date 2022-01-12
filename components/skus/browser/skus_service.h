@@ -27,7 +27,6 @@ namespace skus {
 
 struct CppSDK;
 class SkusContextImpl;
-//class CredentialSummaryCallbackState;
 
 // This is only intended to be used on account.brave.com and the dev / staging
 // counterparts. The accounts website will use this if present which allows a
@@ -42,7 +41,7 @@ class SkusContextImpl;
 // There are a few different implementations using this service:
 // 1. RenderFrameObserver will (conditionally) inject a handler which uses
 //    Mojom to provide to call this in the browser process. See
-//    `brave_skus_js_handler.h` for more info.
+//    `components/skus/renderer/skus_js_handler.h` for more info.
 //
 // 2. The service can be called directly. For example, if we intercept the
 //    order / credential process for a person purchasing VPN, we may only
@@ -52,12 +51,9 @@ class SkusContextImpl;
 //    `PrepareCredentialsPresentation`. If the credentials expire, the VPN
 //    service can call `FetchOrderCredentials`
 //
-// This implementation is meant to work on Android, Desktop, and iOS.
-// iOS will need to have a JS injection where the native handler can call
-// this service.
+// 3. iOS will need to have a JS injection where the native handler can call
+//    this service. See https://github.com/brave/brave-ios/issues/4804
 //
-// For more information, please see:
-// https://github.com/brave-intl/br-rs/tree/skus
 class SkusService : public KeyedService, public mojom::SkusService {
  public:
   explicit SkusService(
@@ -70,6 +66,9 @@ class SkusService : public KeyedService, public mojom::SkusService {
 
   mojo::PendingRemote<mojom::SkusService> MakeRemote();
   void Bind(mojo::PendingReceiver<mojom::SkusService> receiver);
+
+  // KeyedService
+  void Shutdown() override;
 
   // mojom::SkusService
   void RefreshOrder(

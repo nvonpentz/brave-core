@@ -39,9 +39,6 @@ BraveVpnServiceFactory* BraveVpnServiceFactory::GetInstance() {
 #if defined(OS_WIN) || defined(OS_MAC)
 BraveVpnServiceDesktop* BraveVpnServiceFactory::GetForProfile(
     Profile* profile) {
-  if (!brave_vpn::IsBraveVPNEnabled())
-    return nullptr;
-
   return static_cast<BraveVpnServiceDesktop*>(
       GetInstance()->GetServiceForBrowserContext(profile, true));
 }
@@ -70,6 +67,9 @@ BraveVpnServiceFactory::~BraveVpnServiceFactory() = default;
 
 KeyedService* BraveVpnServiceFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
+  if (!brave_vpn::IsBraveVPNEnabled())
+    return nullptr;
+
   auto* default_storage_partition = context->GetDefaultStoragePartition();
   auto shared_url_loader_factory =
       default_storage_partition->GetURLLoaderFactoryForBrowserProcess();
@@ -77,9 +77,9 @@ KeyedService* BraveVpnServiceFactory::BuildServiceInstanceFor(
 // TODO(bsclifton) or TODO(shong):
 // see same notes above
 #if defined(OS_WIN) || defined(OS_MAC)
-  DCHECK(base::FeatureList::IsEnabled(skus::features::kSkusFeature));
   mojo::PendingRemote<skus::mojom::SkusService> pending =
       skus::SkusServiceFactory::GetForContext(context);
+  DCHECK(pending);
   return new BraveVpnServiceDesktop(
       shared_url_loader_factory, user_prefs::UserPrefs::Get(context),
       std::move(pending));

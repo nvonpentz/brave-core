@@ -28,7 +28,6 @@
 #include "brave/components/brave_today/common/features.h"
 #include "brave/components/greaselion/browser/buildflags/buildflags.h"
 #include "brave/components/ipfs/buildflags/buildflags.h"
-#include "brave/components/skus/common/features.h"
 #include "brave/components/tor/buildflags/buildflags.h"
 
 #if BUILDFLAG(ENABLE_GREASELION)
@@ -107,9 +106,7 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
 
   PermissionLifetimeManagerFactory::GetInstance();
 
-  if (base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
-    skus::SkusServiceFactory::GetInstance();
-  }
+  skus::SkusServiceFactory::GetInstance();
 }
 
 }  // namespace brave

@@ -5,8 +5,10 @@
 
 #include "brave/browser/skus/skus_service_factory.h"
 
+#include "base/feature_list.h"
 #include "brave/browser/profiles/profile_util.h"
 #include "brave/components/skus/browser/skus_utils.h"
+#include "brave/components/skus/common/features.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/pref_registry/pref_registry_syncable.h"
@@ -23,6 +25,10 @@ SkusServiceFactory* SkusServiceFactory::GetInstance() {
 // static
 mojo::PendingRemote<mojom::SkusService> SkusServiceFactory::GetForContext(
     content::BrowserContext* context) {
+  if (!context || !base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
+    return mojo::PendingRemote<mojom::SkusService>();
+  }
+
   return static_cast<skus::SkusService*>(
              GetInstance()->GetServiceForBrowserContext(context, true))
       ->MakeRemote();
@@ -48,15 +54,19 @@ SkusServiceFactory::~SkusServiceFactory() = default;
 
 KeyedService* SkusServiceFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
+  // Return null if feature is disabled
+  if (!base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
+    return nullptr;
+  }
+
   // Skus functionality not supported in private / Tor / guest windows
   if (!brave::IsRegularProfile(context)) {
     return nullptr;
   }
 
-  return new skus::SkusService(
-      Profile::FromBrowserContext(context)->GetPrefs(),
-      context->GetDefaultStoragePartition()
-          ->GetURLLoaderFactoryForBrowserProcess());
+  return new skus::SkusService(Profile::FromBrowserContext(context)->GetPrefs(),
+                               context->GetDefaultStoragePartition()
+                                   ->GetURLLoaderFactoryForBrowserProcess());
 }
 
 void SkusServiceFactory::RegisterProfilePrefs(
