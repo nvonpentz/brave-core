@@ -1,0 +1,36 @@
+diff --git a/third_party/crashpad/crashpad/util/mach/mig_fix.py b/third_party/crashpad/crashpad/util/mach/mig_fix.py
+index 037746fac3bb8eda68a04ba0af5707e7025e547f..da9997243ddca9a52b06506269907722ffd0bc16 100755
+--- a/third_party/crashpad/crashpad/util/mach/mig_fix.py
++++ b/third_party/crashpad/crashpad/util/mach/mig_fix.py
+@@ -23,6 +23,13 @@ import sys
+ from mig_gen import MigInterface
+ 
+ 
++def _fix_generated_comments_determinism(contents):
++    """Replaces generated code comments with determenistic ones."""
++    gen_comments_pattern = re.compile(
++        r'^ \* (stub generated|with a MiG generated).*$', re.MULTILINE)
++    return gen_comments_pattern.sub(r' * \1 <determinism>', contents)
++
++
+ def _fix_user_implementation(implementation, fixed_implementation, header,
+                              fixed_header):
+     """Rewrites a MIG-generated user implementation (.c) file.
+@@ -50,6 +57,8 @@ def _fix_user_implementation(implementation, fixed_implementation, header,
+             '#include "%s"' % os.path.basename(header),
+             '#include "%s"' % os.path.basename(fixed_header))
+ 
++    contents = _fix_generated_comments_determinism(contents)
++
+     if fixed_implementation is None:
+         file.seek(0)
+         file.truncate()
+@@ -117,6 +126,8 @@ extern
+             '#include "%s"' % os.path.basename(header),
+             '#include "%s"' % os.path.basename(fixed_header))
+ 
++    contents = _fix_generated_comments_determinism(contents)
++
+     if fixed_implementation is None:
+         file.seek(0)
+         file.truncate()
