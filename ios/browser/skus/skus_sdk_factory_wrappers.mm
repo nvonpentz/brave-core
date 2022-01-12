@@ -16,11 +16,11 @@
 
 @implementation SkusSkusServiceFactory
 + (nullable id)serviceForBrowserState:(ChromeBrowserState*)browserState {
-  auto* service =
-      skus::SkusServiceFactory::GetForBrowserState(browserState);
+  auto service = skus::SkusServiceFactory::GetForBrowserState(browserState);
   if (!service) {
     return nil;
   }
-  return [[SkusSkusServiceImpl alloc] initWithSkusService:service];
+  return
+      [[SkusSkusServiceMojoImpl alloc] initWithSkusService:std::move(service)];
 }
 @end

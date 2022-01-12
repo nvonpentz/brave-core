@@ -20,15 +20,15 @@
 namespace skus {
 
 // static
-mojom::SkusService* SkusServiceFactory::GetForBrowserState(
+mojo::PendingRemote<mojom::SkusService> SkusServiceFactory::GetForBrowserState(
     ChromeBrowserState* browser_state) {
   // Return null if feature is disabled
   if (!base::FeatureList::IsEnabled(skus::features::kSkusFeature)) {
-    return nullptr;
+    return mojo::PendingRemote<mojom::SkusService>();
   }
-
   return static_cast<skus::SkusService*>(
-      GetInstance()->GetServiceForBrowserState(browser_state, true));
+             GetInstance()->GetServiceForBrowserState(browser_state, true))
+      ->MakeRemote();
 }
 
 // static
