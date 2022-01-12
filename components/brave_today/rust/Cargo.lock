@@ -12,6 +12,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "atty"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
+dependencies = [
+ "hermit-abi",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -23,7 +34,12 @@ version = "1.0.0"
 dependencies = [
  "cxx",
  "cxx-build",
+ "env_logger",
  "feed-rs",
+ "lazy_static",
+ "log",
+ "regex",
+ "voca_rs",
 ]
 
 [[package]]
@@ -64,11 +80,7 @@ dependencies = [
 [[package]]
 name = "cxx"
 version = "1.0.56"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8497fb19bda9be0d113b940f88acd2e9faab278a5397861f6c7e31583289f29d"
 dependencies = [
- "cc",
- "cxxbridge-flags",
  "cxxbridge-macro",
  "link-cplusplus",
 ]
@@ -89,12 +101,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cxxbridge-flags"
-version = "1.0.56"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "592c3f94d14bb92cc8867159c5a072ae61ac288ff1f08051c4b26ec664a233e3"
-
-[[package]]
 name = "cxxbridge-macro"
 version = "1.0.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -112,6 +118,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a74ea89a0a1b98f6332de42c95baff457ada66d1cb4030f9ff151b2041a1c746"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
+dependencies = [
+ "atty",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
 ]
 
 [[package]]
@@ -153,6 +172,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hermit-abi"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
 name = "idna"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -188,6 +222,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8cae2cd7ba2f3f63938b9c724475dfb7b9861b545a90324476324ed21dbc8c8"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "log"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]
@@ -328,6 +371,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "533494a8f9b724d33625ab53c6c4800f7cc445895924a8ef649222dcb76e938b"
 
 [[package]]
+name = "stfu8"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bf70433e3300a3c395d06606a700cdf4205f4f14dbae2c6833127c6bb22db77"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -388,6 +441,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "unicode-segmentation"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8895849a949e7845e06bd6dc1aa51731a103c42707010a5b591c0038fb73385b"
+
+[[package]]
 name = "unicode-width"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -418,6 +477,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "voca_rs"
+version = "1.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4646f8794c283a89bfc3bc1a49f99562163fc8d01b2771bcf9c844e9a6f38d94"
+dependencies = [
+ "regex",
+ "stfu8",
+ "unicode-segmentation",
 ]
 
 [[package]]

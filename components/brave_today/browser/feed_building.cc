@@ -231,7 +231,7 @@ bool ShouldDisplayFeedItem(const mojom::FeedItemPtr& feed_item,
   const auto& data = MetadataFromFeedItem(feed_item);
   if (!publishers->contains(data->publisher_id)) {
     VLOG(1) << "Found article with unknown publisher_id. PublisherId: "
-            << data->publisher_id << " Url: " << data->url.spec();
+            << data->publisher_id;
     return false;
   }
   const auto& publisher = publishers->at(data->publisher_id);
@@ -249,7 +249,8 @@ bool ShouldDisplayFeedItem(const mojom::FeedItemPtr& feed_item,
     return false;
   }
   // None of the filters match, we can display
-  VLOG(1) << "None of the filters matched";
+  VLOG(2) << "None of the filters matched, will display item for publisher "
+          << data->publisher_id;
   return true;
 }
 

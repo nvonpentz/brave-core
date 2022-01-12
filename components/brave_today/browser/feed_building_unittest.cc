@@ -92,15 +92,18 @@ std::string GetFeedJson() {
 }
 
 void PopulatePublishers(Publishers* publisher_list) {
-  auto publisher1 =
-      mojom::Publisher::New("111", mojom::PublisherType::COMBINED_SOURCE, "First Publisher", "Top News", true,
-                           GURL("https://www.example.com"), mojom::UserEnabled::NOT_MODIFIED);
-  auto publisher2 =
-      mojom::Publisher::New("222", mojom::PublisherType::COMBINED_SOURCE, "Second Publisher", "Top News", true,
-                           GURL("https://www.example.com"), mojom::UserEnabled::NOT_MODIFIED);
-  auto publisher3 =
-      mojom::Publisher::New("333", mojom::PublisherType::COMBINED_SOURCE, "Third Publisher", "Top News", true,
-                           GURL("https://www.example.com"), mojom::UserEnabled::NOT_MODIFIED);
+  auto publisher1 = mojom::Publisher::New(
+      "111", mojom::PublisherType::COMBINED_SOURCE, "First Publisher",
+      "Top News", true, GURL("https://www.example.com"),
+      mojom::UserEnabled::NOT_MODIFIED);
+  auto publisher2 = mojom::Publisher::New(
+      "222", mojom::PublisherType::COMBINED_SOURCE, "Second Publisher",
+      "Top News", true, GURL("https://www.example.com"),
+      mojom::UserEnabled::NOT_MODIFIED);
+  auto publisher3 = mojom::Publisher::New(
+      "333", mojom::PublisherType::COMBINED_SOURCE, "Third Publisher",
+      "Top News", true, GURL("https://www.example.com"),
+      mojom::UserEnabled::NOT_MODIFIED);
   publisher_list->insert_or_assign(publisher1->publisher_id,
                                    std::move(publisher1));
   publisher_list->insert_or_assign(publisher2->publisher_id,
@@ -156,19 +159,24 @@ TEST(BraveNewsFeedBuilding, RemovesDefaultOffItems) {
   std::string publisher_id_to_hide = "333";
   publisher_list.at(publisher_id_to_hide)->is_enabled = false;
 
-  auto feed_item = mojom::FeedItem::NewArticle(mojom::Article::New(mojom::FeedItemMetadata::New(
-          "Technology",
-          base::Time::Now(),
+  auto feed_item = mojom::FeedItem::NewArticle(
+      mojom::Article::New(mojom::FeedItemMetadata::New(
+          "Technology", base::Time::Now(),
           "Expecting First Transfer Talk: How a busy Deadline Day unfolded",
-          "The transfer window is closed and Saul Niguez is on his way to Chelsea, while Antoine Griezmann is set to go back to Atletico Madrid on loan from Barcelona. Check out all the deals from a busy day.",
-          GURL("https://www.espn.com/soccer/blog-transfer-talk/story/4465789/live-transfer-deadline-day-will-real-madrid-land-psg-star-mbappe"),
+          "The transfer window is closed and Saul Niguez is on his way to "
+          "Chelsea, while Antoine Griezmann is set to go back to Atletico "
+          "Madrid on loan from Barcelona. Check out all the deals from a busy "
+          "day.",
+          GURL("https://www.espn.com/soccer/blog-transfer-talk/story/4465789/"
+               "live-transfer-deadline-day-will-real-madrid-land-psg-star-"
+               "mbappe"),
           "7bb5d8b3e2eee9d317f0568dcb094850fdf2862b2ed6d583c62b2245ea507ab8",
-          mojom::Image::NewPaddedImageUrl(GURL("https://pcdn.brave.com/brave-today/cache/85fb134433369025b46b861a00408e61223678f55620612d980533fa6ce0a815.jpg.pad")),
-          publisher_id_to_hide,
-          "ESPN - Football",
-          14.525910905005045,
-          "a minute ago"
-  )));
+          mojom::Image::NewPaddedImageUrl(
+              GURL("https://pcdn.brave.com/brave-today/cache/"
+                   "85fb134433369025b46b861a00408e61223678f55620612d980533fa6ce"
+                   "0a815.jpg.pad")),
+          publisher_id_to_hide, "ESPN - Football", 14.525910905005045,
+          "a minute ago")));
 
   ASSERT_FALSE(ShouldDisplayFeedItem(feed_item, &publisher_list));
 }
@@ -184,19 +192,24 @@ TEST(BraveNewsFeedBuilding, RemovesUserDisabledItems) {
   publisher_list.at(publisher_id_to_hide)->user_enabled_status =
       mojom::UserEnabled::DISABLED;
 
-  auto feed_item = mojom::FeedItem::NewArticle(mojom::Article::New(mojom::FeedItemMetadata::New(
-          "Technology",
-          base::Time::Now(),
+  auto feed_item = mojom::FeedItem::NewArticle(
+      mojom::Article::New(mojom::FeedItemMetadata::New(
+          "Technology", base::Time::Now(),
           "Expecting First Transfer Talk: How a busy Deadline Day unfolded",
-          "The transfer window is closed and Saul Niguez is on his way to Chelsea, while Antoine Griezmann is set to go back to Atletico Madrid on loan from Barcelona. Check out all the deals from a busy day.",
-          GURL("https://www.espn.com/soccer/blog-transfer-talk/story/4465789/live-transfer-deadline-day-will-real-madrid-land-psg-star-mbappe"),
+          "The transfer window is closed and Saul Niguez is on his way to "
+          "Chelsea, while Antoine Griezmann is set to go back to Atletico "
+          "Madrid on loan from Barcelona. Check out all the deals from a busy "
+          "day.",
+          GURL("https://www.espn.com/soccer/blog-transfer-talk/story/4465789/"
+               "live-transfer-deadline-day-will-real-madrid-land-psg-star-"
+               "mbappe"),
           "7bb5d8b3e2eee9d317f0568dcb094850fdf2862b2ed6d583c62b2245ea507ab8",
-          mojom::Image::NewPaddedImageUrl(GURL("https://pcdn.brave.com/brave-today/cache/85fb134433369025b46b861a00408e61223678f55620612d980533fa6ce0a815.jpg.pad")),
-          publisher_id_to_hide,
-          "ESPN - Football",
-          14.525910905005045,
-          "a minute ago"
-  )));
+          mojom::Image::NewPaddedImageUrl(
+              GURL("https://pcdn.brave.com/brave-today/cache/"
+                   "85fb134433369025b46b861a00408e61223678f55620612d980533fa6ce"
+                   "0a815.jpg.pad")),
+          publisher_id_to_hide, "ESPN - Football", 14.525910905005045,
+          "a minute ago")));
 
   ASSERT_FALSE(ShouldDisplayFeedItem(feed_item, &publisher_list));
 }
@@ -212,19 +225,24 @@ TEST(BraveNewsFeedBuilding, IncludesUserEnabledItems) {
   publisher_list.at(publisher_id_to_hide)->user_enabled_status =
       mojom::UserEnabled::ENABLED;
 
-  auto feed_item = mojom::FeedItem::NewArticle(mojom::Article::New(mojom::FeedItemMetadata::New(
-          "Technology",
-          base::Time::Now(),
+  auto feed_item = mojom::FeedItem::NewArticle(
+      mojom::Article::New(mojom::FeedItemMetadata::New(
+          "Technology", base::Time::Now(),
           "Expecting First Transfer Talk: How a busy Deadline Day unfolded",
-          "The transfer window is closed and Saul Niguez is on his way to Chelsea, while Antoine Griezmann is set to go back to Atletico Madrid on loan from Barcelona. Check out all the deals from a busy day.",
-          GURL("https://www.espn.com/soccer/blog-transfer-talk/story/4465789/live-transfer-deadline-day-will-real-madrid-land-psg-star-mbappe"),
+          "The transfer window is closed and Saul Niguez is on his way to "
+          "Chelsea, while Antoine Griezmann is set to go back to Atletico "
+          "Madrid on loan from Barcelona. Check out all the deals from a busy "
+          "day.",
+          GURL("https://www.espn.com/soccer/blog-transfer-talk/story/4465789/"
+               "live-transfer-deadline-day-will-real-madrid-land-psg-star-"
+               "mbappe"),
           "7bb5d8b3e2eee9d317f0568dcb094850fdf2862b2ed6d583c62b2245ea507ab8",
-          mojom::Image::NewPaddedImageUrl(GURL("https://pcdn.brave.com/brave-today/cache/85fb134433369025b46b861a00408e61223678f55620612d980533fa6ce0a815.jpg.pad")),
-          publisher_id_to_hide,
-          "ESPN - Football",
-          14.525910905005045,
-          "a minute ago"
-  )));
+          mojom::Image::NewPaddedImageUrl(
+              GURL("https://pcdn.brave.com/brave-today/cache/"
+                   "85fb134433369025b46b861a00408e61223678f55620612d980533fa6ce"
+                   "0a815.jpg.pad")),
+          publisher_id_to_hide, "ESPN - Football", 14.525910905005045,
+          "a minute ago")));
 
   ASSERT_TRUE(ShouldDisplayFeedItem(feed_item, &publisher_list));
 }
