@@ -17,6 +17,12 @@ namespace brave_wallet {
 
 bool ParseResult(const std::string& json, base::Value* result);
 void ParseErrorResult(const std::string& json,
+                      int* error,
+                      std::string* error_message);
+
+namespace eth {
+
+void ParseErrorResult(const std::string& json,
                       mojom::ProviderError* error,
                       std::string* error_message);
 bool ParseBoolResult(const std::string& json, bool* value);
@@ -40,6 +46,20 @@ bool ParseUnstoppableDomainsProxyReaderGetMany(
 
 bool ParseUnstoppableDomainsProxyReaderGet(const std::string& json,
                                            std::string* value);
+}  // namespace eth
+
+namespace solana {
+
+void ParseErrorResult(const std::string& json,
+                      mojom::SolanaProviderError* error,
+                      std::string* error_message);
+bool ParseGetBalance(const std::string& json, uint64_t* balance);
+bool ParseGetTokenAccountBalance(const std::string& json,
+                                 std::string* amount,
+                                 uint8_t* decimals,
+                                 std::string* ui_amount_string);
+
+}  // namespace solana
 
 }  // namespace brave_wallet
 

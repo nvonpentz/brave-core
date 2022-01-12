@@ -5,6 +5,7 @@
 
 #include "brave/components/brave_wallet/browser/json_rpc_response_parser.h"
 
+#include <limits>
 #include <utility>
 
 #include "base/json/json_reader.h"
@@ -34,16 +35,12 @@ bool ParseSingleStringResult(const std::string& json, std::string* result) {
   return true;
 }
 
-}  // namespace
-
-namespace brave_wallet {
-
 void ParseErrorResult(const std::string& json,
-                      mojom::ProviderError* error,
+                      int* error,
                       std::string* error_message) {
   DCHECK(error);
   DCHECK(error_message);
-  *error = mojom::ProviderError::kParsingError;
+  *error = static_cast<int>(brave_wallet::mojom::ProviderError::kParsingError);
   *error_message = l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR);
 
   base::JSONReader::ValueWithError value_with_error =
@@ -66,13 +63,17 @@ void ParseErrorResult(const std::string& json,
   if (!code_int)
     return;
 
-  *error = static_cast<mojom::ProviderError>(*code_int);
+  *error = *code_int;
   if (message_string) {
     *error_message = *message_string;
   } else {
     error_message->clear();
   }
 }
+
+}  // namespace
+
+namespace brave_wallet {
 
 bool ParseResult(const std::string& json, base::Value* result) {
   DCHECK(result);
@@ -97,6 +98,16 @@ bool ParseResult(const std::string& json, base::Value* result) {
   *result = result_v->Clone();
 
   return true;
+}
+
+namespace eth {
+
+void ParseErrorResult(const std::string& json,
+                      mojom::ProviderError* error,
+                      std::string* error_message) {
+  int error_code = 0;
+  ::ParseErrorResult(json, &error_code, error_message);
+  *error = static_cast<mojom::ProviderError>(error_code);
 }
 
 bool ParseBoolResult(const std::string& json, bool* value) {
@@ -291,5 +302,74 @@ bool ParseUnstoppableDomainsProxyReaderGet(const std::string& json,
   size_t offset = 2 /* len of "0x" */ + 64 /* len of offset to array */;
   return brave_wallet::DecodeString(offset, result, value);
 }
+
+}  // namespace eth
+
+namespace solana {
+
+void ParseErrorResult(const std::string& json,
+                      mojom::SolanaProviderError* error,
+                      std::string* error_message) {
+  int error_code = 0;
+  ::ParseErrorResult(json, &error_code, error_message);
+  *error = static_cast<mojom::SolanaProviderError>(error_code);
+}
+
+bool ParseGetBalance(const std::string& json, uint64_t* balance) {
+  DCHECK(balance);
+
+  base::Value result;
+  if (!ParseResult(json, &result) || !result.is_dict())
+    return false;
+
+  // uint64
+  const base::Value* value = result.FindKey("value");
+  if (!value)
+    return false;
+
+  if (value->is_int() || value->is_double()) {
+    std::string balance_string = base::NumberToString(value->GetDouble());
+    return base::StringToUint64(balance_string, balance);
+  }
+
+  return false;
+}
+
+bool ParseGetTokenAccountBalance(const std::string& json,
+                                 std::string* amount,
+                                 uint8_t* decimals,
+                                 std::string* ui_amount_string) {
+  DCHECK(amount && decimals && ui_amount_string);
+
+  base::Value result;
+  if (!ParseResult(json, &result) || !result.is_dict())
+    return false;
+
+  base::Value* value = result.FindDictKey("value");
+  if (!value)
+    return false;
+
+  auto* amount_ptr = value->FindStringKey("amount");
+  if (!amount_ptr)
+    return false;
+  *amount = *amount_ptr;
+
+  // uint8
+  auto decimals_opt = value->FindIntKey("decimals");
+  if (!decimals_opt ||
+      decimals_opt.value() > std::numeric_limits<uint8_t>::max() ||
+      decimals_opt.value() < 0)
+    return false;
+  *decimals = decimals_opt.value();
+
+  auto* ui_amount_string_ptr = value->FindStringKey("uiAmountString");
+  if (!ui_amount_string_ptr)
+    return false;
+  *ui_amount_string = *ui_amount_string_ptr;
+
+  return true;
+}
+
+}  // namespace solana
 
 }  // namespace brave_wallet

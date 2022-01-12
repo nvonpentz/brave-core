@@ -15,6 +15,77 @@
 
 namespace brave_wallet {
 
+TEST(JsonRpcResponseParserUnitTest, ParseErrorResult) {
+  mojom::ProviderError eth_error;
+  mojom::SolanaProviderError solana_error;
+  std::string eth_error_message;
+  std::string solana_error_message;
+  std::string json =
+      R"({
+         "jsonrpc": "2.0",
+         "id": 1,
+         "error": {
+           "code": -32601,
+           "message": "method does not exist"
+         }
+       })";
+
+  // kMethodNotFound = -32601
+  eth::ParseErrorResult(json, &eth_error, &eth_error_message);
+  EXPECT_EQ(eth_error, mojom::ProviderError::kMethodNotFound);
+  EXPECT_EQ(eth_error_message, "method does not exist");
+
+  solana::ParseErrorResult(json, &solana_error, &solana_error_message);
+  EXPECT_EQ(solana_error, mojom::SolanaProviderError::kMethodNotFound);
+  EXPECT_EQ(solana_error_message, "method does not exist");
+
+  // No message should still work
+  json =
+      R"({
+       "jsonrpc": "2.0",
+       "id": 1,
+       "error": {
+         "code": -32601
+       }
+     })";
+  eth::ParseErrorResult(json, &eth_error, &eth_error_message);
+  EXPECT_EQ(eth_error, mojom::ProviderError::kMethodNotFound);
+  EXPECT_TRUE(eth_error_message.empty());
+
+  solana::ParseErrorResult(json, &solana_error, &solana_error_message);
+  EXPECT_EQ(solana_error, mojom::SolanaProviderError::kMethodNotFound);
+  EXPECT_TRUE(solana_error_message.empty());
+
+  std::vector<std::string> errors{
+      R"({
+         "jsonrpc": "2.0",
+         "id": 1,
+         "error": {
+           "message": "method does not exist"
+         }
+       })",
+      R"({"jsonrpc": "2.0", "id": 1, "result": "0"})",
+      R"({"jsonrpc": "2.0", "id": 1, "error": "0"})",
+      R"({"jsonrpc": "2.0", "id": 1, "error": "0"})",
+      R"({"jsonrpc": "2.0", "id": 1, "error": {}})",
+      "some string",
+  };
+
+  for (const std::string& json : errors) {
+    eth::ParseErrorResult(json, &eth_error, &eth_error_message);
+    EXPECT_EQ(eth_error, mojom::ProviderError::kParsingError);
+    EXPECT_EQ(eth_error_message,
+              l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+
+    solana::ParseErrorResult(json, &solana_error, &solana_error_message);
+    EXPECT_EQ(solana_error, mojom::SolanaProviderError::kParsingError);
+    EXPECT_EQ(solana_error_message,
+              l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+  }
+}
+
+namespace eth {
+
 TEST(JsonRpcResponseParserUnitTest, ParseEthGetBalance) {
   std::string json(
       R"({
@@ -285,58 +356,72 @@ TEST(JsonRpcResponseParserUnitTest, ParseBoolResult) {
   EXPECT_FALSE(ParseBoolResult(json, &value));
 }
 
-TEST(EthResponseParserUnitTest, ParseErrorResult) {
-  mojom::ProviderError error;
-  std::string error_message;
+}  // namespace eth
+
+namespace solana {
+
+TEST(JsonRpcResponseParserUnitTest, ParseSolanaGetBalance) {
   std::string json =
-      R"({
-         "jsonrpc": "2.0",
-         "id": 1,
-         "error": {
-           "code": -32000,
-           "message": "transaction underpriced"
-         }
-       })";
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":106921266},\"value\":513234116063}}";
 
-  // kInvalidInput = -32000
-  ParseErrorResult(json, &error, &error_message);
-  EXPECT_EQ(error, mojom::ProviderError::kInvalidInput);
-  EXPECT_EQ(error_message, "transaction underpriced");
+  uint64_t balance = 0;
+  EXPECT_TRUE(ParseGetBalance(json, &balance));
+  EXPECT_EQ(balance, 513234116063ULL);
 
-  // No message should still work
   json =
-      R"({
-       "jsonrpc": "2.0",
-       "id": 1,
-       "error": {
-         "code": -32000
-       }
-     })";
-  ParseErrorResult(json, &error, &error_message);
-  EXPECT_EQ(error, mojom::ProviderError::kInvalidInput);
-  EXPECT_TRUE(error_message.empty());
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":0}}";
+  EXPECT_TRUE(ParseGetBalance(json, &balance));
+  EXPECT_EQ(balance, 0ULL);
 
-  std::vector<std::string> errors{
-      R"({
-         "jsonrpc": "2.0",
-         "id": 1,
-         "error": {
-           "message": "transaction underpriced"
-         }
-       })",
-      R"({"jsonrpc": "2.0", "id": 1, "result": "0"})",
-      R"({"jsonrpc": "2.0", "id": 1, "error": "0"})",
-      R"({"jsonrpc": "2.0", "id": 1, "error": "0"})",
-      R"({"jsonrpc": "2.0", "id": 1, "error": {}})",
-      "some string",
-  };
+  // value should be uint64
+  json =
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":\"0\"}}";
+  EXPECT_FALSE(ParseGetBalance(json, &balance));
 
-  for (const std::string& json : errors) {
-    ParseErrorResult(json, &error, &error_message);
-    EXPECT_EQ(error, mojom::ProviderError::kParsingError);
-    EXPECT_EQ(error_message,
-              l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
-  }
+  json =
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":513234116063.33}}";
+  EXPECT_FALSE(ParseGetBalance(json, &balance));
+
+  json =
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":63.33}}";
+  EXPECT_FALSE(ParseGetBalance(json, &balance));
 }
+
+TEST(JsonRpcResponseParserUnitTest, ParseGetTokenAccountBalance) {
+  std::string json =
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":{\"amount\":\"9864\", "
+      "\"decimals\":2, \"uiAmount\":98.64, \"uiAmountString\":\"98.64\"}}}";
+
+  std::string amount, ui_amount_string;
+  uint8_t decimals = 0;
+  EXPECT_TRUE(
+      ParseGetTokenAccountBalance(json, &amount, &decimals, &ui_amount_string));
+  EXPECT_EQ(amount, "9864");
+  EXPECT_EQ(decimals, 2u);
+  EXPECT_EQ(ui_amount_string, "98.64");
+
+  // decimals should be uint8
+  json =
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":{\"amount\":\"9864\", "
+      "\"decimals\":256, \"uiAmount\":98.64, \"uiAmountString\":\"98.64\"}}}";
+  EXPECT_FALSE(
+      ParseGetTokenAccountBalance(json, &amount, &decimals, &ui_amount_string));
+
+  json =
+      "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+      "{\"context\":{\"slot\":1069},\"value\":{\"amount\":\"9864\", "
+      "\"decimals\":-1, \"uiAmount\":98.64, \"uiAmountString\":\"98.64\"}}}";
+  EXPECT_FALSE(
+      ParseGetTokenAccountBalance(json, &amount, &decimals, &ui_amount_string));
+}
+
+}  // namespace solana
 
 }  // namespace brave_wallet
