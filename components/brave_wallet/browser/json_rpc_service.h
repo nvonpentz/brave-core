@@ -215,6 +215,13 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
   void SetAPIRequestHelperForTesting(
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
 
+  // Solana JSON RPCs
+  void GetSolanaBalance(const std::string& pubkey,
+                        GetSolanaBalanceCallback callback) override;
+  void GetSPLTokenAccountBalance(
+      const std::string& pubkey,
+      GetSPLTokenAccountBalanceCallback callback) override;
+
  private:
   void FireNetworkChanged();
   void FirePendingRequestCompleted(const std::string& chain_id,
@@ -347,6 +354,18 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
 
   void OnGetSupportsInterface(
       GetSupportsInterfaceCallback callback,
+      const int status,
+      const std::string& body,
+      const base::flat_map<std::string, std::string>& headers);
+
+  void OnGetSolanaBalance(
+      GetSolanaBalanceCallback callback,
+      const int status,
+      const std::string& body,
+      const base::flat_map<std::string, std::string>& headers);
+
+  void OnGetSPLTokenAccountBalance(
+      GetSPLTokenAccountBalanceCallback callback,
       const int status,
       const std::string& body,
       const base::flat_map<std::string, std::string>& headers);
