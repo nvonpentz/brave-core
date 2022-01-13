@@ -591,6 +591,7 @@ const util = {
       util.run('goma_ctl', ['ensure_start'], options)
       util.run('goma_ctl', ['update_hook'], options)
       if (config.use_goma && config.isCI) {
+        util.run('goma_ctl', ['showflags'], options)
         util.run('goma_ctl', ['stat'], options)
         options.env.NINJA_SUMMARIZE_BUILD = 1
       }
