@@ -51,8 +51,8 @@ class AdBlockSubscriptionDownloadClient : public download::Client {
   // Returns the AdBlockSubscriptionDownloadManager for the profile.
   AdBlockSubscriptionDownloadManager* GetAdBlockSubscriptionDownloadManager();
 
-  raw_ptr<AdBlockSubscriptionServiceManager> subscription_manager_{
-      nullptr};  // NOT OWNED
+  raw_ptr<AdBlockSubscriptionServiceManager> subscription_manager_ =
+      nullptr;  // NOT OWNED
 };
 
 }  // namespace brave_shields

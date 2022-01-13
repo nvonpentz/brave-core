@@ -187,8 +187,8 @@ class BraveActionsContainer : public views::View,
   raw_ptr<extensions::ExtensionSystem> extension_system_ = nullptr;
   raw_ptr<extensions::ExtensionActionAPI> extension_action_api_ = nullptr;
   raw_ptr<extensions::ExtensionRegistry> extension_registry_ = nullptr;
-  raw_ptr<extensions::ExtensionActionManager> extension_action_manager_{
-      nullptr};
+  raw_ptr<extensions::ExtensionActionManager> extension_action_manager_ =
+      nullptr;
   raw_ptr<extensions::BraveActionAPI> brave_action_api_ = nullptr;
 
   // Listen to extension load, unloaded notifications.

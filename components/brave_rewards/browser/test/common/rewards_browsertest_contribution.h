@@ -155,8 +155,8 @@ class RewardsBrowserTestContribution
       ledger::type::Result::LEDGER_ERROR;
 
   raw_ptr<Browser> browser_ = nullptr;  // NOT OWNED
-  raw_ptr<brave_rewards::RewardsServiceImpl> rewards_service_{
-      nullptr};  // NOT OWNED
+  raw_ptr<brave_rewards::RewardsServiceImpl> rewards_service_ =
+      nullptr;  // NOT OWNED
   std::unique_ptr<RewardsBrowserTestContextHelper> context_helper_;
 };
 

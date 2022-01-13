@@ -65,8 +65,8 @@ class RewardsBrowserTestPromotion
 
   ledger::type::PromotionPtr promotion_;
   raw_ptr<Browser> browser_ = nullptr;  // NOT OWNED
-  raw_ptr<brave_rewards::RewardsServiceImpl> rewards_service_{
-      nullptr};  // NOT OWNED
+  raw_ptr<brave_rewards::RewardsServiceImpl> rewards_service_ =
+      nullptr;  // NOT OWNED
 };
 
 }  // namespace rewards_browsertest

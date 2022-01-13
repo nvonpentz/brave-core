@@ -77,8 +77,8 @@ class AdBlockRegionalServiceManager {
   void StartRegionalServices();
   void UpdateFilterListPrefs(const std::string& uuid, bool enabled);
 
-  raw_ptr<brave_component_updater::BraveComponent::Delegate> delegate_{
-      nullptr};  // NOT OWNED
+  raw_ptr<brave_component_updater::BraveComponent::Delegate> delegate_ =
+      nullptr;  // NOT OWNED
   bool initialized_;
   base::Lock regional_services_lock_;
   std::map<std::string, std::unique_ptr<AdBlockRegionalService>>

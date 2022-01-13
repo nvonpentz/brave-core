@@ -97,7 +97,7 @@ class SearchEngineTracker : public KeyedService,
   GURL previous_search_url_;
   WeeklyEventStorage switch_record_;
 
-  raw_ptr<TemplateURLService> template_url_service_{nullptr};
+  raw_ptr<TemplateURLService> template_url_service_ = nullptr;
 };
 
 #endif  // BRAVE_BROWSER_SEARCH_ENGINES_SEARCH_ENGINE_TRACKER_H_

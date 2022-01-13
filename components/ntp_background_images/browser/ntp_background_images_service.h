@@ -150,8 +150,8 @@ class NTPBackgroundImagesService {
   base::RepeatingTimer si_update_check_timer_;
   base::RepeatingClosure si_update_check_callback_;
   bool test_data_used_ = false;
-  raw_ptr<component_updater::ComponentUpdateService> component_update_service_{
-      nullptr};
+  raw_ptr<component_updater::ComponentUpdateService> component_update_service_ =
+      nullptr;
   raw_ptr<PrefService> local_pref_ = nullptr;
   base::FilePath bi_installed_dir_;
   std::unique_ptr<NTPBackgroundImagesData> bi_images_data_;

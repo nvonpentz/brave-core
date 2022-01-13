@@ -290,8 +290,8 @@ class RewardsDOMHandler
   void InitPrefChangeRegistrar();
   void OnPrefChanged(const std::string& key);
 
-  raw_ptr<brave_rewards::RewardsService> rewards_service_{
-      nullptr};                                           // NOT OWNED
+  raw_ptr<brave_rewards::RewardsService> rewards_service_ =
+      nullptr;                                            // NOT OWNED
   raw_ptr<brave_ads::AdsService> ads_service_ = nullptr;  // NOT OWNED
 
   base::ScopedObservation<brave_rewards::RewardsService,

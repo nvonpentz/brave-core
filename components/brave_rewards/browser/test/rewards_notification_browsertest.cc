@@ -215,7 +215,7 @@ class RewardsNotificationBrowserTest
   }
 
   raw_ptr<brave_rewards::RewardsNotificationService>
-      rewards_notification_service_{nullptr};
+      rewards_notification_service_ = nullptr;
   raw_ptr<brave_rewards::RewardsServiceImpl> rewards_service_ = nullptr;
   std::unique_ptr<net::EmbeddedTestServer> https_server_;
   std::unique_ptr<RewardsBrowserTestContribution> contribution_;

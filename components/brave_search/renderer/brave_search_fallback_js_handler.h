@@ -56,8 +56,8 @@ class BraveSearchFallbackJSHandler {
       std::unique_ptr<v8::Global<v8::Promise::Resolver>> promise_resolver,
       const std::string& response);
 
-  raw_ptr<blink::ThreadSafeBrowserInterfaceBrokerProxy> broker_{
-      nullptr};  // not owned
+  raw_ptr<blink::ThreadSafeBrowserInterfaceBrokerProxy> broker_ =
+      nullptr;  // not owned
   mojo::Remote<brave_search::mojom::BraveSearchFallback> brave_search_fallback_;
   v8::Global<v8::Context> context_;
   raw_ptr<v8::Isolate> isolate_ = nullptr;

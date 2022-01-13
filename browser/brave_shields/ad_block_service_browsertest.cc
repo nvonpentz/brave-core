@@ -726,7 +726,7 @@ class TestAdBlockSubscriptionServiceManagerObserver
   void OnServiceUpdateEvent() override { run_loop_.Quit(); }
   base::RunLoop run_loop_;
   raw_ptr<brave_shields::AdBlockSubscriptionServiceManager>
-      sub_service_manager_{nullptr};
+      sub_service_manager_ = nullptr;
 };
 
 // This test fails intermittently on Windows; see

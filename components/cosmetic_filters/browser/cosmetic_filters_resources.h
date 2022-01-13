@@ -49,8 +49,8 @@ class CosmeticFiltersResources final
                             UrlCosmeticResourcesCallback callback) override;
 
  private:
-  raw_ptr<brave_shields::AdBlockService> ad_block_service_{
-      nullptr};  // Not owned
+  raw_ptr<brave_shields::AdBlockService> ad_block_service_ =
+      nullptr;  // Not owned
 };
 
 }  // namespace cosmetic_filters

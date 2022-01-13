@@ -85,10 +85,10 @@ class GreaselionServiceImpl : public GreaselionService,
   const base::FilePath install_directory_;
   raw_ptr<extensions::ExtensionSystem> extension_system_ =
       nullptr;  // NOT OWNED
-  raw_ptr<extensions::ExtensionService> extension_service_{
-      nullptr};  // NOT OWNED
-  raw_ptr<extensions::ExtensionRegistry> extension_registry_{
-      nullptr};  // NOT OWNED
+  raw_ptr<extensions::ExtensionService> extension_service_ =
+      nullptr;  // NOT OWNED
+  raw_ptr<extensions::ExtensionRegistry> extension_registry_ =
+      nullptr;  // NOT OWNED
   bool all_rules_installed_successfully_;
   bool update_in_progress_;
   bool update_pending_;

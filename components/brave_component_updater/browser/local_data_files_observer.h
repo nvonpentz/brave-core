@@ -30,8 +30,8 @@ class LocalDataFilesObserver {
   LocalDataFilesService* local_data_files_service();
 
  protected:
-  raw_ptr<LocalDataFilesService> local_data_files_service_{
-      nullptr};  // NOT OWNED
+  raw_ptr<LocalDataFilesService> local_data_files_service_ =
+      nullptr;  // NOT OWNED
   base::ScopedObservation<LocalDataFilesService, LocalDataFilesObserver>
       local_data_files_observer_{this};
 };

@@ -775,8 +775,8 @@ class RewardsServiceImpl : public RewardsService,
 
   raw_ptr<Profile> profile_ = nullptr;  // NOT OWNED
 #if BUILDFLAG(ENABLE_GREASELION)
-  raw_ptr<greaselion::GreaselionService> greaselion_service_{
-      nullptr};  // NOT OWNED
+  raw_ptr<greaselion::GreaselionService> greaselion_service_ =
+      nullptr;  // NOT OWNED
 #endif
   mojo::AssociatedReceiver<bat_ledger::mojom::BatLedgerClient>
       bat_ledger_client_receiver_;

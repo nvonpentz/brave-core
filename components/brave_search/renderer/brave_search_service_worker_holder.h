@@ -57,8 +57,8 @@ class BraveSearchServiceWorkerHolder : public content::WorkerThread::Observer {
   base::ThreadLocalPointer<
       std::vector<std::unique_ptr<BraveSearchFallbackJSHandler>>>
       js_handlers_tls_;
-  raw_ptr<blink::ThreadSafeBrowserInterfaceBrokerProxy> broker_{
-      nullptr};  // not owned
+  raw_ptr<blink::ThreadSafeBrowserInterfaceBrokerProxy> broker_ =
+      nullptr;  // not owned
 };
 
 }  // namespace brave_search

@@ -60,8 +60,8 @@ class DomainBlockControllerClient
   void OnCanEnable1PESForUrl(bool can_enable_1pes);
 
   const GURL request_url_;
-  raw_ptr<AdBlockCustomFiltersService> ad_block_custom_filters_service_{
-      nullptr};
+  raw_ptr<AdBlockCustomFiltersService> ad_block_custom_filters_service_ =
+      nullptr;
   ephemeral_storage::EphemeralStorageService* ephemeral_storage_service_;
   bool dont_warn_again_;
 

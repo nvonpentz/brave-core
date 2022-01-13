@@ -138,8 +138,8 @@ class AdBlockSubscriptionDownloadManager
   SEQUENCE_CHECKER(sequence_checker_);
 
   // Will be notified of success or failure of downloads.
-  raw_ptr<AdBlockSubscriptionServiceManager> subscription_manager_{
-      nullptr};  // NOT OWNED
+  raw_ptr<AdBlockSubscriptionServiceManager> subscription_manager_ =
+      nullptr;  // NOT OWNED
 
   base::RepeatingCallback<base::FilePath(const GURL&)>
       subscription_path_callback_;

@@ -68,8 +68,8 @@ class TorProfileServiceImpl : public TorProfileService,
   content::BrowserContext* context_ = nullptr;
   BraveTorClientUpdater* tor_client_updater_ = nullptr;
   raw_ptr<TorLauncherFactory> tor_launcher_factory_ = nullptr;  // Singleton
-  raw_ptr<net::ProxyConfigServiceTor> proxy_config_service_{
-      nullptr};  // NOT OWNED
+  raw_ptr<net::ProxyConfigServiceTor> proxy_config_service_ =
+      nullptr;  // NOT OWNED
   base::WeakPtrFactory<TorProfileServiceImpl> weak_ptr_factory_;
 };
 

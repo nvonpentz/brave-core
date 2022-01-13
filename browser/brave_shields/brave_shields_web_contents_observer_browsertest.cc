@@ -96,7 +96,7 @@ class BraveShieldsWebContentsObserverBrowserTest : public InProcessBrowserTest {
  private:
   raw_ptr<HostContentSettingsMap> content_settings_ = nullptr;
   raw_ptr<TestBraveShieldsWebContentsObserver>
-      brave_shields_web_contents_observer_{nullptr};
+      brave_shields_web_contents_observer_ = nullptr;
 };
 
 IN_PROC_BROWSER_TEST_F(BraveShieldsWebContentsObserverBrowserTest,

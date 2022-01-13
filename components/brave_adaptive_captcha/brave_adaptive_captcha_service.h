@@ -81,8 +81,8 @@ class BraveAdaptiveCaptchaService
   void OnCompleteReset(const bool success) override;
 
   raw_ptr<PrefService> prefs_ = nullptr;
-  raw_ptr<brave_rewards::RewardsService> rewards_service_{
-      nullptr};  // NOT OWNED
+  raw_ptr<brave_rewards::RewardsService> rewards_service_ =
+      nullptr;  // NOT OWNED
   std::unique_ptr<BraveAdaptiveCaptchaDelegate> delegate_;
   std::unique_ptr<GetAdaptiveCaptchaChallenge> captcha_challenge_;
 };
