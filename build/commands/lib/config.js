@@ -323,9 +323,8 @@ Config.prototype.buildArgs = function () {
       args.brave_android_key_password = this.braveAndroidKeyPassword
     }
   } else {
-    if (process.platform === 'darwin' && this.targetOS !== 'ios' && this.isOfficialBuild()) {
-      args.strip_absolute_paths_from_debug_symbols = true
-      args.use_lld = true
+    if (process.platform === 'darwin' && !this.isAsan()) {
+      args.enable_dsyms = false
     }
   }
 
