@@ -578,19 +578,31 @@ const util = {
     ]
 
     if (config.use_goma) {
-      options.env.GOMA_COMPILER_PROXY_BINARY = path.join(config.goma_dir, 'compiler_proxy')
+      compiler_proxy_binary = path.join(config.goma_dir, 'compiler_proxy')
+      if (process.platform == 'win32') {
+        compiler_proxy_binary += '.exe'
+      }
+      options.env.GOMA_COMPILER_PROXY_BINARY = compiler_proxy_binary
       const gomaLoginInfo = util.runProcess('goma_auth', ['info'], options)
       if (gomaLoginInfo.status !== 0) {
         console.log('Login required for using Goma. This is only needed once')
         util.run('goma_auth', ['login'], options)
       }
       util.run('goma_ctl', ['ensure_start'], options)
+      util.run('goma_ctl', ['update_hook'], options)
+      if (config.use_goma && config.isCI) {
+        util.run('goma_ctl', ['stat'], options)
+        options.env.NINJA_SUMMARIZE_BUILD = 1
+      }
       if (!ninjaOpts.find(val => typeof val === 'string' && val.startsWith('-j'))) {
         ninjaOpts.push('-j', config.gomaJValue)
       }
     }
 
     util.run('autoninja', ninjaOpts, options)
+    if (config.use_goma && config.isCI) {
+      util.run('goma_ctl', ['stat'], options)
+    }
   },
 
   generateXcodeWorkspace: (options = config.defaultOptions) => {

@@ -152,6 +152,7 @@ const Config = function () {
   this.gomaServerHost = getNPMConfig(['goma_server_host'])
   // os.cpus().length is number of threads not physical cores
   this.gomaJValue = Math.min(40, os.cpus().length * 2)
+  this.isCI = !!process.env.BUILD_ID
   this.braveStatsApiKey = getNPMConfig(['brave_stats_api_key']) || ''
   this.braveStatsUpdaterUrl = getNPMConfig(['brave_stats_updater_url']) || ''
   this.ignore_compile_failure = false
@@ -635,7 +636,12 @@ Config.prototype.update = function (options) {
     if (process.env.GOMA_DIR !== undefined) {
       this.goma_dir = process.env.GOMA_DIR
     } else {
-      this.goma_dir = path.join(this.depotToolsDir, '.cipd_bin')
+      const brave_goma_dir = path.join(this.srcDir, 'build', 'goma')
+      if (fs.existsSync(brave_goma_dir)) {
+        this.goma_dir = brave_goma_dir
+      } else {
+        this.goma_dir = path.join(this.depotToolsDir, '.cipd_bin')
+      }
     }
   } else {
     this.use_goma = false

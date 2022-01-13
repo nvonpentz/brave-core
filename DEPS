@@ -65,6 +65,13 @@ hooks = [
     'action': ['vpython3', 'script/hermetic_xcode.py'],
   },
   {
+    # Download Brave-specific goma client for MacOS to solve build issues.
+    'name': 'download_brave_goma',
+    'pattern': '.',
+    'condition': 'checkout_mac',
+    'action': ['vpython3', 'script/download_brave_goma.py'],
+  },
+  {
     'name': 'generate_licenses',
     'pattern': '.',
     'action': ['python', 'script/generate_licenses.py'],
