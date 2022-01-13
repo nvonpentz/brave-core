@@ -7,6 +7,7 @@
 
 #include "base/feature_list.h"
 #include "brave/browser/profiles/profile_util.h"
+#include "brave/components/skus/browser/skus_service_impl.h"
 #include "brave/components/skus/browser/skus_utils.h"
 #include "brave/components/skus/common/features.h"
 #include "chrome/browser/profiles/profile.h"
@@ -29,7 +30,7 @@ mojo::PendingRemote<mojom::SkusService> SkusServiceFactory::GetForContext(
     return mojo::PendingRemote<mojom::SkusService>();
   }
 
-  return static_cast<skus::SkusService*>(
+  return static_cast<skus::SkusServiceImpl*>(
              GetInstance()->GetServiceForBrowserContext(context, true))
       ->MakeRemote();
 }
@@ -38,7 +39,7 @@ mojo::PendingRemote<mojom::SkusService> SkusServiceFactory::GetForContext(
 void SkusServiceFactory::BindForContext(
     content::BrowserContext* context,
     mojo::PendingReceiver<skus::mojom::SkusService> receiver) {
-  auto* service = static_cast<skus::SkusService*>(
+  auto* service = static_cast<skus::SkusServiceImpl*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
   if (service) {
     service->Bind(std::move(receiver));
@@ -64,9 +65,10 @@ KeyedService* SkusServiceFactory::BuildServiceInstanceFor(
     return nullptr;
   }
 
-  return new skus::SkusService(Profile::FromBrowserContext(context)->GetPrefs(),
-                               context->GetDefaultStoragePartition()
-                                   ->GetURLLoaderFactoryForBrowserProcess());
+  return new skus::SkusServiceImpl(
+      Profile::FromBrowserContext(context)->GetPrefs(),
+      context->GetDefaultStoragePartition()
+          ->GetURLLoaderFactoryForBrowserProcess());
 }
 
 void SkusServiceFactory::RegisterProfilePrefs(

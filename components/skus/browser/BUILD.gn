@@ -9,8 +9,8 @@ static_library("browser") {
     "pref_names.h",
     "skus_context_impl.cc",
     "skus_context_impl.h",
-    "skus_service.cc",
-    "skus_service.h",
+    "skus_service_impl.cc",
+    "skus_service_impl.h",
     "skus_url_loader_impl.cc",
     "skus_url_loader_impl.h",
     "skus_utils.cc",
@@ -22,6 +22,7 @@ static_library("browser") {
 
   deps = [
     "//base",
+    "//brave/components/skus/common",
     "//brave/components/skus/common:mojom",
     "//components/keyed_service/core",
     "//components/pref_registry",

@@ -100,8 +100,6 @@ BraveVpnServiceDesktop::BraveVpnServiceDesktop(
       skus_service_getter_(skus_service_getter) {
   DCHECK(brave_vpn::IsBraveVPNEnabled());
 
-  EnsureMojoConnected();
-
   auto* cmd = base::CommandLine::ForCurrentProcess();
   is_simulation_ = cmd->HasSwitch(brave_vpn::switches::kBraveVPNSimulation);
   observed_.Observe(GetBraveVPNConnectionAPI());

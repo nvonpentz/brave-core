@@ -7,7 +7,7 @@
 #define BRAVE_BROWSER_SKUS_SKUS_SERVICE_FACTORY_H_
 
 #include "base/memory/singleton.h"
-#include "brave/components/skus/browser/skus_service.h"
+#include "brave/components/skus/common/skus_sdk.mojom.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 

@@ -3,8 +3,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_H_
-#define BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_H_
+#ifndef BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_IMPL_H_
+#define BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_IMPL_H_
 
 #include <memory>
 #include <string>
@@ -54,15 +54,15 @@ class SkusContextImpl;
 // 3. iOS will need to have a JS injection where the native handler can call
 //    this service. See https://github.com/brave/brave-ios/issues/4804
 //
-class SkusService : public KeyedService, public mojom::SkusService {
+class SkusServiceImpl : public KeyedService, public mojom::SkusService {
  public:
-  explicit SkusService(
+  explicit SkusServiceImpl(
       PrefService* prefs,
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
-  ~SkusService() override;
+  ~SkusServiceImpl() override;
 
-  SkusService(const SkusService&) = delete;
-  SkusService& operator=(SkusService&) = delete;
+  SkusServiceImpl(const SkusServiceImpl&) = delete;
+  SkusServiceImpl& operator=(SkusServiceImpl&) = delete;
 
   mojo::PendingRemote<mojom::SkusService> MakeRemote();
   void Bind(mojo::PendingReceiver<mojom::SkusService> receiver);
@@ -97,9 +97,9 @@ class SkusService : public KeyedService, public mojom::SkusService {
   ::rust::Box<skus::CppSDK> sdk_;
   PrefService* prefs_;
   mojo::ReceiverSet<mojom::SkusService> receivers_;
-  base::WeakPtrFactory<SkusService> weak_factory_{this};
+  base::WeakPtrFactory<SkusServiceImpl> weak_factory_{this};
 };
 
 }  // namespace skus
 
-#endif  // BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_H_
+#endif  // BRAVE_COMPONENTS_SKUS_BROWSER_SKUS_SERVICE_IMPL_H_
