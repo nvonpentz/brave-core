@@ -82,8 +82,7 @@ KeyedService* BraveVpnServiceFactory::BuildServiceInstanceFor(
       },
       context);
   return new BraveVpnServiceDesktop(
-      shared_url_loader_factory, user_prefs::UserPrefs::Get(context),
-      callback);
+      shared_url_loader_factory, user_prefs::UserPrefs::Get(context), callback);
 #elif defined(OS_ANDROID)
   return new BraveVpnService(shared_url_loader_factory);
 #endif

@@ -18,7 +18,10 @@ static_library("browser") {
     "switches.h",
   ]
 
-  public_deps = [ "rs/cxx", "rs/cxx:shim" ]
+  public_deps = [
+    "rs/cxx",
+    "rs/cxx:shim",
+  ]
 
   deps = [
     "//base",
