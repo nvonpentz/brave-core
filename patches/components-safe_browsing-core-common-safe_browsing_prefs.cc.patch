@@ -1,10 +1,10 @@
 diff --git a/components/safe_browsing/core/common/safe_browsing_prefs.cc b/components/safe_browsing/core/common/safe_browsing_prefs.cc
-index bacfcd99cfa8be7217a40849b9e084529af1f1fa..7e24f4e669061a14d72985de2ef19b2fd1fd2f02 100644
+index 05e74a727ce1f28ee9f2b7841c7d1b7d3d75b630..4f081b413d7a5602ad053b6b8e23858afc04e5ed 100644
 --- a/components/safe_browsing/core/common/safe_browsing_prefs.cc
 +++ b/components/safe_browsing/core/common/safe_browsing_prefs.cc
 @@ -148,6 +148,7 @@ bool IsSafeBrowsingEnabled(const PrefService& prefs) {
  }
- 
+
  bool IsEnhancedProtectionEnabled(const PrefService& prefs) {
 +  BRAVE_IS_ENHANCED_PROTECTION_ENABLED
    // SafeBrowsingEnabled is checked too due to devices being out

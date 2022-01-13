@@ -1,12 +1,12 @@
 diff --git a/chrome/browser/about_flags.cc b/chrome/browser/about_flags.cc
-index d1b66475ef7443bf98a82d54fa35c3fe2ca2aba2..5a775b94edb7806cdba65a5808675426e78d3780 100644
+index b47217f4df0d587d7f3e5631d6c6772451a4f237..03b6f4dc2c921aa5320fe30d71540a613720e4ef 100644
 --- a/chrome/browser/about_flags.cc
 +++ b/chrome/browser/about_flags.cc
-@@ -7671,6 +7671,7 @@ const FeatureEntry kFeatureEntries[] = {
+@@ -7725,6 +7725,7 @@ const FeatureEntry kFeatureEntries[] = {
      // "LoginCustomFlags" in tools/metrics/histograms/enums.xml. See "Flag
      // Histograms" in tools/metrics/histograms/README.md (run the
      // AboutFlagsHistogramTest unit test to verify this process).
 +    BRAVE_ABOUT_FLAGS_FEATURE_ENTRIES
  };
- 
+
  class FlagsStateSingleton : public flags_ui::FlagsState::Delegate {
