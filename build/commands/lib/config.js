@@ -322,6 +322,10 @@ Config.prototype.buildArgs = function () {
       args.brave_android_keystore_password = this.braveAndroidKeystorePassword
       args.brave_android_key_password = this.braveAndroidKeyPassword
     }
+  } else {
+    if (process.platform === 'darwin' && this.targetOS !== 'ios' && this.isOfficialBuild()) {
+      args.strip_absolute_paths_from_debug_symbols = true
+    }
   }
 
   if (process.platform === 'win32' && this.build_omaha) {
