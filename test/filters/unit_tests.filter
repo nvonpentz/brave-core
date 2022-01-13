@@ -170,6 +170,9 @@
 -BrowserListTest.TabContentsIteratorVerifyCount
 -BrowserNonClientFrameViewPopupTest.HitTestPopupTopChrome
 -BrowserNonClientFrameViewTabbedTest.HitTestTabstrip
+-BrowserReportGeneratorTest.GenerateBasicReport
+-BrowserReportGeneratorTest.GenerateBasicReportForProfileReporting
+-BrowserReportGeneratorTest.GenerateBasicReportWithUpdate
 -BrowserUnitTest.DisablePrintOnCrashedTab
 -BrowserUnitTest.DisableZoomOnCrashedTab
 -BrowserUnitTest.ReloadCrashedTab
@@ -297,6 +300,9 @@
 -ChromeWebContentsMenuHelperUnitTest.AllowContextMenuAccessThroughPreferences
 -ChromeWebContentsMenuHelperUnitTest.DisallowContextMenuAccessThroughPreferences
 -ChromeWebContentsViewDelegateViewsTest.ContextMenuNoFocusedFrame
+-Chromium/ChannelInfoTest.GetChannel/*
+-Chromium/ChannelInfoTest.GetChannelByName/*
+-ClearBrowsingDataHandlerUnitTest.UpdateSyncState_GoogleDse
 -ClearBrowsingDataHandlerUnitTest.UpdateSyncState_NonGoogleDseNotPrepopulated
 -ClearBrowsingDataHandlerUnitTest.UpdateSyncState_NonGoogleDsePrepopulated
 -ClickToCallUtilsTest.TelLink_OfferForLink
@@ -1399,16 +1405,7 @@
 -SessionStorageApiUnittest.SessionStorageClearedWhenExtensionIsReloaded
 -SettingsOverriddenParamsProvidersUnitTest.GetExtensionControllingNewTab
 -SettingsResetPromptModel/ResetStatesTest.PerformReset/*
--SettingsResetPromptModel/ResetStatesTest.PerformReset/*
--SettingsResetPromptModel/ResetStatesTest.PerformReset/*
--SettingsResetPromptModel/ResetStatesTest.PerformReset/*
 -SettingsResetPromptModel/ResetStatesTest.SettingsResetStates/*
--SettingsResetPromptModel/ResetStatesTest.SettingsResetStates/*
--SettingsResetPromptModel/ResetStatesTest.SettingsResetStates/*
--SettingsResetPromptModel/ResetStatesTest.SettingsResetStates/*
--SettingsResetPromptModel/ResetStatesTest.ShouldPromptForReset/*
--SettingsResetPromptModel/ResetStatesTest.ShouldPromptForReset/*
--SettingsResetPromptModel/ResetStatesTest.ShouldPromptForReset/*
 -SettingsResetPromptModel/ResetStatesTest.ShouldPromptForReset/*
 -SettingsResetPromptModelTest.DefaultSearch
 -SharedModuleServiceUnitTest.AddDependentSharedModules
@@ -1448,6 +1445,8 @@
 -SiteSettingsHandlerTest.GetAllSites
 -SiteSettingsHandlerTest.NotificationPermissionRevokeUkm
 -SiteSettingsHelperTest.ExceptionListShowsEmbargoed
+-StartupBrowserPolicyUnitTest.NewTabPageLocation
+-StartupTabProviderTest.GetCommandLineTabs
 -StartupTabProviderTest.GetStandardOnboardingTabsForState_Negative
 -StorageAccessGrantPermissionContextTest.ExplicitGrantAccept
 -StorageAccessGrantPermissionContextTest.ExplicitGrantDenial
