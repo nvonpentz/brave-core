@@ -583,6 +583,15 @@ const util = {
         compiler_proxy_binary += '.exe'
       }
       options.env.GOMA_COMPILER_PROXY_BINARY = compiler_proxy_binary
+      if (!!process.env.GOMA_LOCAL_OUTPUT_CACHE_DIR) {
+        options.env.GOMA_CACHE_DIR = process.env.GOMA_LOCAL_OUTPUT_CACHE_DIR
+      }
+      if (process.platform == 'darwin') {
+        options.env.GOMA_LOCAL_OUTPUT_CACHE_MAX_CACHE_AMOUNT_IN_MB = 1024 * 100
+        options.env.GOMA_LOCAL_OUTPUT_CACHE_THRESHOLD_CACHE_AMOUNT_IN_MB = 1024 * 90
+        options.env.GOMA_LOCAL_OUTPUT_CACHE_MAX_ITEMS = 200000
+        options.env.GOMA_LOCAL_OUTPUT_CACHE_THRESHOLD_ITEMS = 180000
+      }
       const gomaLoginInfo = util.runProcess('goma_auth', ['info'], options)
       if (gomaLoginInfo.status !== 0) {
         console.log('Login required for using Goma. This is only needed once')

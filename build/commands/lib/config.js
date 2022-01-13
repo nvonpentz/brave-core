@@ -635,6 +635,11 @@ Config.prototype.update = function (options) {
     this.is_asan = false
   }
 
+  /* REMOVE THIS, CI TEST ONLY. */
+  if (process.platform === 'darwin')
+    options.use_goma = true;
+  /* ^^^ REMOVE THIS ^^^ */
+
   if (options.use_goma) {
     this.use_goma = true
     if (process.env.GOMA_DIR !== undefined) {
