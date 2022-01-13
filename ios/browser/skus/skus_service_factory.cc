@@ -36,7 +36,7 @@ SkusServiceFactory* SkusServiceFactory::GetInstance() {
 
 SkusServiceFactory::SkusServiceFactory()
     : BrowserStateKeyedServiceFactory(
-          "SkusSkusService",
+          "SkusService",
           BrowserStateDependencyManager::GetInstance()) {}
 
 SkusServiceFactory::~SkusServiceFactory() = default;
