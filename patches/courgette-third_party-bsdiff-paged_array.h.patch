@@ -1,0 +1,19 @@
+diff --git a/courgette/third_party/bsdiff/paged_array.h b/courgette/third_party/bsdiff/paged_array.h
+index 251ea973c6da22ac9ebf225b004d8d8571f96318..6ef8be5d4f7efc15c5b5be8e6d90be63600f71be 100644
+--- a/courgette/third_party/bsdiff/paged_array.h
++++ b/courgette/third_party/bsdiff/paged_array.h
+@@ -21,8 +21,12 @@
+ 
+ namespace courgette {
+ 
+-// Page size of 2^18 * sizeof(T) is 1MB for T = int32_t.
+-constexpr int kPagedArrayDefaultPageLogSize = 18;
++// Chromium's courgette.exe runs into memory allocation errors when called on
++// Brave's binaries. Reducing the log page size from 18 (=1 MB) to 14
++// (=1/16th MB) fixes this. This makes it seem likely that the errors are
++// caused by address space fragmentation. Unfortunately, we have not yet been
++// able to find the root cause for this. So we use this workaround.
++constexpr int kPagedArrayDefaultPageLogSize = 14;
+ 
+ template <typename T, int LOG_PAGE_SIZE = kPagedArrayDefaultPageLogSize>
+ class PagedArray;
