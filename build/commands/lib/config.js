@@ -325,6 +325,7 @@ Config.prototype.buildArgs = function () {
   } else {
     if (process.platform === 'darwin' && this.targetOS !== 'ios' && this.isOfficialBuild()) {
       args.strip_absolute_paths_from_debug_symbols = true
+      args.use_lld = true
     }
   }
 
