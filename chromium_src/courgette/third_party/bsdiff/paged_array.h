@@ -13,7 +13,7 @@
 // able to find the root cause for this. So we use this workaround.
 #define kPagedArrayDefaultPageLogSize \
   kPagedArrayDefaultPageLogSize = 14; \
-  static constexpr size_t kPagedArrayDefaultPageLogSize_Unused
+  constexpr int kPagedArrayDefaultPageLogSize_Unused
 
 #include "src/courgette/third_party/bsdiff/paged_array.h"
 
