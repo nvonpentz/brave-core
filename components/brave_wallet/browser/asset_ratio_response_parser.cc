@@ -466,88 +466,81 @@ bool ParseCoinMarkets(const std::string& json,
     return false;
   }
 
-  const base::DictionaryValue* response_dict;
-  if (!records_v->GetAsDictionary(&response_dict)) {
+  if (!records_v->is_dict()) {
     return false;
   }
 
-  auto* payload = response_dict->FindPath("payload");
+  auto* payload = records_v->FindListKey("payload");
   if (!payload) {
     return false;
   }
 
-  const base::ListValue* payload_list;
-  if (!payload->GetAsList(&payload_list)) {
-    return false;
-  }
-
-  for (const auto& coin_market_list_it : payload_list->GetList()) {
-    const base::DictionaryValue* coin_market_dict;
-    if (!coin_market_list_it.GetAsDictionary(&coin_market_dict)) {
+  for (const auto& coin_market_list_it : payload->GetList()) {
+    if (!coin_market_list_it.is_dict()) {
       return false;
     }
     auto coin_market = mojom::CoinMarket::New();
-    auto* id = coin_market_dict->FindStringKey("id");
+    auto* id = coin_market_list_it.FindStringKey("id");
     if (!id) {
       return false;
     }
     coin_market->id = *id;
 
-    auto* symbol = coin_market_dict->FindStringKey("symbol");
+    auto* symbol = coin_market_list_it.FindStringKey("symbol");
     if (!symbol) {
       return false;
     }
     coin_market->symbol = *symbol;
 
-    auto* name = coin_market_dict->FindStringKey("name");
+    auto* name = coin_market_list_it.FindStringKey("name");
     if (!name) {
       return false;
     }
     coin_market->name = *name;
 
-    auto* image = coin_market_dict->FindStringKey("image");
+    auto* image = coin_market_list_it.FindStringKey("image");
     if (!image) {
       return false;
     }
     coin_market->image = *image;
 
     absl::optional<double> market_cap =
-        coin_market_dict->FindDoublePath("market_cap");
+        coin_market_list_it.FindDoubleKey("market_cap");
     if (!market_cap) {
       return false;
     }
     coin_market->market_cap = *market_cap;
 
     absl::optional<uint32_t> market_cap_rank =
-        coin_market_dict->FindIntPath("market_cap_rank");
+        coin_market_list_it.FindIntKey("market_cap_rank");
     if (!market_cap_rank) {
       return false;
     }
     coin_market->market_cap_rank = *market_cap_rank;
 
     absl::optional<double> current_price =
-        coin_market_dict->FindDoublePath("current_price");
+        coin_market_list_it.FindDoubleKey("current_price");
     if (!current_price) {
       return false;
     }
     coin_market->current_price = *current_price;
 
     absl::optional<double> price_change_24h =
-        coin_market_dict->FindDoublePath("price_change_24h");
+        coin_market_list_it.FindDoubleKey("price_change_24h");
     if (!price_change_24h) {
       return false;
     }
     coin_market->price_change_24h = *price_change_24h;
 
     absl::optional<double> price_change_percentage_24h =
-        coin_market_dict->FindDoublePath("price_change_percentage_24h");
+        coin_market_list_it.FindDoubleKey("price_change_percentage_24h");
     if (!price_change_percentage_24h) {
       return false;
     }
     coin_market->price_change_percentage_24h = *price_change_percentage_24h;
 
     absl::optional<double> total_volume =
-        coin_market_dict->FindDoublePath("total_volume");
+        coin_market_list_it.FindDoubleKey("total_volume");
     if (!total_volume) {
       return false;
     }
