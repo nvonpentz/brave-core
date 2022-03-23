@@ -124,6 +124,9 @@ GURL GetFirstValidChainURL(const std::vector<std::string>& chain_urls);
 
 absl::optional<std::string> GetPrefKeyForCoinType(mojom::CoinType coin);
 
+// Get the JSON included in a data URI with a mime type application/json
+bool ParseDataURIAndExtractJSON(const GURL url, std::string* json);
+
 }  // namespace brave_wallet
 
 #endif  // BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_BRAVE_WALLET_UTILS_H_

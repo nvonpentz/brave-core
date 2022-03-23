@@ -216,6 +216,11 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                              const std::string& chain_id,
                              GetERC721TokenBalanceCallback callback) override;
 
+  void GetERC721Metadata(const std::string& contract_address,
+                         const std::string& token_id,
+                         const std::string& chain_id,
+                         GetERC721MetadataCallback callback) override;
+
   // Resets things back to the original state of BraveWalletService.
   // To be used when the Wallet is reset / erased
   void Reset();
@@ -224,6 +229,7 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
       base::OnceCallback<void(bool is_supported,
                               mojom::ProviderError error,
                               const std::string& error_message)>;
+
   void GetSupportsInterface(const std::string& contract_address,
                             const std::string& interface_id,
                             GetSupportsInterfaceCallback callback);
@@ -416,11 +422,30 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
       const std::string& body,
       const base::flat_map<std::string, std::string>& headers);
 
+  void OnGetSupportsInterfaceERC721Metadata(const std::string& contract_address,
+                                            const std::string& signature,
+                                            const GURL& network_url,
+                                            GetERC721MetadataCallback callback,
+                                            bool is_supported,
+                                            mojom::ProviderError error,
+                                            const std::string& error_message);
+
   void ContinueGetERC721TokenBalance(const std::string& account_address,
                                      GetERC721TokenBalanceCallback callback,
                                      const std::string& owner_address,
                                      mojom::ProviderError error,
                                      const std::string& error_message);
+  void OnGetERC721TokenUri(
+      GetERC721MetadataCallback callback,
+      const int status,
+      const std::string& body,
+      const base::flat_map<std::string, std::string>& headers);
+
+  void OnGetERC721MetadataPayload(
+      GetERC721MetadataCallback callback,
+      const int status,
+      const std::string& body,
+      const base::flat_map<std::string, std::string>& headers);
 
   void OnGetSupportsInterface(
       GetSupportsInterfaceCallback callback,

@@ -29,6 +29,7 @@
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "crypto/random.h"
+#include "net/base/data_url.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/boringssl/src/include/openssl/evp.h"
 #include "url/gurl.h"
@@ -946,6 +947,20 @@ absl::optional<std::string> GetPrefKeyForCoinType(mojom::CoinType coin) {
       return kSolanaPrefKey;
   }
   return absl::nullopt;
+}
+
+bool ParseDataURIAndExtractJSON(const GURL url, std::string* json) {
+  std::string mime_type, charset, data;
+  if (!net::DataURL::Parse(url, &mime_type, &charset, &data) || data.empty()) {
+    return false;
+  }
+
+  if (mime_type != "application/json") {
+    return false;
+  }
+
+  *json = data;
+  return true;
 }
 
 }  // namespace brave_wallet
