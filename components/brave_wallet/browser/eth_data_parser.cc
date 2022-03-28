@@ -67,6 +67,7 @@ bool GetTransactionInfoFromData(const std::string& data,
        {"0x095ea7b3", mojom::TransactionType::ERC20Approve},
        {"0x23b872dd", mojom::TransactionType::ERC721TransferFrom},
        {"0x42842e0e", mojom::TransactionType::ERC721SafeTransferFrom},
+       {"0xf242432a", mojom::TransactionType::ERC1155SafeTransferFrom},
        {"0x70a08231", mojom::TransactionType::Other}};
 
   if (data.empty() || data == "0x0") {

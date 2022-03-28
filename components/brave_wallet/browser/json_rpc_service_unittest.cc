@@ -2046,6 +2046,104 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Balance) {
   EXPECT_TRUE(callback_called);
 }
 
+TEST_F(JsonRpcServiceUnitTest, GetERC1155Balance) {
+  // Invalid inputs.
+  bool callback_called = false;
+  json_rpc_service_->GetERC1155TokenBalance(
+      "", "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "0x0",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+                     ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  callback_called = false;
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f", "", "0x0",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+                     ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  callback_called = false;
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f",
+      "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "", mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+                     ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  callback_called = false;
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f",
+      "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "0x0", "",
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+                     ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  SetInterceptor("eth_call", "",
+                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
+                 "\"0x000000000000000000000000000000000000000000000000000000000"
+                 "0000001\"}");
+
+  // Owner gets balance 0x1.
+  callback_called = false;
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f",
+      "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "0x0",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kSuccess, "",
+                     "0x0000000000000000000000000000000000000000000000000000000"
+                     "000000001"));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  SetHTTPRequestTimeoutInterceptor();
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f",
+      "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "0x0",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kInternalError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR), ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  SetInvalidJsonInterceptor();
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f",
+      "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "0x0",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR), ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  SetLimitExceededJsonErrorResponse();
+  json_rpc_service_->GetERC1155TokenBalance(
+      "0x28472a58a490c5e09a238847f66a68a47cc76f0f",
+      "0x16e4476c8fddc552e3b1c4b8b56261d85977fe52", "0x0",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kLimitExceeded,
+                     "Request exceeds defined limit", ""));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+}
+
 TEST_F(JsonRpcServiceUnitTest, GetSupportsInterface) {
   // Successful, and does support the interface
   bool callback_called = false;

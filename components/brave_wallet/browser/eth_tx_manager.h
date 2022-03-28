@@ -69,6 +69,8 @@ class EthTxManager : public TxManager, public EthBlockTracker::Observer {
       mojom::EthTxManagerProxy::MakeERC20ApproveDataCallback;
   using MakeERC721TransferFromDataCallback =
       mojom::EthTxManagerProxy::MakeERC721TransferFromDataCallback;
+  using MakeERC1155TransferFromDataCallback =
+      mojom::EthTxManagerProxy::MakeERC1155TransferFromDataCallback;
   using SetGasPriceAndLimitForUnapprovedTransactionCallback = mojom::
       EthTxManagerProxy::SetGasPriceAndLimitForUnapprovedTransactionCallback;
   using SetGasFeeAndLimitForUnapprovedTransactionCallback = mojom::
@@ -96,6 +98,13 @@ class EthTxManager : public TxManager, public EthBlockTracker::Observer {
                                   const std::string& token_id,
                                   const std::string& contract_address,
                                   MakeERC721TransferFromDataCallback);
+
+  void MakeERC1155TransferFromData(const std::string& from,
+                                   const std::string& to,
+                                   const std::string& token_id,
+                                   const std::string& value,
+                                   const std::string& contract_address,
+                                   MakeERC1155TransferFromDataCallback);
 
   void SetGasPriceAndLimitForUnapprovedTransaction(
       const std::string& tx_meta_id,
@@ -223,6 +232,16 @@ class EthTxManager : public TxManager, public EthBlockTracker::Observer {
       const std::string& to,
       uint256_t token_id,
       MakeERC721TransferFromDataCallback callback,
+      bool is_safe_transfer_from_supported,
+      mojom::ProviderError error,
+      const std::string& error_message);
+
+  void ContinueMakeERC1155TransferFromData(
+      const std::string& from,
+      const std::string& to,
+      uint256_t token_id,
+      uint256_t value,
+      MakeERC1155TransferFromDataCallback callback,
       bool is_safe_transfer_from_supported,
       mojom::ProviderError error,
       const std::string& error_message);
