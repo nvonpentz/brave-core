@@ -125,6 +125,71 @@ bool OwnerOf(uint256_t token_id, std::string* data) {
 
 }  // namespace erc721
 
+namespace erc1155 {
+bool SafeTransferFrom(const std::string& from,
+                      const std::string& to,
+                      uint256_t token_id,
+                      uint256_t value,
+                      std::string* data) {
+  const std::string function_hash = GetFunctionHash(
+      "safeTransferFrom(address,address,uint256,uint256,bytes)");
+
+  std::string padded_from;
+  if (!PadHexEncodedParameter(from, &padded_from)) {
+    return false;
+  }
+
+  std::string padded_to;
+  if (!PadHexEncodedParameter(to, &padded_to)) {
+    return false;
+  }
+
+  std::string padded_token_id;
+  if (!PadHexEncodedParameter(Uint256ValueToHex(token_id), &padded_token_id)) {
+    return false;
+  }
+
+  std::string padded_value;
+  if (!PadHexEncodedParameter(Uint256ValueToHex(value), &padded_value)) {
+    return false;
+  }
+
+  // SafeTransferFrom's `data` parameter is arbitrary bytes that the ERC1155
+  // contract will send as part of a onERC1155Received call if the recipient
+  // is an contract that implements ERC1155TokenReceiver.
+  // https://eips.ethereum.org/EIPS/eip-1155#erc-1155-token-receiver
+  //
+  // This argument is hardcoded as empty bytes since to support basic transfers
+  // only.
+  const std::string receiver_args =
+      "0x00000000000000000000000000000000000000000000000000000000000000a0000000"
+      "0000000000000000000000000000000000000000000000000000000000";
+
+  std::vector<std::string> hex_strings = {function_hash, padded_from,
+                                          padded_to,     padded_token_id,
+                                          padded_value,  receiver_args};
+  return ConcatHexStrings(hex_strings, data);
+}
+
+bool BalanceOf(const std::string& owner_address,
+               uint256_t token_id,
+               std::string* data) {
+  const std::string function_hash =
+      GetFunctionHash("balanceOf(address,uint256)");
+  std::string padded_address;
+  if (!brave_wallet::PadHexEncodedParameter(owner_address, &padded_address)) {
+    return false;
+  }
+  std::string padded_token_id;
+  if (!PadHexEncodedParameter(Uint256ValueToHex(token_id), &padded_token_id)) {
+    return false;
+  }
+  std::vector<std::string> hex_strings = {function_hash, padded_address,
+                                          padded_token_id};
+  return ConcatHexStrings(hex_strings, data);
+}
+}  // namespace erc1155
+
 namespace erc165 {
 
 bool SupportsInterface(const std::string& interface_id, std::string* data) {
