@@ -682,15 +682,19 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     setFoundTokenInfo(foundToken)
   }
 
+  const onFetchMoreMarketData = () => {
+    console.log('Fetching more coin market data')
+  }
+
   return (
     <Provider store={store}>
       <LibContext.Provider value={Lib as any}>
         <WalletPageLayout>
           {/* <SideNav
-            navList={NavOptions}
-            selectedButton={view}
-            onSubmit={navigateTo}
-          /> */}
+          navList={NavOptions}
+          selectedButton={view}
+          onSubmit={navigateTo}
+        /> */}
           <WalletSubViewLayout>
             {isRestoring ? (
               <OnboardingRestore
@@ -772,7 +776,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                                   isFetchingPortfolioPriceHistory={false}
                                   selectedPortfolioTimeline={selectedTimeline}
                                   onRemoveAccount={onRemoveAccount}
-                                  privateKey='gf65a4g6a54fg6a54fg6ad4fa5df65a4d6ff54a6sdf'
+                                  privateKey="gf65a4g6a54fg6a54fg6ad4fa5df65a4d6ff54a6sdf"
                                   onDoneViewingPrivateKey={onDoneViewingPrivateKey}
                                   onViewPrivateKey={onViewPrivateKey}
                                   networkList={mockNetworks}
@@ -787,6 +791,8 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                                   showVisibleAssetsModal={showVisibleAssetsModal}
                                   onFindTokenInfoByContractAddress={onFindTokenInfoByContractAddress}
                                   foundTokenInfoByContractAddress={foundTokenInfo}
+                                  coinMarketData={[]}
+                                  onFetchMoreMarketData={onFetchMoreMarketData}
                                 />
                               )}
                             </>
@@ -804,38 +810,38 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
 
           </WalletSubViewLayout>
           {!needsOnboarding && !walletLocked &&
-            <WalletWidgetStandIn>
-              <BuySendSwap
-                defaultCurrencies={defaultCurrencies}
-                selectedNetwork={selectedNetwork}
-                selectedTab={selectedWidgetTab}
-                buyAmount={buyAmount}
-                sendAmount={sendAmount}
-                selectedSendAsset={fromAsset}
-                sendAssetBalance={fromAssetBalance}
-                toAddressOrUrl={toAddress}
-                toAddress={toAddress}
-                addressError=''
-                addressWarning=''
-                onSubmitBuy={onSubmitBuy}
-                onSetBuyAmount={onSetBuyAmount}
-                onSetSendAmount={onSetSendAmount}
-                onSetToAddressOrUrl={onSetToAddress}
-                onSubmitSend={onSubmitSend}
-                onSelectNetwork={onSelectNetwork}
-                onSelectAccount={onSelectAccount}
-                onSelectPresetSendAmount={onSelectPresetSendAmount}
-                onSelectTab={setSelectedWidgetTab}
-                buyAssetOptions={AccountAssetOptions}
-                sendAssetOptions={AccountAssetOptions}
-                networkList={mockNetworks}
-                onSelectSendAsset={onSelectTransactAsset}
-                onAddNetwork={onAddNetwork}
-                onAddAsset={onShowVisibleAssetsModal}
-                sendAmountValidationError={undefined}
-              />
-              <SweepstakesBanner />
-            </WalletWidgetStandIn>
+              <WalletWidgetStandIn>
+                  <BuySendSwap
+                      defaultCurrencies={defaultCurrencies}
+                      selectedNetwork={selectedNetwork}
+                      selectedTab={selectedWidgetTab}
+                      buyAmount={buyAmount}
+                      sendAmount={sendAmount}
+                      selectedSendAsset={fromAsset}
+                      sendAssetBalance={fromAssetBalance}
+                      toAddressOrUrl={toAddress}
+                      toAddress={toAddress}
+                      addressError=""
+                      addressWarning=""
+                      onSubmitBuy={onSubmitBuy}
+                      onSetBuyAmount={onSetBuyAmount}
+                      onSetSendAmount={onSetSendAmount}
+                      onSetToAddressOrUrl={onSetToAddress}
+                      onSubmitSend={onSubmitSend}
+                      onSelectNetwork={onSelectNetwork}
+                      onSelectAccount={onSelectAccount}
+                      onSelectPresetSendAmount={onSelectPresetSendAmount}
+                      onSelectTab={setSelectedWidgetTab}
+                      buyAssetOptions={AccountAssetOptions}
+                      sendAssetOptions={AccountAssetOptions}
+                      networkList={mockNetworks}
+                      onSelectSendAsset={onSelectTransactAsset}
+                      onAddNetwork={onAddNetwork}
+                      onAddAsset={onShowVisibleAssetsModal}
+                      sendAmountValidationError={undefined}
+                  />
+                  <SweepstakesBanner/>
+              </WalletWidgetStandIn>
           }
         </WalletPageLayout>
       </LibContext.Provider>
