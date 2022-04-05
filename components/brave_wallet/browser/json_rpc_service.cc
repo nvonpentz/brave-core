@@ -1465,6 +1465,14 @@ void JsonRpcService::OnGetERC1155TokenBalance(
   std::move(callback).Run(balance, mojom::ProviderError::kSuccess, "");
 }
 
+void JsonRpcService::GetERC1155Metadata(const std::string& contract_address,
+                                       const std::string& token_id,
+                                       const std::string& chain_id,
+                                       GetERC1155MetadataCallback callback) {
+  // TODO(nvonpentz)
+  // Call GetNFTMetadata(token_type);
+}
+
 void JsonRpcService::GetSupportsInterface(
     const std::string& contract_address,
     const std::string& interface_id,
