@@ -2063,7 +2063,7 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Metadata) {
   EXPECT_TRUE(callback_called);
 
   // Valid inputs
-  // HTTP URI (1/3)
+  // HTTP URI (1/4)
   callback_called = false;
   SetERC721MetadataInterceptor(interface_supported_response,
                                https_token_uri_response,
@@ -2077,7 +2077,7 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Metadata) {
   base::RunLoop().RunUntilIdle();
   EXPECT_TRUE(callback_called);
 
-  // IPFS URI (2/3)
+  // IPFS URI (2/4)
   callback_called = false;
   SetERC721MetadataInterceptor(interface_supported_response,
                                ipfs_token_uri_response, ipfs_metadata_response);
@@ -2090,7 +2090,7 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Metadata) {
   base::RunLoop().RunUntilIdle();
   EXPECT_TRUE(callback_called);
 
-  // Data URI (3/3)
+  // Data URI (3/4)
   callback_called = false;
   SetERC721MetadataInterceptor(interface_supported_response,
                                data_token_uri_response);
@@ -2102,6 +2102,20 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Metadata) {
           "",
           R"({"attributes":"","description":"Non fungible lion","image":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj48cGF0aCBkPSIiLz48L3N2Zz4=","name":"NFL"})"));
 
+  base::RunLoop().RunUntilIdle();
+  EXPECT_TRUE(callback_called);
+
+  // Empty JSON is valid (4/4)
+  const std::string empty_json = "{}";
+  callback_called = false;
+  SetERC721MetadataInterceptor(interface_supported_response,
+                               ipfs_token_uri_response, empty_json);
+  json_rpc_service_->GetERC721Metadata(
+      "0x59468516a8259058bad1ca5f8f4bff190d30e066", "0x719",
+      mojom::kMainnetChainId,
+      base::BindOnce(&OnStringResponse, &callback_called,
+                     mojom::ProviderError::kSuccess,
+                     "", empty_json));
   base::RunLoop().RunUntilIdle();
   EXPECT_TRUE(callback_called);
 
