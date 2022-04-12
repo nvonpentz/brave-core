@@ -244,16 +244,6 @@ class EthTxManager : public TxManager, public EthBlockTracker::Observer {
       mojom::ProviderError error,
       const std::string& error_message);
 
-  void ContinueMakeERC1155TransferFromData(
-      const std::string& from,
-      const std::string& to,
-      uint256_t token_id,
-      uint256_t value,
-      MakeERC1155TransferFromDataCallback callback,
-      bool is_safe_transfer_from_supported,
-      mojom::ProviderError error,
-      const std::string& error_message);
-
   void ContinueProcessHardwareSignature(
       ProcessHardwareSignatureCallback callback,
       bool status,

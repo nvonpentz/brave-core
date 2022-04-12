@@ -75,11 +75,11 @@ mojom::GasEstimation1559Ptr GetMojomGasEstimation() {
       "0xab5d04c00" /* Hex of 4600000000 */);
 }
 
-void MakeTransactionFromDataCallback(base::RunLoop* run_loop,
-                                     bool expected_success,
-                                     mojom::TransactionType expected_type,
-                                     bool success,
-                                     const std::vector<uint8_t>& data) {
+void MakeERC721TransferFromDataCallback(base::RunLoop* run_loop,
+                                        bool expected_success,
+                                        mojom::TransactionType expected_type,
+                                        bool success,
+                                        const std::vector<uint8_t>& data) {
   ASSERT_EQ(expected_success, success);
 
   // Verify tx type.
@@ -397,6 +397,34 @@ class EthTxManagerUnitTest : public testing::Test {
       EthTxManager::AddUnapprovedTransactionCallback callback) {
     eth_tx_manager()->AddUnapproved1559Transaction(
         std::move(tx_data), from, GetOrigin(), std::move(callback));
+  }
+
+  void TestMakeERC1155TransferFromDataTxType(
+      const std::string& from,
+      const std::string& to,
+      const std::string& token_id,
+      const std::string& value,
+      const std::string& contract_address,
+      bool expected_success,
+      mojom::TransactionType expected_type) {
+    base::RunLoop run_loop;
+    eth_tx_manager()->MakeERC1155TransferFromData(
+        from, to, token_id, value, contract_address,
+        base::BindLambdaForTesting(
+            [&](bool success, const std::vector<uint8_t>& data) {
+              EXPECT_EQ(expected_success, success);
+              if (success) {
+                mojom::TransactionType tx_type;
+                std::vector<std::string> tx_params;
+                std::vector<std::string> tx_args;
+                ASSERT_TRUE(GetTransactionInfoFromData(ToHex(data), &tx_type,
+                                                       nullptr, nullptr));
+                EXPECT_EQ(expected_type, tx_type);
+              }
+              run_loop.Quit();
+            }));
+
+    run_loop.Run();
   }
 
  protected:
@@ -1953,7 +1981,7 @@ TEST_F(EthTxManagerUnitTest, MakeERC721TransferFromDataTxType) {
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "0xf",
       contract_safe_transfer_from,
-      base::BindOnce(&MakeTransactionFromDataCallback, run_loop.get(), true,
+      base::BindOnce(&MakeERC721TransferFromDataCallback, run_loop.get(), true,
                      mojom::TransactionType::ERC721SafeTransferFrom));
   run_loop->Run();
 
@@ -1962,7 +1990,7 @@ TEST_F(EthTxManagerUnitTest, MakeERC721TransferFromDataTxType) {
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "0xf",
       contract_transfer_from,
-      base::BindOnce(&MakeTransactionFromDataCallback, run_loop.get(), true,
+      base::BindOnce(&MakeERC721TransferFromDataCallback, run_loop.get(), true,
                      mojom::TransactionType::ERC721TransferFrom));
   run_loop->Run();
 
@@ -1971,65 +1999,31 @@ TEST_F(EthTxManagerUnitTest, MakeERC721TransferFromDataTxType) {
   eth_tx_manager()->MakeERC721TransferFromData(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "1", contract_transfer_from,
-      base::BindOnce(&MakeTransactionFromDataCallback, run_loop.get(), false,
+      base::BindOnce(&MakeERC721TransferFromDataCallback, run_loop.get(), false,
                      mojom::TransactionType::Other));
   run_loop->Run();
 }
 
-TEST_F(EthTxManagerUnitTest, MakeERC1155TransferFromDataTxType) {
-  const std::string contract_safe_transfer_from =
-      "0x0d8775f648430679a709e98d2b0cb6250d2887ef";
-
-  url_loader_factory_.SetInterceptor(
-      base::BindLambdaForTesting([&](const network::ResourceRequest& request) {
-        base::StringPiece request_string(request.request_body->elements()
-                                             ->at(0)
-                                             .As<network::DataElementBytes>()
-                                             .AsStringPiece());
-        if (request_string.find(contract_safe_transfer_from) !=
-            std::string::npos) {
-          url_loader_factory_.AddResponse(
-              request.url.spec(),
-              "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
-              "\"0x0000000000000000000000000000000000000000000000000000000000"
-              "000001\"}");
-        } else {
-          url_loader_factory_.AddResponse(
-              request.url.spec(),
-              "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
-              "\"0x0000000000000000000000000000000000000000000000000000000000"
-              "000000\"}");
-        }
-      }));
-
-  auto run_loop = std::make_unique<base::RunLoop>();
-  eth_tx_manager()->MakeERC1155TransferFromData(
+TEST_F(EthTxManagerUnitTest, MakeERC1155TransferFromData) {
+  TestMakeERC1155TransferFromDataTxType(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "0xf", "0x1",
-      contract_safe_transfer_from,
-      base::BindOnce(&MakeTransactionFromDataCallback, run_loop.get(), true,
-                     mojom::TransactionType::ERC1155SafeTransferFrom));
-  run_loop->Run();
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef", true,
+      mojom::TransactionType::ERC1155SafeTransferFrom);
 
   // Invalid token ID should fail.
-  run_loop.reset(new base::RunLoop());
-  eth_tx_manager()->MakeERC1155TransferFromData(
+  TestMakeERC1155TransferFromDataTxType(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "1", "0x1",
-      contract_safe_transfer_from,
-      base::BindOnce(&MakeTransactionFromDataCallback, run_loop.get(), false,
-                     mojom::TransactionType::Other));
-  run_loop->Run();
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef", false,
+      mojom::TransactionType::Other);
 
   // Invalid value should fail.
-  run_loop.reset(new base::RunLoop());
-  eth_tx_manager()->MakeERC1155TransferFromData(
+  TestMakeERC1155TransferFromDataTxType(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
-      "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "0x1", "1",
-      contract_safe_transfer_from,
-      base::BindOnce(&MakeTransactionFromDataCallback, run_loop.get(), false,
-                     mojom::TransactionType::Other));
-  run_loop->Run();
+      "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "1", "0x1",
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef", false,
+      mojom::TransactionType::Other);
 }
 
 TEST_F(EthTxManagerUnitTest, Reset) {

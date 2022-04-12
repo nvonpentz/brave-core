@@ -47,14 +47,14 @@ bool OwnerOf(uint256_t token_id, std::string* data);
 
 namespace erc1155 {
 
-// Transfers the ownership of an NFT from one address to another address
+// Transfer the ownership of token from one address to another address.
 bool SafeTransferFrom(const std::string& from_address,
                       const std::string& to_address,
                       uint256_t token_id,
                       uint256_t value,
                       std::string* data);
 
-// Returns the balance of an address for a token ID
+// Return the balance of an address for a token ID.
 bool BalanceOf(const std::string& owner_address,
                uint256_t token_id,
                std::string* data);

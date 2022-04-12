@@ -717,25 +717,8 @@ void EthTxManager::MakeERC1155TransferFromData(
     return;
   }
 
-  // Check if safeTransferFrom is supported first.
-  json_rpc_service_->GetSupportsInterface(
-      contract_address, kERC1155InterfaceId,
-      base::BindOnce(&EthTxManager::ContinueMakeERC1155TransferFromData,
-                     weak_factory_.GetWeakPtr(), from, to, token_id_uint,
-                     value_uint, std::move(callback)));
-}
-
-void EthTxManager::ContinueMakeERC1155TransferFromData(
-    const std::string& from,
-    const std::string& to,
-    uint256_t token_id,
-    uint256_t value,
-    MakeERC1155TransferFromDataCallback callback,
-    bool is_safe_transfer_from_supported,
-    mojom::ProviderError error,
-    const std::string& error_message) {
   std::string data;
-  if (!erc1155::SafeTransferFrom(from, to, token_id, value, &data)) {
+  if (!erc1155::SafeTransferFrom(from, to, token_id_uint, value_uint, &data)) {
     VLOG(1) << __FUNCTION__ << ": Could not make safeTransferFrom data";
     std::move(callback).Run(false, std::vector<uint8_t>());
     return;

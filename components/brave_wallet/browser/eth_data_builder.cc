@@ -126,6 +126,7 @@ bool OwnerOf(uint256_t token_id, std::string* data) {
 }  // namespace erc721
 
 namespace erc1155 {
+
 bool SafeTransferFrom(const std::string& from,
                       const std::string& to,
                       uint256_t token_id,
@@ -159,15 +160,24 @@ bool SafeTransferFrom(const std::string& from,
   // is an contract that implements ERC1155TokenReceiver.
   // https://eips.ethereum.org/EIPS/eip-1155#erc-1155-token-receiver
   //
-  // This argument is hardcoded as empty bytes since to support basic transfers
-  // only.
-  const std::string receiver_args =
-      "0x00000000000000000000000000000000000000000000000000000000000000a0000000"
-      "0000000000000000000000000000000000000000000000000000000000";
+  // The receiver_data_arg is hardcoded as empty bytes to support basic
+  // transfers only.  It consists of two 32 byte parts. The first 32 bytes
+  // specify the offset of SafeTransferFrom calldata where the parameter starts
+  // The second 32 bytes is the data.
+  //
+  // Since the preceding four arguments in the calldata
+  // (to, from, id, amount) are all of fixed size (32 bytes), we can always
+  // specify 0xa0 (160) as the offset, since 32*(4+1) = 160.
+  const std::string receiver_data_arg =
+      "0x"
+      // Offset
+      "00000000000000000000000000000000000000000000000000000000000000a0"
+      // The empty bytes
+      "0000000000000000000000000000000000000000000000000000000000000000";
 
   std::vector<std::string> hex_strings = {function_hash, padded_from,
                                           padded_to,     padded_token_id,
-                                          padded_value,  receiver_args};
+                                          padded_value,  receiver_data_arg};
   return ConcatHexStrings(hex_strings, data);
 }
 

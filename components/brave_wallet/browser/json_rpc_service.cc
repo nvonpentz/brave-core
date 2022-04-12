@@ -1497,7 +1497,7 @@ void JsonRpcService::GetERC1155TokenBalance(
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
   RequestInternal(
       eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
-      network_urls_[mojom::CoinType::ETH], std::move(internal_callback));
+      network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetERC1155TokenBalance(
