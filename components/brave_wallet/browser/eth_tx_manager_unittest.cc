@@ -2005,24 +2005,43 @@ TEST_F(EthTxManagerUnitTest, MakeERC721TransferFromDataTxType) {
 }
 
 TEST_F(EthTxManagerUnitTest, MakeERC1155TransferFromData) {
+  // Valid
   TestMakeERC1155TransferFromDataTxType(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "0xf", "0x1",
       "0x0d8775f648430679a709e98d2b0cb6250d2887ef", true,
       mojom::TransactionType::ERC1155SafeTransferFrom);
 
-  // Invalid token ID should fail.
+  // Invalid from
+  TestMakeERC1155TransferFromDataTxType(
+      "", "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "0xf", "0x1",
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef", false,
+      mojom::TransactionType::Other);
+
+  // Invalid to
+  TestMakeERC1155TransferFromDataTxType(
+      "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f", "", "0xf", "0x1",
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef", false,
+      mojom::TransactionType::Other);
+
+  // Invalid token_id
   TestMakeERC1155TransferFromDataTxType(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "1", "0x1",
       "0x0d8775f648430679a709e98d2b0cb6250d2887ef", false,
       mojom::TransactionType::Other);
 
-  // Invalid value should fail.
+  // Invalid value
   TestMakeERC1155TransferFromDataTxType(
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
       "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "1", "0x1",
       "0x0d8775f648430679a709e98d2b0cb6250d2887ef", false,
+      mojom::TransactionType::Other);
+
+  // Invalid contract_address
+  TestMakeERC1155TransferFromDataTxType(
+      "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460f",
+      "0xBFb30a082f650C2A15D0632f0e87bE4F8e64460a", "1", "0x1", "", false,
       mojom::TransactionType::Other);
 }
 
