@@ -198,6 +198,7 @@ bool BalanceOf(const std::string& owner_address,
                                           padded_token_id};
   return ConcatHexStrings(hex_strings, data);
 }
+
 }  // namespace erc1155
 
 namespace erc165 {
