@@ -161,8 +161,8 @@ bool SafeTransferFrom(const std::string& from,
   // https://eips.ethereum.org/EIPS/eip-1155#erc-1155-token-receiver
   //
   // The receiver_data_arg is hardcoded as empty bytes to support basic
-  // transfers only.  It consists of two 32 byte parts. The first 32 bytes
-  // specify the offset of SafeTransferFrom calldata where the parameter starts
+  // transfers only. It consists of two 32 byte parts. The first 32 bytes
+  // specify the offset of SafeTransferFrom calldata where the parameter starts.
   // The second 32 bytes is the data.
   //
   // Since the preceding four arguments in the calldata

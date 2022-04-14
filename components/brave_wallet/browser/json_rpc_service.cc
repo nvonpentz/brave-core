@@ -1456,12 +1456,13 @@ void JsonRpcService::ContinueGetERC721TokenBalance(
 
 void JsonRpcService::GetERC1155TokenBalance(
     const std::string& contract_address,
-    const std::string& owner_address,
     const std::string& token_id,
+    const std::string& owner_address,
     const std::string& chain_id,
     GetERC1155TokenBalanceCallback callback) {
   const auto eth_account_address = EthAddress::FromHex(owner_address);
   auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::ETH);
+
   if (eth_account_address.IsEmpty() || !network_url.is_valid()) {
     std::move(callback).Run(
         "", mojom::ProviderError::kInvalidParams,
@@ -1493,35 +1494,11 @@ void JsonRpcService::GetERC1155TokenBalance(
   }
 
   auto internal_callback =
-      base::BindOnce(&JsonRpcService::OnGetERC1155TokenBalance,
+      base::BindOnce(&JsonRpcService::OnEthGetBalance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
   RequestInternal(
       eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
       network_url, std::move(internal_callback));
-}
-
-void JsonRpcService::OnGetERC1155TokenBalance(
-    GetERC1155TokenBalanceCallback callback,
-    const int status,
-    const std::string& body,
-    const base::flat_map<std::string, std::string>& headers) {
-  if (status < 200 || status > 299) {
-    std::move(callback).Run(
-        "", mojom::ProviderError::kInternalError,
-        l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
-    return;
-  }
-
-  std::string balance;
-  if (!eth::ParseEthGetBalance(body, &balance)) {
-    mojom::ProviderError error;
-    std::string error_message;
-    ParseErrorResult<mojom::ProviderError>(body, &error, &error_message);
-    std::move(callback).Run(balance, error, error_message);
-    return;
-  }
-
-  std::move(callback).Run(balance, mojom::ProviderError::kSuccess, "");
 }
 
 void JsonRpcService::GetSupportsInterface(

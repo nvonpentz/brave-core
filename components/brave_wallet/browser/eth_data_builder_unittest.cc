@@ -24,8 +24,7 @@ TEST(EthCallDataBuilderTest, Transfer) {
 
 TEST(EthCallDataBuilderTest, BalanceOf) {
   std::string data;
-  BalanceOf("0x4e02f254184E904300e0775E4b8eeCB1",
-            &data);  // this is not actually a valid eth address
+  BalanceOf("0x4e02f254184E904300e0775E4b8eeCB1", &data);
   ASSERT_EQ(data,
             "0x70a08231000000000000000000000000000000004e02f254184E904300e0775E"
             "4b8eeCB1");

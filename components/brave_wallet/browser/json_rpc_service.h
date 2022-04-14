@@ -455,11 +455,11 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                                      const std::string& owner_address,
                                      mojom::ProviderError error,
                                      const std::string& error_message);
-  void OnGetERC1155TokenBalance(
-      GetERC1155TokenBalanceCallback callback,
-      const int status,
-      const std::string& body,
-      const base::flat_map<std::string, std::string>& headers);
+  // void OnGetERC1155TokenBalance(
+  //     GetERC1155TokenBalanceCallback callback,
+  //     const int status,
+  //     const std::string& body,
+  //     const base::flat_map<std::string, std::string>& headers);
 
   void OnGetSupportsInterface(
       GetSupportsInterfaceCallback callback,

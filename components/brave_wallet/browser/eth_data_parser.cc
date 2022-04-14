@@ -47,6 +47,25 @@ bool GetUint256HexFromData(const std::string& input,
   return true;
 }
 
+// GetBytesHexFromData is only applicable when the bytes are the fifth and final
+// parameter and the preceding 4 params are fixed types exactly 32 bytes.
+bool GetBytesHexFromData(const std::string& input, std::string* arg) {
+  CHECK(arg);
+  if (input.length() < 64 * 2) {
+    return false;
+  }
+  const std::string expected_offset =
+      "00000000000000000000000000000000000000000000000000000000000000a0";
+  const std::string offset = input.substr(0, 64);
+  if (!(offset == expected_offset)) {
+    return false;
+  }
+
+  *arg = "0x" + input.substr(64);
+
+  return true;
+}
+
 }  // namespace
 
 bool GetTransactionInfoFromData(const std::string& data,
@@ -140,6 +159,43 @@ bool GetTransactionInfoFromData(const std::string& data,
       tx_params->push_back("address");
       tx_params->push_back("address");
       tx_params->push_back("uint256");
+    }
+  } else if (*tx_type == mojom::TransactionType::ERC1155SafeTransferFrom) {
+    std::string from, to, token_id, value, data_arg;
+
+    std::string left_over_data = data.substr(10);
+    // Intentional copy of left_over_data
+    if (!GetAddressArgFromData(std::string(left_over_data), &from,
+                               &left_over_data))
+      return false;
+
+    if (!GetAddressArgFromData(std::string(left_over_data), &to,
+                               &left_over_data))
+      return false;
+    if (!GetUint256HexFromData(std::string(left_over_data), &token_id,
+                               &left_over_data))
+      return false;
+    if (!GetUint256HexFromData(std::string(left_over_data), &value,
+                               &left_over_data))
+      return false;
+
+    if (!GetBytesHexFromData(std::string(left_over_data), &data_arg))
+      return false;
+
+    if (tx_args) {
+      tx_args->push_back(from);
+      tx_args->push_back(to);
+      tx_args->push_back(token_id);
+      tx_args->push_back(value);
+      tx_args->push_back(data_arg);
+    }
+
+    if (tx_params) {
+      tx_params->push_back("address");
+      tx_params->push_back("address");
+      tx_params->push_back("uint256");
+      tx_params->push_back("uint256");
+      tx_params->push_back("bytes");
     }
   }
 
