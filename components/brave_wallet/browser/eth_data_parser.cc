@@ -15,6 +15,30 @@ namespace brave_wallet {
 
 namespace {
 
+namespace erc1155 {
+
+// For erc1155::SafeTransferFrom, bytes is the fifth and final parameter and the
+// preceding 4 params are fixed types exactly 32 bytes.
+bool GetBytesHexFromSafeTransferFromData(const std::string& input,
+                                         std::string* arg) {
+  CHECK(arg);
+  if (input.length() < 64 * 2) {
+    return false;
+  }
+  const std::string expected_offset =
+      "00000000000000000000000000000000000000000000000000000000000000a0";
+  const std::string offset = input.substr(0, 64);
+  if (!(offset == expected_offset)) {
+    return false;
+  }
+
+  *arg = "0x" + input.substr(64);
+
+  return true;
+}
+
+}  // namespace erc1155
+
 bool GetAddressArgFromData(const std::string& input,
                            std::string* arg,
                            std::string* left_over) {
@@ -44,25 +68,6 @@ bool GetUint256HexFromData(const std::string& input,
     return false;
   }
   *arg = brave_wallet::Uint256ValueToHex(arg_uint);
-  return true;
-}
-
-// GetBytesHexFromData is only applicable when the bytes are the fifth and final
-// parameter and the preceding 4 params are fixed types exactly 32 bytes.
-bool GetBytesHexFromData(const std::string& input, std::string* arg) {
-  CHECK(arg);
-  if (input.length() < 64 * 2) {
-    return false;
-  }
-  const std::string expected_offset =
-      "00000000000000000000000000000000000000000000000000000000000000a0";
-  const std::string offset = input.substr(0, 64);
-  if (!(offset == expected_offset)) {
-    return false;
-  }
-
-  *arg = "0x" + input.substr(64);
-
   return true;
 }
 
@@ -179,7 +184,8 @@ bool GetTransactionInfoFromData(const std::string& data,
                                &left_over_data))
       return false;
 
-    if (!GetBytesHexFromData(std::string(left_over_data), &data_arg))
+    if (!erc1155::GetBytesHexFromSafeTransferFromData(
+            std::string(left_over_data), &data_arg))
       return false;
 
     if (tx_args) {
