@@ -295,6 +295,22 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                           const std::string& chain_id,
                           GetTokenMetadataCallback callback) override;
 
+  void DiscoverAssets(const std::string& chain_id,
+                      const std::vector<std::string>&,
+                      DiscoverAssetsCallback callback) override;
+
+  void OnGetAllTokensDiscoverAssets(
+      const std::string& chain_id,
+      const std::vector<std::string>& account_addresses,
+      DiscoverAssetsCallback callback,
+      std::vector<mojom::BlockchainTokenPtr> token_list);
+
+  void OnGetTransferLogs(
+      DiscoverAssetsCallback callback,
+      const int status,
+      const std::string& body,
+      const base::flat_map<std::string, std::string>& headers);
+
   // Resets things back to the original state of BraveWalletService.
   // To be used when the Wallet is reset / erased
   void Reset();
