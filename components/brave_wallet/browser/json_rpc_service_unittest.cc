@@ -19,6 +19,8 @@
 #include "base/test/mock_callback.h"
 #include "base/test/task_environment.h"
 #include "base/values.h"
+#include "brave/common/brave_services_key.h"
+#include "brave/components/brave_wallet/browser/blockchain_registry.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_prefs.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
@@ -712,6 +714,33 @@ class JsonRpcServiceUnitTest : public testing::Test {
           EXPECT_EQ(error_message, expected_error_message);
           run_loop.Quit();
         }));
+    run_loop.Run();
+  }
+
+  void TestDiscoverAssets(
+      const std::string& chain_id,
+      const std::vector<std::string>& account_addresses,
+      const std::vector<std::string>& expected_token_contract_addresses,
+      mojom::ProviderError expected_error,
+      const std::string& expected_error_message) {
+    base::RunLoop run_loop;
+    std::vector<mojom::BlockchainTokenPtr> expected_tokens;
+    json_rpc_service_->DiscoverAssets(
+        chain_id, account_addresses,
+        base::BindLambdaForTesting(
+            [&](const std::vector<mojom::BlockchainTokenPtr> tokens,
+                mojom::ProviderError error, const std::string& error_message) {
+              EXPECT_EQ(tokens.size(),
+                        expected_token_contract_addresses.size());
+              for (size_t i = 0; i < expected_token_contract_addresses.size();
+                   i++) {
+                EXPECT_EQ(tokens[i]->contract_address,
+                          expected_token_contract_addresses[i]);
+              }
+              EXPECT_EQ(error, expected_error);
+              EXPECT_EQ(error_message, expected_error_message);
+              run_loop.Quit();
+            }));
     run_loop.Run();
   }
 
@@ -3139,6 +3168,166 @@ TEST_F(JsonRpcServiceUnitTest, GetSupportsInterface) {
                      "Request exceeds defined limit", false));
   base::RunLoop().RunUntilIdle();
   EXPECT_TRUE(callback_called);
+}
+
+TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
+  auto* blockchain_registry = BlockchainRegistry::GetInstance();
+  TokenListMap token_list_map;
+
+  std::string get_logs_response;
+  std::string response;
+
+  // Unsupported chainId is not supported
+  TestDiscoverAssets(
+      mojom::kPolygonMainnetChainId,
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+      mojom::ProviderError::kMethodNotSupported,
+      l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR));
+
+  // Empty address is invalid
+  TestDiscoverAssets(mojom::kMainnetChainId, {}, {},
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+
+  // Invalid address is invalid
+  TestDiscoverAssets(mojom::kMainnetChainId, {"0xinvalid"}, {},
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+
+  // Invalid json response triggers parsing error
+  auto expected_network =
+      GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH);
+  ASSERT_TRUE(ParseTokenList(R"( {
+     "0x0d8775f648430679a709e98d2b0cb6250d2887ef": {
+       "name": "Basic Attention Token",
+       "logo": "bat.svg",
+       "erc20": true,
+       "symbol": "BAT",
+       "decimals": 18
+     }
+    })",
+                             &token_list_map, mojom::CoinType::ETH));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+  SetInterceptor(expected_network, "eth_getLogs", "",
+                 "invalid eth_getLogs response");
+  TestDiscoverAssets(mojom::kMainnetChainId,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+
+  // Limit exceeded response triggers parsing error
+  SetLimitExceededJsonErrorResponse();
+  TestDiscoverAssets(mojom::kMainnetChainId,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+
+  // Invalid logs (missing addresses) triggers parsing error
+  get_logs_response = R"(
+  {"jsonrpc": "2.0",
+   "id": 1,
+   "result": [
+     {
+       "blockHash": "0xaefb023131aa58e533c09c0eae29c280460d3976f5235a1ff53159ef37f73073",
+       "blockNumber": "0xa72603",
+       "data": "0x000000000000000000000000000000000000000000000006e83695ab1f893c00",
+       "logIndex": "0x14",
+       "removed": false,
+       "topics": [
+         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+         "0x000000000000000000000000897bb1e945f5aa7ed7f81646e7991eaba63aa4b0",
+         "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+       ],
+       "transactionHash": "0x5c655301d386f45af116a4aef418491ee27b71ac30be70a593ccffa3754797d4",
+       "transactionIndex": "0xa"
+     },
+   ]
+  })";
+  SetInterceptor(expected_network, "eth_getLogs", "", response);
+  TestDiscoverAssets(mojom::kMainnetChainId,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+
+  // All valid
+  ASSERT_TRUE(ParseTokenList(R"(
+     {
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef": {
+        "name": "Basic Attention Token",
+        "logo": "bat.svg",
+        "erc20": true,
+        "symbol": "BAT",
+        "decimals": 18
+      },
+      "0x6b175474e89094c44da98b954eedeac495271d0f": {
+        "name": "Dai Stablecoin",
+        "logo": "dai.svg",
+        "erc20": true,
+        "symbol": "DAI",
+        "decimals": 18,
+        "chainId": "0x1"
+      }
+     })",
+                             &token_list_map, mojom::CoinType::ETH));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+
+  response = R"(
+   {"jsonrpc": "2.0",
+    "id": 1,
+    "result": [
+      {
+        "address": "0x0d8775f648430679a709e98d2b0cb6250d2887ef",
+        "blockHash": "0xaefb023131aa58e533c09c0eae29c280460d3976f5235a1ff53159ef37f73073",
+        "blockNumber": "0xa72603",
+        "data": "0x000000000000000000000000000000000000000000000006e83695ab1f893c00",
+        "logIndex": "0x14",
+        "removed": false,
+        "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000897bb1e945f5aa7ed7f81646e7991eaba63aa4b0",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash": "0x5c655301d386f45af116a4aef418491ee27b71ac30be70a593ccffa3754797d4",
+        "transactionIndex": "0xa"
+      },
+      {
+        "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+        "blockHash": "0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber": "0xd6464c",
+        "data": "0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex": "0x159",
+        "removed": false,
+        "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash": "0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex": "0x9f"
+      },
+      {
+        "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+        "blockHash": "0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber": "0xd6464c",
+        "data": "0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex": "0x159",
+        "removed": false,
+        "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash": "0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex": "0x9f"
+      }
+    ]
+   })";
+  SetInterceptor(expected_network, "eth_getLogs", "", response);
+  TestDiscoverAssets(mojom::kMainnetChainId,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+                     {"0x6b175474e89094c44da98b954eedeac495271d0f",
+                      "0x0d8775f648430679a709e98d2b0cb6250d2887ef"},
+                     mojom::ProviderError::kSuccess, "");
 }
 
 TEST_F(JsonRpcServiceUnitTest, Reset) {
