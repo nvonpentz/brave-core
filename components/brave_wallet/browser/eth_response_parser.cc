@@ -262,6 +262,78 @@ bool ParseEthGasPrice(const std::string& json, std::string* result) {
   return ParseSingleStringResult(json, result);
 }
 
+bool ParseEthGetLogs(const std::string& json, std::vector<Log>* logs) {
+  DCHECK(logs);
+  base::Value result;
+  if (!ParseResult(json, &result))
+    return false;
+  const base::ListValue* result_list = nullptr;
+  if (!result.GetAsList(&result_list))
+    return false;
+  DCHECK(result_list);
+
+  for (const auto& logs_list_it : result_list->GetList()) {
+    Log log;
+    const base::DictionaryValue* log_dict = nullptr;
+    if (!logs_list_it.GetAsDictionary(&log_dict))
+      return false;
+
+    if (!log_dict->GetString("address", &log.address))
+      return false;
+    if (!log_dict->GetString("blockHash", &log.block_hash))
+      return false;
+    std::string block_number;
+    if (!log_dict->GetString("blockNumber", &block_number))
+      return false;
+
+    uint256_t block_number_int = 0;
+    if (!HexValueToUint256(block_number, &block_number_int))
+      return false;
+    log.block_number = block_number_int;
+    if (!log_dict->GetString("data", &log.data))
+      return false;
+
+    std::string log_index;
+    if (!log_dict->GetString("logIndex", &log_index))
+      return false;
+    uint32_t log_index_int = 0;
+    if (!base::HexStringToUInt(log_index, &log_index_int))
+      return false;
+    log.log_index = log_index_int;
+
+    absl::optional<bool> removed = log_dict->FindBoolKey("removed");
+    if (!removed.has_value())
+      return false;
+    log.removed = removed.value_or(false);
+
+    if (!log_dict->GetString("transactionHash", &log.transaction_hash))
+      return false;
+
+    std::string transaction_index;
+    if (!log_dict->GetString("transactionIndex", &transaction_index))
+      return false;
+    uint32_t transaction_index_int = 0;
+    if (!base::HexStringToUInt(transaction_index, &transaction_index_int))
+      return false;
+    log.transaction_index = transaction_index_int;
+
+    const base::ListValue* topics_list = nullptr;
+    std::vector<std::string> topics;
+    if (!log_dict->GetList("topics", &topics_list))
+      return false;
+    for (const base::Value& entry : topics_list->GetList()) {
+      const std::string* v = entry.GetIfString();
+      if (!v)
+        return false;
+      topics.push_back(*v);
+    }
+    log.topics = topics;
+    logs->push_back(log);
+  }
+
+  return true;
+}
+
 bool ParseEnsResolverContentHash(const std::string& json,
                                  std::string* content_hash) {
   return ParseStringResult(json, content_hash);
