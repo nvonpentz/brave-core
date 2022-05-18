@@ -182,4 +182,9 @@
     "META": {"sizes": {"includes": [250]}},
     "includes": [58750]
   },
+  # This file is generated during the build.
+  "<(SHARED_INTERMEDIATE_DIR)/brave/web-ui-nft_display/nft_display.grd": {
+    "META": {"sizes": {"includes": [250]}},
+    "includes": [59000]
+  },
 }
