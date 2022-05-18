@@ -20,7 +20,8 @@ import {
   NetworkIconWrapper,
   NameColumn,
   Spacer,
-  NetworkDescriptionText
+  NetworkDescriptionText,
+  NFTAssetIcon
 } from './style'
 import { withPlaceholderIcon, CreateNetworkIcon, LoadingSkeleton } from '../../shared'
 import { WithHideBalancePlaceholder } from '../'
@@ -57,7 +58,7 @@ const PortfolioAssetItem = (props: Props) => {
   const [assetNetworkSkeletonWidth, setAssetNetworkSkeletonWidth] = React.useState(0)
 
   const AssetIconWithPlaceholder = React.useMemo(() => {
-    return withPlaceholderIcon(AssetIcon, { size: 'big', marginLeft: 0, marginRight: 8 })
+    return withPlaceholderIcon(token.isErc721 ? NFTAssetIcon : AssetIcon, { size: 'big', marginLeft: 0, marginRight: 8 })
   }, [])
 
   const formattedAssetBalance = token.isErc721

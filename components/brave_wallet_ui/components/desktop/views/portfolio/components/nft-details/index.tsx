@@ -19,7 +19,6 @@ import {
   StyledWrapper,
   LoadIcon,
   LoadingOverlay,
-  NFTImage,
   DetailColumn,
   TokenName,
   DetailSectionRow,
@@ -38,7 +37,8 @@ import {
   ProjectDetailIDRow,
   ExplorerIcon,
   ExplorerButton,
-  NFTImageSkeletonWrapper
+  NFTImageSkeletonWrapper,
+  NTFImageIframe
 } from './style'
 import { LoadingSkeleton } from '../../../../../shared'
 
@@ -94,10 +94,9 @@ const NFTDetails = (props: Props) => {
       }
       {nftMetadata &&
         <>
-          <NFTImage
-            isLoading={!isImageLoaded}
-            src={nftMetadata.imageURL}
+          <NTFImageIframe
             onLoad={() => setIsImageLoaded(true)}
+            src={`chrome-untrusted://nft-display?imageUrl=${encodeURIComponent(nftMetadata.imageURL)}`}
           />
           {!isImageLoaded &&
             <LoadingSkeleton wrapper={NFTImageSkeletonWrapper} />

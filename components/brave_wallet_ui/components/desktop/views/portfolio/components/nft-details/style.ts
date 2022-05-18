@@ -9,7 +9,7 @@ export interface StyleProps {
   isLoading: boolean
 }
 
-const nftImageDimension = '440px'
+export const nftImageDimension = '440px'
 
 export const StyledWrapper = styled.div`
   display: flex;
@@ -21,12 +21,13 @@ export const StyledWrapper = styled.div`
   margin: 16px 0 50px 0;
 `
 
-export const NFTImage = styled.img<Partial<StyleProps>>`
-  display: ${p => p.isLoading ? 'none' : 'block'};
+export const NTFImageIframe = styled.iframe`
+  display: block;
   width: ${nftImageDimension};
   height: ${nftImageDimension};
   margin-right: 28px;
   border-radius: 12px;
+  border: transparent;
 `
 
 export const NFTImageSkeletonWrapper = styled.div`
