@@ -508,6 +508,12 @@ interface KeyringServiceObserver {
   // Fired when the accounts list changes
   AccountsChanged();
 
+  // Fired when accounts are added to the account list
+  AccountsAdded(array<AccountInfo> account_infos);
+
+  // Fired when accounts are removed from the account list
+  AccountsRemoved(array<string> accounts);
+
   // Fired when the autolock setting changes
   AutoLockMinutesChanged();
 
