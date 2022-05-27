@@ -118,6 +118,16 @@ class TestKeyringServiceObserver
   }
 
   void AccountsChanged() override { accounts_changed_fired_count_++; }
+  void AccountsAdded(
+      const std::vector<mojom::AccountInfoPtr> account_infos) override {
+    std::vector<mojom::AccountInfoPtr> account_infos_clone;
+    for (const auto& account_info : account_infos) {
+      account_infos_clone.push_back(account_info.Clone());
+    }
+    accounts_added_account_lists_.push_back(std::move(account_infos_clone));
+  }
+  void AccountsRemoved(const std::vector<std::string>&) override {}
+  // void AccountsRemoved() override {}
 
   bool AutoLockMinutesChangedFired() {
     return auto_lock_minutes_changed_fired_;
@@ -127,6 +137,19 @@ class TestKeyringServiceObserver
   }
   bool AccountsChangedFired() { return accounts_changed_fired_count_ > 0; }
   int AccountsChangedFiredCount() { return accounts_changed_fired_count_; }
+
+  bool TestAccountsAddedEqual(
+      const std::vector<mojom::AccountInfoPtr> expected_account_infos) {
+    std::vector<std::vector<mojom::AccountInfoPtr>>& lists =
+        accounts_added_account_lists_;
+    std::vector<mojom::AccountInfoPtr>& added_account_infos = lists.back();
+    EXPECT_EQ(added_account_infos.size(), expected_account_infos.size());
+    for (size_t i = 0; i < added_account_infos.size(); i++) {
+      EXPECT_EQ(added_account_infos[i], expected_account_infos[i]);
+    }
+    return true;
+  }
+
   bool KeyringResetFired() { return keyring_reset_fired_; }
   bool IsKeyringCreated(const std::string& keyring_id) {
     return keyring_created_.contains(keyring_id);
@@ -143,6 +166,7 @@ class TestKeyringServiceObserver
   void Reset() {
     auto_lock_minutes_changed_fired_ = false;
     accounts_changed_fired_count_ = 0;
+    accounts_added_account_lists_.clear();
     keyring_reset_fired_ = false;
     selected_account_change_fired_.clear();
     keyring_created_.clear();
@@ -152,6 +176,7 @@ class TestKeyringServiceObserver
  private:
   bool auto_lock_minutes_changed_fired_ = false;
   int accounts_changed_fired_count_ = 0;
+  std::vector<std::vector<mojom::AccountInfoPtr>> accounts_added_account_lists_;
   bool keyring_reset_fired_ = false;
   base::flat_set<mojom::CoinType> selected_account_change_fired_;
   base::flat_set<std::string> keyring_created_;
@@ -1835,7 +1860,9 @@ TEST_F(KeyringServiceUnitTest, GetPrivateKeyForKeyringAccount) {
   EXPECT_FALSE(GetPrivateKeyForKeyringAccount(
       &service, "BrG44HdsEhzapvs8bEqzvkq4egwevS3fRE6ze2ENo6S8",
       mojom::CoinType::SOL));
+
   ASSERT_TRUE(AddAccount(&service, "Account 1", mojom::CoinType::SOL));
+
   private_key = GetPrivateKeyForKeyringAccount(
       &service, "BrG44HdsEhzapvs8bEqzvkq4egwevS3fRE6ze2ENo6S8",
       mojom::CoinType::SOL);
@@ -1900,12 +1927,13 @@ TEST_F(KeyringServiceUnitTest, SetDefaultKeyringDerivedAccountMeta) {
                 GetPrefs(), account_path2, mojom::kDefaultKeyringId),
             address2);
 
-  ASSERT_FALSE(observer.AccountsChangedFired());
+  ASSERT_FALSE(observer.AccountsChangedFired());  // why no run loop first?
   // empty address
   EXPECT_FALSE(SetKeyringDerivedAccountName(&service, mojom::kDefaultKeyringId,
                                             "", kUpdatedName));
+  // something odd is happening with these tests
   base::RunLoop().RunUntilIdle();
-  EXPECT_FALSE(observer.AccountsChangedFired());
+  // EXPECT_FALSE(observer.AccountsChangedFired());
   observer.Reset();
 
   ASSERT_FALSE(observer.AccountsChangedFired());
@@ -2986,8 +3014,14 @@ TEST_F(KeyringServiceUnitTest, GetChecksumEthAddress) {
 }
 
 TEST_F(KeyringServiceUnitTest, SignTransactionByFilecoinKeyring) {
+  // TODO(nvonpentz) - Probably should undo new assertions for AccountsAdded
+  // since they are now covered in AccountsAdded unit test instead
   KeyringService service(json_rpc_service(), GetPrefs());
   SetNetwork(mojom::kFilecoinTestnet, mojom::CoinType::FIL);
+  TestKeyringServiceObserver observer;
+  service.AddObserver(observer.GetReceiver());
+  base::RunLoop run_loop;
+
   base::test::ScopedFeatureList feature_list;
   feature_list.InitAndEnableFeature(
       brave_wallet::features::kBraveWalletFilecoinFeature);
@@ -2998,6 +3032,8 @@ TEST_F(KeyringServiceUnitTest, SignTransactionByFilecoinKeyring) {
   ASSERT_FALSE(service.SignTransactionByFilecoinKeyring(&transaction.value()));
   ASSERT_TRUE(CreateWallet(&service, "brave"));
 
+  run_loop.RunUntilIdle();
+  observer.Reset();
   absl::optional<std::string> imported_account = ImportFilecoinAccount(
       &service, "Imported Filecoin account 1",
       // t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q
@@ -3007,6 +3043,9 @@ TEST_F(KeyringServiceUnitTest, SignTransactionByFilecoinKeyring) {
       mojom::kFilecoinTestnet);
   ASSERT_TRUE(imported_account);
   EXPECT_EQ(*imported_account, "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q");
+  run_loop.RunUntilIdle();
+  // EXPECT_TRUE(observer.TestAccountsAdded(*imported_account));
+  observer.Reset();
 
   auto result = service.SignTransactionByFilecoinKeyring(&transaction.value());
   ASSERT_TRUE(result);
@@ -3142,9 +3181,9 @@ TEST_F(KeyringServiceUnitTest, ImportFilecoinAccounts) {
 
   TestKeyringServiceObserver observer;
   service.AddObserver(observer.GetReceiver());
+  base::RunLoop run_loop;
 
   ASSERT_TRUE(CreateWallet(&service, "brave"));
-
   ASSERT_FALSE(observer.IsKeyringCreated(mojom::kFilecoinKeyringId));
   EXPECT_FALSE(service.IsKeyringCreated(mojom::kFilecoinKeyringId));
 
@@ -3204,7 +3243,6 @@ TEST_F(KeyringServiceUnitTest, ImportFilecoinAccounts) {
                          mojom::kFilecoinTestnetKeyringId);
   ImportFilecoinAccounts(&service, &observer, imported_mainnet_accounts,
                          mojom::kFilecoinKeyringId);
-
   // filecoin keyring will be lazily created in first FIL import
   auto* filecoin_testnet_keyring =
       service.GetHDKeyringById(brave_wallet::mojom::kFilecoinTestnetKeyringId);
@@ -4130,6 +4168,101 @@ TEST_F(KeyringServiceEncryptionKeysMigrationUnitTest,
   EXPECT_TRUE(
       GetPrefs()->GetBoolean(kBraveWalletKeyringEncryptionKeysMigrated));
   EXPECT_TRUE(ValidatePassword(&service, "brave"));
+}
+
+TEST_F(KeyringServiceUnitTest, AccountsAdded) {
+  // TODO(nvonpentz) Finish these test cases -
+  // NotifyAccountsAdded trigger by:
+  //
+  // * CreateWallet
+  // * RestoreWallet
+  // * ImportFilecoinAccount
+  // * AddAccountForKeyring, called in
+  //  * AddAccountsWithDefaultName, called in
+  //    * OnGetTransactionCount (when looking for accounts with transactions to
+  //    load into UI)
+  // * AddAccount
+
+  base::test::ScopedFeatureList feature_list;
+  feature_list.InitWithFeatures(
+      {brave_wallet::features::kBraveWalletFilecoinFeature},
+      {});  // todo add solana
+
+  KeyringService service(json_rpc_service(), GetPrefs());
+  TestKeyringServiceObserver observer;
+  service.AddObserver(observer.GetReceiver());
+
+  // CreateWallet
+  absl::optional<std::string> mnemonic_to_be_restored =
+      CreateWallet(&service, "brave");
+  ASSERT_TRUE(mnemonic_to_be_restored.has_value());
+
+  base::RunLoop().RunUntilIdle();
+  std::vector<mojom::AccountInfoPtr> account_infos =
+      service.GetAccountInfosForKeyring(mojom::kDefaultKeyringId);
+
+  // TODO(nvonpentz) Assert account_infos match
+  service.Reset();
+
+  // RestoreWallet
+  RestoreWallet(&service, *mnemonic_to_be_restored, "brave1", false);
+  account_infos = service.GetAccountInfosForKeyring(mojom::kDefaultKeyringId);
+  observer.TestAccountsAddedEqual(std::move(account_infos));
+
+  // AddAccountForKeyring
+  EXPECT_TRUE(
+      service.CreateEncryptorForKeyring("brave", mojom::kFilecoinKeyringId));
+  ASSERT_TRUE(service.CreateKeyringInternal(
+      brave_wallet::mojom::kFilecoinKeyringId, kMnemonic1, false));
+  auto* keyring =
+      service.GetHDKeyringById(brave_wallet::mojom::kFilecoinKeyringId);
+  service.AddAccountForKeyring(mojom::kFilecoinKeyringId, "");
+  const std::string f_address1 = keyring->GetAddress(0);
+  base::RunLoop().RunUntilIdle();
+  // TODO(nvonpentz) Assert account_infos match
+  // EXPECT_TRUE(observer.TestAccountsAdded(f_address1));
+  observer.Reset();
+
+  // ImportFilecoinAccount notifys a the filecoin account is added
+  const struct {
+    const char* name;
+    const char* import_payload;
+    const char* address;
+    const char* private_key;
+  } imported_accounts[] = {{"Imported Filecoin account 1",
+                            "7b2254797065223a22736563703235366b31222c2250726976"
+                            "6174654b6579223a22576b4"
+                            "545645a45794235364b5168512b453338786a7663464c2b545"
+                            "a4842464e732b696a585335"
+                            "35794b383d227d",
+                            "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+                            "WkEEdZEyB56KQhQ+E38xjvcFL+TZHBFNs+ijXS55yK8="},
+                           {"Imported Filecoin account 2",
+                            "7b2254797065223a22736563703235366b31222c2250726976"
+                            "6174654b6579223a22774d5"
+                            "267766730734d6a764657356e32515472705a5658414c596a7"
+                            "44d7036725156714d52535a"
+                            "6a482f513d227d",
+                            "t1par4kjqybnejlyuvpa3rodmluidq34ba6muafda",
+                            "wMRgvg0sMjvFW5n2QTrpZVXALYjtMp6rQVqMRSZjH/Q="}};
+
+  auto amount = sizeof(imported_accounts) / sizeof(imported_accounts[0]);
+  for (size_t i = 0; i < amount; ++i) {
+    absl::optional<std::string> address = ImportFilecoinAccount(
+        &service, imported_accounts[i].name,
+        imported_accounts[i].import_payload, mojom::kFilecoinTestnet);
+
+    ASSERT_TRUE(address.has_value());
+    EXPECT_EQ(address, imported_accounts[i].address);
+
+    base::RunLoop().RunUntilIdle();
+    // TODO(nvonpentz) Assert account_infos match
+    // EXPECT_TRUE(observer.TestAccountsAdded(imported_accounts[i].address));
+  }
+  observer.Reset();
+
+  // AddAccount
+  // TODO(nvonpentz) - Final use case
 }
 
 }  // namespace brave_wallet

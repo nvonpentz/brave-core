@@ -34,14 +34,40 @@ void SolanaKeyring::ConstructRootHDKey(const std::vector<uint8_t>& seed,
   }
 }
 
-void SolanaKeyring::AddAccounts(size_t number) {
+// void SolanaKeyring::AddAccounts(size_t number) {
+//   size_t cur_accounts_number = accounts_.size();
+//   for (size_t i = cur_accounts_number; i < cur_accounts_number + number; ++i)
+//   {
+//     if (root_) {
+//       accounts_.push_back(root_->DeriveChild(i)->DeriveChild(0));
+//     }
+//   }
+// }
+
+std::vector<size_t> SolanaKeyring::AddAccounts(size_t number) {
+  std::vector<size_t> indexes;
   size_t cur_accounts_number = accounts_.size();
   for (size_t i = cur_accounts_number; i < cur_accounts_number + number; ++i) {
     if (root_) {
       accounts_.push_back(root_->DeriveChild(i)->DeriveChild(0));
+      indexes.push_back(i);
     }
   }
+  return indexes;
 }
+
+// std::vector<size_t> SolanaKeyring::AddAccounts(size_t number) {
+//   // std::vector<size_t> indexes;
+//   size_t cur_accounts_number = accounts_.size();
+//   for (size_t i = cur_accounts_number; i < cur_accounts_number + number; ++i)
+//   {
+//     if (root_) {
+//       accounts_.push_back(root_->DeriveChild(i));
+//       // indexes.push_back(i);
+//     }
+//   }
+//   // return indexes;
+// }
 
 std::string SolanaKeyring::ImportAccount(const std::vector<uint8_t>& keypair) {
   // extract private key from keypair

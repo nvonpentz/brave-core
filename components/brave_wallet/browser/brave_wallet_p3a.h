@@ -7,6 +7,7 @@
 #define BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_BRAVE_WALLET_P3A_H_
 
 #include <string>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
@@ -39,6 +40,9 @@ class BraveWalletP3A : public mojom::BraveWalletServiceObserver,
   void Unlocked() override {}
   void BackedUp() override {}
   void AccountsChanged() override {}
+  void AccountsAdded(
+      const std::vector<mojom::AccountInfoPtr> account_infos) override {}
+  void AccountsRemoved(const std::vector<std::string>&) override {}
   void AutoLockMinutesChanged() override {}
   void SelectedAccountChanged(mojom::CoinType coin) override {}
 

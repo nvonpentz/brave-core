@@ -60,6 +60,12 @@ export class WalletApiProxy {
       accountsChanged: function () {
         store.dispatch(WalletActions.accountsChanged())
       },
+      accountsAdded: function () {
+        store.dispatch(WalletActions.accountsAdded())
+      },
+      accountsRemoved: function () {
+        store.dispatch(WalletActions.accountsRemoved())
+      },
       autoLockMinutesChanged: function () {
         store.dispatch(WalletActions.autoLockMinutesChanged())
       },

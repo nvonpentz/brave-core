@@ -931,6 +931,14 @@ void KeyringService::ImportFilecoinAccount(
   SetSelectedAccountForCoinSilently(mojom::CoinType::FIL, address);
   SetSelectedCoin(prefs_, mojom::CoinType::FIL);
 
+  std::vector<mojom::AccountInfoPtr> account_infos;
+  mojom::AccountInfoPtr account_info = mojom::AccountInfo::New();
+  account_info->address = info.account_address;
+  account_info->name = info.account_name;
+  account_info->is_imported = true;
+  account_info->coin = info.coin;
+  account_infos.push_back(std::move(account_info));
+  NotifyAccountsAdded(std::move(account_infos));
   NotifyAccountsChanged();
 
   std::move(callback).Run(true, address);
@@ -1210,14 +1218,32 @@ absl::optional<std::string> KeyringService::AddAccountForKeyring(
     const std::string& account_name) {
   auto* keyring = GetHDKeyringById(keyring_id);
   if (!keyring)
-    return absl::nullopt;
   keyring->AddAccounts(1);
+    return absl::nullopt;
+  std::vector<size_t> indexes = keyring->AddAccounts(1);
   size_t accounts_num = keyring->GetAccountsNumber();
   CHECK(accounts_num);
   SetAccountMetaForKeyring(
       prefs_, GetAccountPathByIndex(accounts_num - 1, keyring_id), account_name,
       keyring->GetAddress(accounts_num - 1), keyring_id);
   return keyring->GetAccounts().at(accounts_num - 1);
+  // Create the AccountInfos for notification
+  std::vector<mojom::AccountInfoPtr> account_infos;
+  for (size_t i = 0; i < indexes.size(); ++i) {
+    size_t index = indexes[i];
+    mojom::AccountInfoPtr account_info = mojom::AccountInfo::New();
+    account_info->address = GetAccountAddressForKeyring(
+        prefs_, GetAccountPathByIndex(index, keyring_id), keyring_id);
+    account_info->name = GetAccountNameForKeyring(
+        prefs_, GetAccountPathByIndex(index, keyring_id), keyring_id);
+    account_info->is_imported = false;
+    account_info->coin = GetCoinForKeyring(keyring_id);
+    account_infos.push_back(std::move(account_info));
+  }
+
+  // NotifyAccountsChanged(); TODO(nvonpentz) Should we notify changed when an
+  // account added?
+  NotifyAccountsAdded(std::move(account_infos));
 }
 
 void KeyringService::AddDiscoveryAccountsForKeyring(
@@ -1251,7 +1277,7 @@ void KeyringService::OnGetTransactionCount(size_t discovery_account_index,
     size_t last_account_index = keyring->GetAccountsNumber() - 1;
     if (discovery_account_index > last_account_index) {
       AddAccountsWithDefaultName(discovery_account_index - last_account_index);
-      NotifyAccountsChanged();
+      NotifyAccountsChanged();  // todo should we remove this call ?
     }
 
     AddDiscoveryAccountsForKeyring(discovery_account_index + 1,
@@ -1287,6 +1313,14 @@ absl::optional<std::string> KeyringService::ImportAccountForKeyring(
 
   NotifyAccountsChanged();
 
+  std::vector<mojom::AccountInfoPtr> account_infos;
+  mojom::AccountInfoPtr account_info = mojom::AccountInfo::New();
+  account_info->address = info.account_address;
+  account_info->name = info.account_name;
+  account_info->is_imported = true;
+  account_info->coin = info.coin;
+  account_infos.push_back(std::move(account_info));
+  NotifyAccountsAdded(std::move(account_infos));
   return address;
 }
 
@@ -1362,26 +1396,26 @@ std::vector<mojom::AccountInfoPtr> KeyringService::GetHardwareAccountsSync(
 }
 
 void KeyringService::AddHardwareAccounts(
-    std::vector<mojom::HardwareWalletAccountPtr> infos) {
-  if (infos.empty())
+    std::vector<mojom::HardwareWalletAccountPtr> hardware_infos) {
+  if (hardware_infos.empty())
     return;
 
   bool account_selected = false;
-
-  for (const auto& info : infos) {
-    const auto& hardware_vendor = info->hardware_vendor;
-    std::string device_id = info->device_id;
-
-    DCHECK_EQ(hardware_vendor, info->hardware_vendor);
-    if (hardware_vendor != info->hardware_vendor)
+  std::vector<mojom::AccountInfoPtr> account_infos;
+  for (const auto& hardware_info : hardware_infos) {
+    const auto& hardware_vendor = hardware_info->hardware_vendor;
+    std::string device_id = hardware_info->device_id;
+    DCHECK_EQ(hardware_vendor, hardware_info->hardware_vendor);
+    if (hardware_vendor != hardware_info->hardware_vendor)
       continue;
     base::Value hw_account(base::Value::Type::DICTIONARY);
-    hw_account.SetStringKey(kAccountName, info->name);
-    hw_account.SetStringKey(kHardwareVendor, info->hardware_vendor);
-    hw_account.SetStringKey(kHardwareDerivationPath, info->derivation_path);
-    hw_account.SetIntKey(kCoinType, static_cast<int>(info->coin));
+
+    hw_account.SetStringKey(kAccountName, hardware_info->name);
+    hw_account.SetStringKey(kHardwareVendor, hardware_info->hardware_vendor);
+    hw_account.SetStringKey(kHardwareDerivationPath, hardware_info->derivation_path);
+    hw_account.SetIntKey(kCoinType, static_cast<int>(hardware_info->coin));
     auto keyring_id =
-        GetKeyringIdForNetwork(info->coin, info->network.value_or(""));
+        GetKeyringIdForNetwork(hardware_info->coin, hardware_info->network.value_or(""));
 
     base::Value* hardware_keyrings =
         GetPrefForKeyringUpdate(prefs_, kHardwareAccounts, keyring_id);
@@ -1397,15 +1431,22 @@ void KeyringService::AddHardwareAccounts(
           kAccountMetas, base::Value(base::Value::Type::DICTIONARY));
     }
 
-    meta_value->SetKey(info->address, std::move(hw_account));
+    meta_value->SetKey(hardware_info->address, std::move(hw_account));
 
     if (!account_selected) {
-      SetSelectedAccountForCoinSilently(infos[0]->coin, infos[0]->address);
-      SetSelectedCoin(prefs_, infos[0]->coin);
+      SetSelectedAccountForCoinSilently(hardware_infos[0]->coin, hardware_infos[0]->address);
+      SetSelectedCoin(prefs_, hardware_infos[0]->coin);
       account_selected = true;
     }
+    account_infos.push_back(mojom::AccountInfo::New(
+        hardware_info->address, hardware_info->name, false,
+        mojom::HardwareInfo::New(hardware_info->derivation_path,
+                                 hardware_info->hardware_vendor,
+                                 hardware_info->device_id),
+        hardware_info->coin));
   }
 
+  NotifyAccountsAdded(std::move(account_infos));
   NotifyAccountsChanged();
 }
 
@@ -2078,6 +2119,17 @@ void KeyringService::SetKeyringImportedAccountName(
 void KeyringService::NotifyAccountsChanged() {
   for (const auto& observer : observers_) {
     observer->AccountsChanged();
+  }
+}
+
+void KeyringService::NotifyAccountsAdded(
+    const std::vector<mojom::AccountInfoPtr> account_infos) {
+  for (const auto& observer : observers_) {
+    std::vector<mojom::AccountInfoPtr> account_infos_clone;
+    for (const auto& account_info : account_infos) {
+      account_infos_clone.push_back(account_info.Clone());
+    }
+    observer->AccountsAdded(std::move(account_infos_clone));
   }
 }
 

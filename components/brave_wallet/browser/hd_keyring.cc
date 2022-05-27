@@ -23,14 +23,42 @@ void HDKeyring::ConstructRootHDKey(const std::vector<uint8_t>& seed,
   }
 }
 
-void HDKeyring::AddAccounts(size_t number) {
+// void HDKeyring::AddAccounts(size_t number) {
+//   size_t cur_accounts_number = accounts_.size();
+//   for (size_t i = cur_accounts_number; i < cur_accounts_number + number; ++i)
+//   {
+//     if (root_) {
+//       accounts_.push_back(root_->DeriveChild(i));
+//     }
+//   }
+// }
+
+std::vector<size_t> HDKeyring::AddAccounts(size_t number) {
+  std::vector<size_t> indexes;
   size_t cur_accounts_number = accounts_.size();
   for (size_t i = cur_accounts_number; i < cur_accounts_number + number; ++i) {
     if (root_) {
       accounts_.push_back(root_->DeriveChild(i));
+      indexes.push_back(i);
     }
   }
+  return indexes;
 }
+
+// void HDKeyring::AddAccountsAndReturn(size_t number) {
+// void HDKeyring::AddAccountsAndReturn(size_t number) {
+//   // return AddAccounts(number);
+//   VLOG(0) << "HDKeyring::AddAccountsAndReturn";
+//   size_t cur_accounts_number = accounts_.size();
+//   VLOG(0) << "HDKeyring::AddAccountsAndReturn: cur_accounts_number is " <<
+//   cur_accounts_number; for (size_t i = cur_accounts_number; i <
+//   cur_accounts_number + number; ++i) {
+//     if (root_) {
+//       VLOG(0) << "HDKeyring::AddAccountsAndReturn: root_ == true";
+//       accounts_.push_back(root_->DeriveChild(i));
+//     }
+//   }
+// }
 
 std::vector<std::string> HDKeyring::GetAccounts() const {
   std::vector<std::string> addresses;
