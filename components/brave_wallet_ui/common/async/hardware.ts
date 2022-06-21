@@ -71,7 +71,7 @@ export async function signTrezorTransaction (
   txInfo.txDataUnion.ethTxData1559.baseData.nonce = nonce.nonce
   const signed = await deviceKeyring.signTransaction(path, txInfo, chainId.chainId)
   if (!signed || !signed.success || !signed.payload) {
-    const error = signed.error ? signed.error : getLocale('braveWalletSignOnDeviceError')
+    const error = (signed.error ? signed.error : getLocale('braveWalletSignOnDeviceError')) as string
     if (signed.code === TrezorErrorsCodes.CommandInProgress) {
       return { success: false, error: error, deviceError: 'deviceBusy' }
     }
@@ -168,8 +168,10 @@ export async function signLedgerSolanaTransaction (
       const error = signed?.error ?? getLocale('braveWalletSignOnDeviceError')
       const code = signed?.code ?? ''
       if (code === 'DisconnectedDeviceDuringOperation') {
-        await deviceKeyring.makeApp()
+        // await deviceKeyring.makeApp()
+        return { success: false, error: 'error', code: 'code' } // TODO handle this case correctly now that makeApp was removed
       }
+
       return { success: false, error: error, code: code }
     }
 

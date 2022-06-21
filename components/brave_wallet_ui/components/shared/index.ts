@@ -11,6 +11,7 @@ import CreateNetworkIcon from './create-network-icon'
 import SelectNetworkButton from './select-network-button'
 import LoadingSkeleton from './loading-skeleton'
 import CreateSiteOrigin from './create-site-origin'
+import AuthorizeHardwareDeviceIFrame from './authorize-hardware-device/authorize-hardware-device'
 
 export {
   AppListItem,
@@ -25,5 +26,6 @@ export {
   CreateNetworkIcon,
   SelectNetworkButton,
   LoadingSkeleton,
-  CreateSiteOrigin
+  CreateSiteOrigin,
+  AuthorizeHardwareDeviceIFrame
 }

@@ -12,6 +12,7 @@ import { getBalance } from '../../../../../common/async/lib'
 
 // components
 import HardwareWalletAccountsList from './accounts-list'
+import { AuthorizeHardwareDeviceIFrame } from '../../../../shared/'
 import { NavButton } from '../../../../extension'
 
 // Styled Components
@@ -46,6 +47,10 @@ export interface Props {
 }
 
 const getErrorMessage = (error: any, accountTypeName: string) => {
+  if (typeof(error) === "string") {
+    return { error: error, userHint: '' }
+  }
+
   if (error.statusCode && error.statusCode === 27404) { // Unknown Error
     return { error: getLocale('braveWalletConnectHardwareInfo2').replace('$1', accountTypeName), userHint: '' }
   }
@@ -81,6 +86,7 @@ export const HardwareWalletConnect = ({ onSuccess, selectedAccountType }: Props)
   )
   const [showAccountsList, setShowAccountsList] = React.useState<boolean>(false)
   const [filecoinNetwork, setFilecoinNetwork] = React.useState<FilecoinNetwork>('f')
+  const [showAuthorizeDevice, setShowAuthorizeDevice] = React.useState<boolean>(false)
 
   // methods
   const onFilecoinNetworkChanged = React.useCallback((network: FilecoinNetwork) => {
@@ -90,7 +96,8 @@ export const HardwareWalletConnect = ({ onSuccess, selectedAccountType }: Props)
       startIndex: 0,
       stopIndex: DerivationBatchSize,
       network: network,
-      coin: BraveWallet.CoinType.FIL
+      coin: BraveWallet.CoinType.FIL,
+      onAuthorized: setShowAuthorizeDevice
     }).then((result) => {
       setAccounts(result)
     }).catch((error) => {
@@ -115,7 +122,8 @@ export const HardwareWalletConnect = ({ onSuccess, selectedAccountType }: Props)
       stopIndex: DerivationBatchSize,
       scheme: scheme,
       coin: selectedAccountType.coin,
-      network: filecoinNetwork
+      network: filecoinNetwork,
+      onAuthorized: setShowAuthorizeDevice
     }).then((result) => {
       setAccounts(result)
     }).catch((error) => {
@@ -180,13 +188,19 @@ export const HardwareWalletConnect = ({ onSuccess, selectedAccountType }: Props)
       stopIndex: accounts.length + DerivationBatchSize,
       scheme: selectedDerivationScheme,
       coin: selectedAccountType.coin,
-      network: filecoinNetwork
+      network: filecoinNetwork,
+      onAuthorized: setShowAuthorizeDevice
     }).then((result) => {
       setAccounts([...accounts, ...result])
       setShowAccountsList(true)
     }).catch((error) => {
-      setConnectionError(getErrorMessage(error, selectedAccountType.name))
-      setShowAccountsList(false)
+      if (error === 'unauthorized') {
+        setShowAuthorizeDevice(true)
+        setShowAccountsList(false)
+      } else {
+        setConnectionError(getErrorMessage(error, selectedAccountType.name))
+        setShowAccountsList(false)
+      }
     }).finally(
       () => setIsConnecting(false)
     )
@@ -200,6 +214,12 @@ export const HardwareWalletConnect = ({ onSuccess, selectedAccountType }: Props)
   }, [savedAccounts])
 
   // render
+  if (showAuthorizeDevice) {
+    return (
+      <AuthorizeHardwareDeviceIFrame/>
+    )
+  }
+
   if (showAccountsList) {
     return (
       <HardwareWalletAccountsList

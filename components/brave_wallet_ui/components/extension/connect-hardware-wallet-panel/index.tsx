@@ -15,6 +15,7 @@ import { getLocale } from '../../../../common/locale'
 import useInterval from '../../../common/hooks/interval'
 import { BraveWallet } from '../../../constants/types'
 import { HardwareWalletResponseCodeType } from '../../../common/hardware/types'
+import { AuthorizeHardwareDeviceIFrame } from '../../shared'
 
 export interface Props {
   onCancel: (accountAddress: string, coinType: BraveWallet.CoinType) => void
@@ -38,7 +39,8 @@ function ConnectHardwareWalletPanel (props: Props) {
   } = props
 
   const isConnected = React.useMemo((): boolean => {
-    return hardwareWalletCode !== 'deviceNotConnected'
+    return hardwareWalletCode !== undefined && hardwareWalletCode !== 'deviceNotConnected' && hardwareWalletCode !== 'unauthorized'
+    // return hardwareWalletCode !== 'deviceNotConnected' && hardwareWalletCode !== 'unauthorized'
   }, [hardwareWalletCode])
 
   const title = React.useMemo(() => {
@@ -61,7 +63,6 @@ function ConnectHardwareWalletPanel (props: Props) {
   }
 
   useInterval(retryCallable, 3000, !isConnected ? 5000 : null)
-
   return (
     <StyledWrapper>
       <ConnectionRow>
@@ -81,7 +82,11 @@ function ConnectHardwareWalletPanel (props: Props) {
       {
         hardwareWalletCode !== 'deviceBusy' && (
           <ButtonWrapper>
-            <NavButton buttonType='secondary' text={getLocale('braveWalletBackupButtonCancel')} onSubmit={onCancelConnect} />
+            { 
+              hardwareWalletCode !== 'unauthorized'
+              ?  <NavButton buttonType='secondary' text={getLocale('braveWalletBackupButtonCancel')} onSubmit={onCancelConnect} />
+              :  <AuthorizeHardwareDeviceIFrame/>
+            }
           </ButtonWrapper>
         )
       }

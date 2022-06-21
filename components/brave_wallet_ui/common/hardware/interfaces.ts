@@ -15,7 +15,7 @@ import {
 export abstract class HardwareKeyring {
   abstract coin (): BraveWallet.CoinType
   abstract type (): HardwareVendor
-  abstract isUnlocked (): boolean
+  // abstract isUnlocked (): boolean // TODO
   abstract unlock (): Promise<HardwareOperationResult>
 }
 
@@ -43,5 +43,5 @@ export abstract class LedgerFilecoinKeyring extends HardwareKeyring {
 export abstract class LedgerSolanaKeyring extends HardwareKeyring {
   abstract getAccounts (from: number, to: number): Promise<GetAccountsHardwareOperationResult>
   abstract signTransaction (path: string, rawTxBytes: Buffer): Promise<SignHardwareOperationResult>
-  abstract makeApp (): Promise<void>
+  // abstract makeApp (): Promise<void>
 }
