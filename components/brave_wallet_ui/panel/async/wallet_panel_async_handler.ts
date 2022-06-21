@@ -320,6 +320,15 @@ handler.on(PanelActions.approveHardwareTransaction.getType(), async (store: Stor
     }
 
     if (code) {
+      // TODO resolve: 'code' is an overloaded term right now. In some places it refers to the
+      // codes received from the hardware device itself.  In other places they refer to 
+      // transport errors (e.g. BridgeNotReady).  I'm adding a third case here - when
+      // the user is not authorized which is not a device code, or related to transport.
+      if (code === 'unauthorized') {
+        await store.dispatch(PanelActions.setHardwareWalletInteractionError(code))
+        return
+      }
+
       const deviceError = dialogErrorFromLedgerErrorCode(code)
       if (deviceError === 'transactionRejected') {
         await store.dispatch(WalletActions.rejectTransaction(txInfo))
@@ -516,6 +525,7 @@ handler.on(PanelActions.signMessageHardware.getType(), async (store, messageData
   const info = hardwareAccount.hardware
   const signed = await signMessageWithHardwareKeyring(info.vendor as HardwareVendor, info.path, messageData)
   if (!signed.success && signed.code) {
+    // todo handle unauthorized here, dispatch event
     const deviceError = (info.vendor === BraveWallet.TREZOR_HARDWARE_VENDOR)
       ? dialogErrorFromTrezorErrorCode(signed.code) : dialogErrorFromLedgerErrorCode(signed.code)
     if (deviceError !== 'transactionRejected') {
@@ -532,7 +542,7 @@ handler.on(PanelActions.signMessageHardware.getType(), async (store, messageData
   const payload: SignMessageProcessedPayload =
     signed.success
       ? { approved: signed.success, id: messageData.id, signature: signature }
-      : { approved: signed.success, id: messageData.id, error: signed.error }
+      : { approved: signed.success, id: messageData.id, error: (signed.error) as string }
   store.dispatch(PanelActions.signMessageHardwareProcessed(payload))
   await store.dispatch(PanelActions.navigateToMain())
   apiProxy.panelHandler.closeUI()
@@ -585,7 +595,7 @@ handler.on(PanelActions.signTransactionHardware.getType(), async (store, message
   const payload: SignMessageProcessedPayload =
     signed.success
       ? { approved: signed.success, id: messageData.id, signature: signature }
-      : { approved: signed.success, id: messageData.id, error: signed.error }
+      : { approved: signed.success, id: messageData.id, error: signed.error as string }
   store.dispatch(PanelActions.signTransactionProcessed(payload))
   await store.dispatch(PanelActions.navigateToMain())
   apiProxy.panelHandler.closeUI()
@@ -635,7 +645,7 @@ handler.on(PanelActions.signAllTransactionsHardware.getType(), async (store, mes
     if (!signed.success) {
       payload.approved = false
       payload.signatures = undefined
-      payload.error = signed.error
+      payload.error = signed.error as string
       break
     }
     // @ts-expect-error google closure is ok with undefined for other fields but mojom runtime is not

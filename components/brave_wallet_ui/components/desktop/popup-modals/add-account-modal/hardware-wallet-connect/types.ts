@@ -30,6 +30,7 @@ export interface HardwareWalletConnectOpts {
   scheme?: HardwareDerivationScheme
   network?: FilecoinNetwork
   coin: BraveWallet.CoinType
+  onAuthorized: (showAuthorizeDevice: boolean) => void
 }
 
 export interface ErrorMessage {
