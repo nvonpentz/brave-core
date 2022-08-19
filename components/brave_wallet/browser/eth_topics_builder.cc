@@ -19,7 +19,7 @@ bool MakeAssetDiscoveryTopics(
   topics->Append(
       brave_wallet::GetFunctionHash("Transfer(address,address,uint256)"));
 
-  // Second topic matches everything (any from address)
+  // Second topic matches everything (any from_address)
   topics->Append(base::Value());
 
   // Third topic matches any of the to_addresses

@@ -312,7 +312,6 @@ class EthereumProviderImpl final
   void AccountsChanged() override {}
   void AccountsAdded(
       const std::vector<mojom::AccountInfoPtr> account_infos) override {}
-  void AccountsRemoved(const std::vector<std::string>&) override {}
   void AutoLockMinutesChanged() override {}
   void SelectedAccountChanged(mojom::CoinType coin) override;
 

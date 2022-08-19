@@ -37,6 +37,7 @@ namespace brave_wallet {
 class EthTransaction;
 class FilTransaction;
 class KeyringServiceUnitTest;
+class KeyringServiceUnitTest2;
 class EthereumProviderImplUnitTest;
 class SolanaProviderImplUnitTest;
 class FilecoinKeyring;
@@ -290,6 +291,7 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, PreCreateEncryptors);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, HardwareAccounts);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, AccountsAdded);
+  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryServiceUnitTest, AccountsAdded);
 
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceAccountDiscoveryUnitTest,
                            AccountDiscovery);
@@ -306,6 +308,7 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   friend class EthTxManagerUnitTest;
   friend class FilTxManagerUnitTest;
   friend class KeyringServiceUnitTest;
+  friend class AssetDiscoveryServiceUnitTest;
 
   absl::optional<std::string> FindImportedFilecoinKeyringId(
       const std::string& address) const;
@@ -379,7 +382,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   void NotifyAccountsChanged();
   void NotifyAccountsAdded(
       const std::vector<mojom::AccountInfoPtr> account_infos);
-  // void NotifyAccountsRemoved();
   void StopAutoLockTimer();
   void ResetAutoLockTimer();
   void OnAutoLockPreferenceChanged();

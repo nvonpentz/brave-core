@@ -264,15 +264,13 @@ bool ParseEthGasPrice(const std::string& json, std::string* result) {
 
 bool ParseEthGetLogs(const std::string& json, std::vector<Log>* logs) {
   DCHECK(logs);
-  base::Value result;
-  if (!ParseResult(json, &result))
+  auto result = ParseResultList(json);
+  if (!result)
     return false;
-  const base::ListValue* result_list = nullptr;
-  if (!result.GetAsList(&result_list))
-    return false;
-  DCHECK(result_list);
 
-  for (const auto& logs_list_it : result_list->GetList()) {
+  DCHECK(result);
+
+  for (const auto& logs_list_it : *result) {
     Log log;
     const base::DictionaryValue* log_dict = nullptr;
     if (!logs_list_it.GetAsDictionary(&log_dict))

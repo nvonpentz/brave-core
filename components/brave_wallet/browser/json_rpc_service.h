@@ -295,9 +295,13 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                           const std::string& chain_id,
                           GetTokenMetadataCallback callback) override;
 
+  using DiscoverAssetsCallback = base::OnceCallback<void(
+      const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
+      mojom::ProviderError error,
+      const std::string& error_message)>;
   void DiscoverAssets(const std::string& chain_id,
                       const std::vector<std::string>&,
-                      DiscoverAssetsCallback callback) override;
+                      DiscoverAssetsCallback callback);
 
   void OnGetAllTokensDiscoverAssets(
       const std::string& chain_id,
