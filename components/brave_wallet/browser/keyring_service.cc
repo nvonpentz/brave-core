@@ -1437,7 +1437,12 @@ void KeyringService::AddHardwareAccounts(
         mojom::HardwareInfo::New(hardware_info->derivation_path,
                                  hardware_info->hardware_vendor,
                                  hardware_info->device_id),
-        hardware_info->coin));
+        hardware_info->coin,
+        keyring_id));
+        // TODO(nvonpentz) - should I check IsFilecoinKeyringId?
+        // IsFilecoinKeyringId(keyring_id)
+        //    ? absl::optional<std::string>(keyring_id)
+        //    : absl::nullopt);
   }
 
   NotifyAccountsAdded(std::move(account_infos));
