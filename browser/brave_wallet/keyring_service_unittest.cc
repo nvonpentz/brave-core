@@ -4161,99 +4161,99 @@ TEST_F(KeyringServiceEncryptionKeysMigrationUnitTest,
   EXPECT_TRUE(ValidatePassword(&service, "brave"));
 }
 
-TEST_F(KeyringServiceUnitTest, AccountsAdded) {
-  // TODO(nvonpentz) Finish these test cases -
-  // NotifyAccountsAdded trigger by:
-  //
-  // * CreateWallet
-  // * RestoreWallet
-  // * ImportFilecoinAccount
-  // * AddAccountForKeyring, called in
-  //  * AddAccountsWithDefaultName, called in
-  //    * OnGetTransactionCount (when looking for accounts with transactions to
-  //    load into UI)
-  // * AddAccount
+//TEST_F(KeyringServiceUnitTest, AccountsAdded) {
+//  // TODO(nvonpentz) Finish these test cases -
+//  // NotifyAccountsAdded trigger by:
+//  //
+//  // * CreateWallet
+//  // * RestoreWallet
+//  // * ImportFilecoinAccount
+//  // * AddAccountForKeyring, called in
+//  //  * AddAccountsWithDefaultName, called in
+//  //    * OnGetTransactionCount (when looking for accounts with transactions to
+//  //    load into UI)
+//  // * AddAccount
 
-  base::test::ScopedFeatureList feature_list;
-  feature_list.InitWithFeatures(
-      {brave_wallet::features::kBraveWalletFilecoinFeature},
-      {});  // todo add solana
+//  base::test::ScopedFeatureList feature_list;
+//  feature_list.InitWithFeatures(
+//      {brave_wallet::features::kBraveWalletFilecoinFeature},
+//      {});  // todo add solana
 
-  KeyringService service(json_rpc_service(), GetPrefs());
-  TestKeyringServiceObserver observer;
-  service.AddObserver(observer.GetReceiver());
+//  KeyringService service(json_rpc_service(), GetPrefs());
+//  TestKeyringServiceObserver observer;
+//  service.AddObserver(observer.GetReceiver());
 
-  // CreateWallet
-  absl::optional<std::string> mnemonic_to_be_restored =
-      CreateWallet(&service, "brave");
-  ASSERT_TRUE(mnemonic_to_be_restored.has_value());
+//  // CreateWallet
+//  absl::optional<std::string> mnemonic_to_be_restored =
+//      CreateWallet(&service, "brave");
+//  ASSERT_TRUE(mnemonic_to_be_restored.has_value());
 
-  base::RunLoop().RunUntilIdle();
-  std::vector<mojom::AccountInfoPtr> account_infos =
-      service.GetAccountInfosForKeyring(mojom::kDefaultKeyringId);
+//  base::RunLoop().RunUntilIdle();
+//  std::vector<mojom::AccountInfoPtr> account_infos =
+//      service.GetAccountInfosForKeyring(mojom::kDefaultKeyringId);
 
-  // TODO(nvonpentz) Assert account_infos match
-  service.Reset();
+//  // TODO(nvonpentz) Assert account_infos match
+//  service.Reset();
 
-  // RestoreWallet
-  RestoreWallet(&service, *mnemonic_to_be_restored, "brave1", false);
-  account_infos = service.GetAccountInfosForKeyring(mojom::kDefaultKeyringId);
-  observer.TestAccountsAddedEqual(std::move(account_infos));
+//  // RestoreWallet
+//  RestoreWallet(&service, *mnemonic_to_be_restored, "brave1", false);
+//  account_infos = service.GetAccountInfosForKeyring(mojom::kDefaultKeyringId);
+//  observer.TestAccountsAddedEqual(std::move(account_infos));
 
-  // AddAccountForKeyring
-  EXPECT_TRUE(
-      service.CreateEncryptorForKeyring("brave", mojom::kFilecoinKeyringId));
-  ASSERT_TRUE(service.CreateKeyringInternal(
-      brave_wallet::mojom::kFilecoinKeyringId, kMnemonic1, false));
-  auto* keyring =
-      service.GetHDKeyringById(brave_wallet::mojom::kFilecoinKeyringId);
-  service.AddAccountForKeyring(mojom::kFilecoinKeyringId, "");
-  const std::string f_address1 = keyring->GetAddress(0);
-  base::RunLoop().RunUntilIdle();
-  // TODO(nvonpentz) Assert account_infos match
-  // EXPECT_TRUE(observer.TestAccountsAdded(f_address1));
-  observer.Reset();
+//  // AddAccountForKeyring
+//  EXPECT_TRUE(
+//      service.CreateEncryptorForKeyring("brave", mojom::kFilecoinKeyringId));
+//  ASSERT_TRUE(service.CreateKeyringInternal(
+//      brave_wallet::mojom::kFilecoinKeyringId, kMnemonic1, false));
+//  auto* keyring =
+//      service.GetHDKeyringById(brave_wallet::mojom::kFilecoinKeyringId);
+//  service.AddAccountForKeyring(mojom::kFilecoinKeyringId, "");
+//  const std::string f_address1 = keyring->GetAddress(0);
+//  base::RunLoop().RunUntilIdle();
+//  // TODO(nvonpentz) Assert account_infos match
+//  // EXPECT_TRUE(observer.TestAccountsAdded(f_address1));
+//  observer.Reset();
 
-  // ImportFilecoinAccount notifys a the filecoin account is added
-  const struct {
-    const char* name;
-    const char* import_payload;
-    const char* address;
-    const char* private_key;
-  } imported_accounts[] = {{"Imported Filecoin account 1",
-                            "7b2254797065223a22736563703235366b31222c2250726976"
-                            "6174654b6579223a22576b4"
-                            "545645a45794235364b5168512b453338786a7663464c2b545"
-                            "a4842464e732b696a585335"
-                            "35794b383d227d",
-                            "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
-                            "WkEEdZEyB56KQhQ+E38xjvcFL+TZHBFNs+ijXS55yK8="},
-                           {"Imported Filecoin account 2",
-                            "7b2254797065223a22736563703235366b31222c2250726976"
-                            "6174654b6579223a22774d5"
-                            "267766730734d6a764657356e32515472705a5658414c596a7"
-                            "44d7036725156714d52535a"
-                            "6a482f513d227d",
-                            "t1par4kjqybnejlyuvpa3rodmluidq34ba6muafda",
-                            "wMRgvg0sMjvFW5n2QTrpZVXALYjtMp6rQVqMRSZjH/Q="}};
+//  // ImportFilecoinAccount notifys a the filecoin account is added
+//  const struct {
+//    const char* name;
+//    const char* import_payload;
+//    const char* address;
+//    const char* private_key;
+//  } imported_accounts[] = {{"Imported Filecoin account 1",
+//                            "7b2254797065223a22736563703235366b31222c2250726976"
+//                            "6174654b6579223a22576b4"
+//                            "545645a45794235364b5168512b453338786a7663464c2b545"
+//                            "a4842464e732b696a585335"
+//                            "35794b383d227d",
+//                            "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+//                            "WkEEdZEyB56KQhQ+E38xjvcFL+TZHBFNs+ijXS55yK8="},
+//                           {"Imported Filecoin account 2",
+//                            "7b2254797065223a22736563703235366b31222c2250726976"
+//                            "6174654b6579223a22774d5"
+//                            "267766730734d6a764657356e32515472705a5658414c596a7"
+//                            "44d7036725156714d52535a"
+//                            "6a482f513d227d",
+//                            "t1par4kjqybnejlyuvpa3rodmluidq34ba6muafda",
+//                            "wMRgvg0sMjvFW5n2QTrpZVXALYjtMp6rQVqMRSZjH/Q="}};
 
-  auto amount = sizeof(imported_accounts) / sizeof(imported_accounts[0]);
-  for (size_t i = 0; i < amount; ++i) {
-    absl::optional<std::string> address = ImportFilecoinAccount(
-        &service, imported_accounts[i].name,
-        imported_accounts[i].import_payload, mojom::kFilecoinTestnet);
+//  auto amount = sizeof(imported_accounts) / sizeof(imported_accounts[0]);
+//  for (size_t i = 0; i < amount; ++i) {
+//    absl::optional<std::string> address = ImportFilecoinAccount(
+//        &service, imported_accounts[i].name,
+//        imported_accounts[i].import_payload, mojom::kFilecoinTestnet);
 
-    ASSERT_TRUE(address.has_value());
-    EXPECT_EQ(address, imported_accounts[i].address);
+//    ASSERT_TRUE(address.has_value());
+//    EXPECT_EQ(address, imported_accounts[i].address);
 
-    base::RunLoop().RunUntilIdle();
-    // TODO(nvonpentz) Assert account_infos match
-    // EXPECT_TRUE(observer.TestAccountsAdded(imported_accounts[i].address));
-  }
-  observer.Reset();
+//    base::RunLoop().RunUntilIdle();
+//    // TODO(nvonpentz) Assert account_infos match
+//    // EXPECT_TRUE(observer.TestAccountsAdded(imported_accounts[i].address));
+//  }
+//  observer.Reset();
 
-  // AddAccount
-  // TODO(nvonpentz) - Final use case
-}
+//  // AddAccount
+//  // TODO(nvonpentz) - Final use case
+//}
 
 }  // namespace brave_wallet
