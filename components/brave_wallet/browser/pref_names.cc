@@ -49,6 +49,10 @@ extern const char kBraveWalletP3AUsedSecondDay[] =
     "brave.wallet.p3a_used_second_day";
 const char kBraveWalletKeyringEncryptionKeysMigrated[] =
     "brave.wallet.keyring_encryption_keys_migrated";
+const char kBraveWalletAssetsDiscoveredThroughBlock[] =
+    "brave.wallet.assets_discovered_through_block";
+const char kBraveWalletLastDiscoveredAssetsAt[] =
+    "brave.wallet.last_discovered_assets_at";
 
 // DEPRECATED
 const char kBraveWalletSelectedAccount[] = "brave.wallet.selected_account";

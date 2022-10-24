@@ -27,6 +27,9 @@ constexpr uint256_t kDefaultERC20ApproveGasLimit = 300000;
 constexpr int32_t kAutoLockMinutesMin = 1;
 constexpr int32_t kAutoLockMinutesMax = 10080;
 
+constexpr int32_t kAssetDiscoveryRequestsPerMinuteLimit = 1;
+constexpr int32_t kAssetDiscoveryMinutesPerRequest = 1;
+
 constexpr char kWalletBaseDirectory[] = "BraveWallet";
 constexpr char kImageSourceHost[] = "erc-token-images";
 constexpr char kWyreID[] = "AC_MGNVBGHPA9T";
@@ -1003,6 +1006,8 @@ const std::vector<mojom::BlockchainToken>& GetSardineBuyTokens();
 const std::string GetSardineNetworkName(const std::string& chain_id);
 const base::flat_map<std::string, std::string>& GetInfuraChainEndpoints();
 bool HasJupiterFeesForTokenMint(const std::string& mint);
+
+const std::vector<std::string>& GetAssetDiscoverySupportedChains();
 
 }  // namespace brave_wallet
 

@@ -116,6 +116,10 @@ bool SolanaAccountInfo::operator!=(const SolanaAccountInfo& info) const {
   return !operator==(info);
 }
 
+// WorkItem::WorkItem() = default;
+// WorkItem::~WorkItem() = default;
+// WorkItem::WorkItem(const WorkItem&) = default;
+
 bool ValidSolidityBits(size_t bits) {
   return bits != 0 && bits % 8 == 0 && bits <= 256;
 }

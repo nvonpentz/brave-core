@@ -34,6 +34,9 @@ export class WalletApiProxy {
       },
       onIsEip1559Changed: function (chainId, isEip1559) {
         store.dispatch(WalletActions.isEip1559Changed({ chainId, isEip1559 }))
+      },
+      onDiscoveredAssetsCompleted: function (chainId, providerError, error) {
+        console.log('onDiscoveredAssetsCompleted fired for', 'chainId', chainId, 'providerError', providerError, 'error', error)
       }
     })
     this.jsonRpcService.addObserver(jsonRpcServiceObserverReceiver.$.bindNewPipeAndPassRemote())
