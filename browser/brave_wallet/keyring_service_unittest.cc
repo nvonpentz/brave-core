@@ -4473,6 +4473,8 @@ TEST_F(KeyringServiceUnitTest, DiscoverAssets) {
                                         mojom::CoinType::ETH, GetPrefs());
   EXPECT_EQ(user_assets.size(), 3u);
   EXPECT_EQ(user_assets[user_assets.size() - 1]->symbol, "DAI");
+  task_environment_.FastForwardBy(
+      base::Minutes(kAssetDiscoveryMinutesPerRequest));
 
   // AddAccount
   // Mock an eth_getLogs response that includes logs for WETH transfers to the
@@ -4508,6 +4510,8 @@ TEST_F(KeyringServiceUnitTest, DiscoverAssets) {
       mojom::kMainnetChainId, mojom::CoinType::ETH, GetPrefs());
   EXPECT_EQ(user_assets.size(), 4u);
   EXPECT_EQ(user_assets[user_assets.size() - 1]->symbol, "WETH");
+  task_environment_.FastForwardBy(
+      base::Minutes(kAssetDiscoveryMinutesPerRequest));
 
   // AddHardwareAccounts
   // Mock an eth_getLogs response that includes logs for USDC transfers to the
@@ -4545,6 +4549,8 @@ TEST_F(KeyringServiceUnitTest, DiscoverAssets) {
       mojom::kMainnetChainId, mojom::CoinType::ETH, GetPrefs());
   EXPECT_EQ(user_assets[user_assets.size() - 1]->symbol, "USDC");
   EXPECT_EQ(user_assets.size(), 5u);
+  task_environment_.FastForwardBy(
+      base::Minutes(kAssetDiscoveryMinutesPerRequest));
 
   // ImportAccountForKeyring
   // Mock an eth_getLogs response that includes logs for RAI transfers to the

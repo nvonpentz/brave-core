@@ -275,11 +275,20 @@ class TestJsonRpcServiceObserver
     expected_is_eip1559_ = expected_is_eip1559;
   }
 
+  TestJsonRpcServiceObserver() = default;
+
   void Reset(const std::string& expected_chain_id, bool expected_is_eip1559) {
     expected_chain_id_ = expected_chain_id;
     expected_is_eip1559_ = expected_is_eip1559;
+    discovered_assets_chain_ids_.clear();
+    discovered_assets_error_messages_.clear();
     chain_changed_called_ = false;
     is_eip1559_changed_called_ = false;
+  }
+
+  void Reset() {
+    discovered_assets_chain_ids_.clear();
+    discovered_assets_error_messages_.clear();
   }
 
   void OnAddEthereumChainRequestCompleted(const std::string& chain_id,
@@ -303,6 +312,25 @@ class TestJsonRpcServiceObserver
     EXPECT_EQ(is_eip1559, expected_is_eip1559_);
   }
 
+  void OnDiscoveredAssetsCompleted(const std::string& chain_id,
+                                   mojom::ProviderError error,
+                                   const std::string& error_message) override {
+    discovered_assets_chain_ids_.push_back(chain_id);
+    discovered_assets_error_messages_.push_back(error_message);
+  }
+
+  // TestOnDiscoveredAssetsCompletedResults verifies
+  // that the chain_ids and error messages passed as arguments to
+  // OnDiscoveredAssetsCompleted are as expected
+  void TestOnDiscoveredAssetsCompletedResults(
+      std::vector<std::string> expected_chain_ids,
+      std::vector<std::string> expected_error_messages) {
+    ASSERT_EQ(expected_error_messages.size(), expected_chain_ids.size());
+    ASSERT_EQ(discovered_assets_error_messages_.size(),
+              discovered_assets_chain_ids_.size());
+    EXPECT_EQ(expected_chain_ids.size(), discovered_assets_chain_ids_.size());
+  }
+
   bool is_eip1559_changed_called() {
     base::RunLoop().RunUntilIdle();
     return is_eip1559_changed_called_;
@@ -322,6 +350,8 @@ class TestJsonRpcServiceObserver
   std::string expected_chain_id_;
   mojom::CoinType expected_coin_;
   std::string expected_error_;
+  std::vector<std::string> discovered_assets_chain_ids_;
+  std::vector<std::string> discovered_assets_error_messages_;
   bool expected_is_eip1559_;
   bool chain_changed_called_ = false;
   bool is_eip1559_changed_called_ = false;
@@ -680,7 +710,8 @@ class JsonRpcEnpointHandler {
 
 class JsonRpcServiceUnitTest : public testing::Test {
  public:
-  JsonRpcServiceUnitTest() = default;
+  JsonRpcServiceUnitTest()
+      : task_environment_(base::test::TaskEnvironment::TimeSource::MOCK_TIME) {}
 
   void SetUp() override {
     Test::SetUp();
@@ -919,6 +950,40 @@ class JsonRpcServiceUnitTest : public testing::Test {
         }));
   }
 
+  // SetDiscoverAssetsOnAllSupportedChainsInterceptor sets the response
+  // based on the requested URL and verifies the from / to blocks
+  // specified in the eth_getLogs query is expected for each URL/chain ID
+  // requested.
+  void SetDiscoverAssetsOnAllSupportedChainsInterceptor(
+      const std::map<std::string, std::string> responses,
+      const std::map<std::string, std::string> expected_from_blocks,
+      const std::map<std::string, std::string> expected_to_blocks) {
+    url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
+        [&, responses, expected_from_blocks,
+         expected_to_blocks](const network::ResourceRequest& request) {
+          base::StringPiece request_string(request.request_body->elements()
+                                               ->at(0)
+                                               .As<network::DataElementBytes>()
+                                               .AsStringPiece());
+          const auto expected_from_block =
+              expected_from_blocks.find(request.url.spec())->second;
+          const auto expected_to_block =
+              expected_to_blocks.find(request.url.spec())->second;
+
+          EXPECT_NE(request_string.find(base::StringPrintf(
+                        "\"fromBlock\":\"%s\"", expected_from_block.c_str())),
+                    std::string::npos);
+          EXPECT_NE(request_string.find(base::StringPrintf(
+                        "\"toBlock\":\"%s\"", expected_to_block.c_str())),
+                    std::string::npos);
+          url_loader_factory_.ClearResponses();
+          for (const auto& kv : responses) {
+            url_loader_factory_.AddResponse(kv.first, kv.second);
+          }
+          return;
+        }));
+  }
+
   void SetInterceptor(const GURL& expected_url,
                       const std::string& expected_method,
                       const std::string& expected_cache_header,
@@ -1121,20 +1186,27 @@ class JsonRpcServiceUnitTest : public testing::Test {
     run_loop.Run();
   }
 
-  void TestDiscoverAssetsInternal(
+  void TestDiscoverAssets(
       const std::string& chain_id,
       mojom::CoinType coin,
       const std::vector<std::string>& account_addresses,
       const std::vector<std::string>& expected_token_contract_addresses,
       mojom::ProviderError expected_error,
-      const std::string& expected_error_message) {
+      const std::string& expected_error_message,
+      const std::string& expected_next_asset_discovery_from_block,
+      bool update_prefs = true,
+      const std::string& start_block = "earliest",
+      const std::string& end_block = "latest") {
     base::RunLoop run_loop;
     std::vector<mojom::BlockchainTokenPtr> expected_tokens;
-    json_rpc_service_->DiscoverAssetsInternal(
-        chain_id, mojom::CoinType::ETH, account_addresses,
+    json_rpc_service_->DiscoverAssets(
+        chain_id, mojom::CoinType::ETH, account_addresses, update_prefs,
+        start_block, end_block,
         base::BindLambdaForTesting(
-            [&](const std::vector<mojom::BlockchainTokenPtr> tokens,
+            [&](const std::string& returned_chain_id,
+                std::vector<mojom::BlockchainTokenPtr> tokens,
                 mojom::ProviderError error, const std::string& error_message) {
+              ASSERT_EQ(chain_id, returned_chain_id);
               ASSERT_EQ(tokens.size(),
                         expected_token_contract_addresses.size());
               for (size_t i = 0; i < expected_token_contract_addresses.size();
@@ -1144,9 +1216,66 @@ class JsonRpcServiceUnitTest : public testing::Test {
               }
               EXPECT_EQ(error, expected_error);
               EXPECT_EQ(error_message, expected_error_message);
-              run_loop.Quit();
+
+              auto next_asset_discovery_from_blocks =
+                  prefs()
+                      ->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks)
+                      .Clone();
+              const std::string* next_asset_discovery_from_block =
+                  next_asset_discovery_from_blocks.FindString(chain_id);
+              if (next_asset_discovery_from_block) {
+                EXPECT_EQ(*next_asset_discovery_from_block,
+                          expected_next_asset_discovery_from_block);
+              } else {
+                ASSERT_EQ(expected_next_asset_discovery_from_block, "");
+              }
+              run_loop.QuitWhenIdle();
             }));
     run_loop.Run();
+    observer_->TestOnDiscoveredAssetsCompletedResults({chain_id},
+                                                      {expected_error_message});
+    observer_->Reset();
+  }
+
+  void TestDiscoverAssetsOnAllSupportedChains(
+      const std::vector<std::string>& account_addresses,
+      const std::vector<std::string>& expected_chain_ids,
+      const std::vector<std::string>& expected_error_messages,
+      const base::Time expected_assets_last_discovered_at_pref,
+      const base::Value::Dict expected_next_asset_discovery_from_blocks) {
+    json_rpc_service_->DiscoverAssetsOnAllSupportedChains(account_addresses);
+    base::RunLoop().RunUntilIdle();
+    EXPECT_EQ(prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt),
+              expected_assets_last_discovered_at_pref);
+    EXPECT_EQ(prefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks),
+              expected_next_asset_discovery_from_blocks);
+    observer_->TestOnDiscoveredAssetsCompletedResults(expected_chain_ids,
+                                                      expected_error_messages);
+    observer_->Reset();
+  }
+
+  void TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
+      const std::vector<std::string>& account_addresses,
+      const std::vector<std::string>& expected_error_messages,
+      const base::Time previous_assets_last_discovered_at,
+      base::OnceCallback<void(base::Time previous, base::Time current)>
+          assets_last_discovered_at_test_fn,
+      const base::Value::Dict previous_next_asset_discovery_from_blocks) {
+    json_rpc_service_->DiscoverAssetsOnAllSupportedChainsOnRefresh(
+        account_addresses);
+    base::RunLoop().RunUntilIdle();
+    base::Time current_assets_last_discovered_at =
+        prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
+    std::move(assets_last_discovered_at_test_fn)
+        .Run(previous_assets_last_discovered_at,
+             current_assets_last_discovered_at);
+
+    const base::Value::Dict current_next_asset_discovery_from_blocks =
+        prefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
+    EXPECT_EQ(previous_next_asset_discovery_from_blocks,
+              current_next_asset_discovery_from_blocks);
+    observer_->TestOnDiscoveredAssetsCompletedResults(
+        GetAssetDiscoverySupportedChains(), expected_error_messages);
   }
 
   void TestGetSolanaBalance(uint64_t expected_balance,
@@ -1401,10 +1530,11 @@ class JsonRpcServiceUnitTest : public testing::Test {
 
  protected:
   std::unique_ptr<JsonRpcService> json_rpc_service_;
+  std::unique_ptr<TestJsonRpcServiceObserver> observer_;
   network::TestURLLoaderFactory url_loader_factory_;
+  base::test::TaskEnvironment task_environment_;
 
  private:
-  base::test::TaskEnvironment task_environment_;
   sync_preferences::TestingPrefServiceSyncable prefs_;
   sync_preferences::TestingPrefServiceSyncable local_state_prefs_;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory_;
@@ -3879,29 +4009,30 @@ TEST_F(JsonRpcServiceUnitTest, GetSupportsInterface) {
 }
 
 TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
+  observer_ = std::make_unique<TestJsonRpcServiceObserver>();
+  json_rpc_service_->AddObserver(observer_->GetReceiver());
   auto* blockchain_registry = BlockchainRegistry::GetInstance();
   TokenListMap token_list_map;
-
   std::string response;
 
   // Unsupported chainId is not supported
-  TestDiscoverAssetsInternal(
-      mojom::kPolygonMainnetChainId, mojom::CoinType::ETH,
+  TestDiscoverAssets(
+      mojom::kBinanceSmartChainMainnetChainId, mojom::CoinType::ETH,
       {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
       mojom::ProviderError::kMethodNotSupported,
-      l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR));
+      l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR), "");
 
   // Empty address is invalid
-  TestDiscoverAssetsInternal(
-      mojom::kMainnetChainId, mojom::CoinType::ETH, {}, {},
-      mojom::ProviderError::kInvalidParams,
-      l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+  TestDiscoverAssets(mojom::kMainnetChainId, mojom::CoinType::ETH, {}, {},
+                     mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+                     "");
 
   // Invalid address is invalid
-  TestDiscoverAssetsInternal(
-      mojom::kMainnetChainId, mojom::CoinType::ETH, {"0xinvalid"}, {},
-      mojom::ProviderError::kInvalidParams,
-      l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+  TestDiscoverAssets(mojom::kMainnetChainId, mojom::CoinType::ETH,
+                     {"0xinvalid"}, {}, mojom::ProviderError::kInvalidParams,
+                     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+                     "");
 
   // Invalid RPC response json response triggers parsing error
   auto expected_network =
@@ -3920,19 +4051,17 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
   SetInterceptor(expected_network, "eth_getLogs", "",
                  "invalid eth_getLogs response");
-  TestDiscoverAssetsInternal(
-      mojom::kMainnetChainId, mojom::CoinType::ETH,
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
-      mojom::ProviderError::kParsingError,
-      l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+  TestDiscoverAssets(mojom::kMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR), "");
 
   // Invalid limit exceeded response triggers parsing error
   SetLimitExceededJsonErrorResponse();
-  TestDiscoverAssetsInternal(
-      mojom::kMainnetChainId, mojom::CoinType::ETH,
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
-      mojom::ProviderError::kParsingError,
-      l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+  TestDiscoverAssets(mojom::kMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR), "");
 
   // Invalid logs (missing addresses) triggers parsing error
   response = R"({
@@ -3956,11 +4085,10 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
     ]
   })";
   SetInterceptor(expected_network, "eth_getLogs", "", response);
-  TestDiscoverAssetsInternal(
-      mojom::kMainnetChainId, mojom::CoinType::ETH,
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
-      mojom::ProviderError::kParsingError,
-      l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
+  TestDiscoverAssets(mojom::kMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
+                     mojom::ProviderError::kParsingError,
+                     l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR), "");
 
   // Valid registry token DAI is discovered and added.
   // Valid registry token WETH is discovered and added (tests insensitivity to
@@ -4013,7 +4141,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
       {
         "address":"0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
-        "blockNumber":"0xd6464c",
+        "blockNumber":"0xd6464a",
         "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
         "logIndex":"0x159",
         "removed":false,
@@ -4028,7 +4156,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
       {
         "address":"0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B",
         "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
-        "blockNumber":"0xd6464c",
+        "blockNumber":"0xd6464b",
         "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
         "logIndex":"0x159",
         "removed":false,
@@ -4058,22 +4186,440 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssets) {
     ]
   })";
   SetInterceptor(expected_network, "eth_getLogs", "", response);
-  TestDiscoverAssetsInternal(mojom::kMainnetChainId, mojom::CoinType::ETH,
-                             {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
-                             {"0x6B175474E89094C44Da98b954EedeAC495271d0F",
-                              "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"},
-                             mojom::ProviderError::kSuccess, "");
+  TestDiscoverAssets(mojom::kMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+                     {"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+                      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"},
+                     mojom::ProviderError::kSuccess, "", "0xd6464d");
 
   // Discover assets should not run unless using Infura proxy
   std::vector<base::Value::Dict> values;
   mojom::NetworkInfo chain = GetTestNetworkInfo1("0x1");
   values.push_back(brave_wallet::NetworkInfoToValue(chain));
   UpdateCustomNetworks(prefs(), &values);
-  TestDiscoverAssetsInternal(
+  TestDiscoverAssets(
       mojom::kMainnetChainId, mojom::CoinType::ETH,
       {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, {},
       mojom::ProviderError::kMethodNotSupported,
-      l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR));
+      l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR),
+      "0xd6464d");
+
+  // Discover assets should be supported on Polygon
+  token_list_json = R"(
+    {
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F": {
+        "name": "Dai Stablecoin",
+        "logo": "dai.svg",
+        "erc20": true,
+        "symbol": "DAI",
+        "chainId": "0x89",
+        "decimals": 18
+      }
+  })";
+  ASSERT_TRUE(
+      ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::ETH));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+  response = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464c",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  expected_network =
+      GetNetwork(mojom::kPolygonMainnetChainId, mojom::CoinType::ETH);
+  SetInterceptor(expected_network, "eth_getLogs", "", response);
+  TestDiscoverAssets(mojom::kPolygonMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+                     {"0x6B175474E89094C44Da98b954EedeAC495271d0F"},
+                     mojom::ProviderError::kSuccess, "", "0xd6464d");
+
+  // Discover assets should be supported on Optimism
+  token_list_json = R"({
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F": {
+        "name": "Dai Stablecoin",
+        "logo": "dai.svg",
+        "erc20": true,
+        "symbol": "DAI",
+        "chainId": "0xa",
+        "decimals": 18
+      },
+      "0x4200000000000000000000000000000000000006": {
+        "name": "WETH optimism",
+        "logo": "eth.svg",
+        "erc20": true,
+        "symbol": "WETH",
+        "chainId": "0xa",
+        "decimals": 18
+      }
+  })";
+  ASSERT_TRUE(
+      ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::ETH));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+  response = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464c",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  expected_network =
+      GetNetwork(mojom::kOptimismMainnetChainId, mojom::CoinType::ETH);
+  SetInterceptor(expected_network, "eth_getLogs", "", response);
+  TestDiscoverAssets(mojom::kOptimismMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+                     {"0x6B175474E89094C44Da98b954EedeAC495271d0F"},
+                     mojom::ProviderError::kSuccess, "", "0xd6464d");
+
+  // Another optimism asset discovered at later block
+  // Asset discovered through block pref should update when newer transfers
+  // for a given network are found
+  response = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x4200000000000000000000000000000000000006",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464d",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  SetInterceptor(expected_network, "eth_getLogs", "", response);
+  TestDiscoverAssets(mojom::kOptimismMainnetChainId, mojom::CoinType::ETH,
+                     {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+                     {"0x4200000000000000000000000000000000000006"},
+                     mojom::ProviderError::kSuccess, "", "0xd6464e");
+}
+
+TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChains) {
+  // Send valid requests that yield no results and verify
+  // 1. OnDiscoveredAssetsCompleted is called exactly once for each supported
+  // chain
+  // 2. All eth_getLogs requests specify all block ranges (earliest to latest)
+  // 3. kBraveWalletNextAssetDiscoveryFromBlocks &
+  // kBraveWalletAssetsLastDiscoveredAt prefs are not updated
+  observer_ = std::make_unique<TestJsonRpcServiceObserver>();
+  json_rpc_service_->AddObserver(observer_->GetReceiver());
+  const std::vector<std::string> supported_chain_ids =
+      GetAssetDiscoverySupportedChains();
+  std::map<std::string, std::string> responses;
+  std::map<std::string, std::string> expected_from_blocks;
+  std::map<std::string, std::string> expected_to_blocks;
+  std::vector<std::string> expected_error_messages;
+  std::string default_response = R"({ "jsonrpc":"2.0", "id":1, "result":[] })";
+  for (std::string chain_id : supported_chain_ids) {
+    GURL network_url = GetNetwork(chain_id, mojom::CoinType::ETH);
+    responses[network_url.spec()] = default_response;
+    expected_from_blocks[network_url.spec()] = "earliest";
+    expected_to_blocks[network_url.spec()] = "latest";
+    expected_error_messages.push_back("");  // Expect no error
+  }
+  const base::Time assets_last_discovered_at =
+      prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
+  auto previous_next_asset_discovery_from_blocks =
+      prefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
+  SetDiscoverAssetsOnAllSupportedChainsInterceptor(
+      responses, expected_from_blocks, expected_to_blocks);
+  TestDiscoverAssetsOnAllSupportedChains(
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+      GetAssetDiscoverySupportedChains(), expected_error_messages,
+      assets_last_discovered_at,
+      std::move(previous_next_asset_discovery_from_blocks));
+}
+
+TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
+  // Send valid requests that yield no results and verify
+  // 1. OnDiscoveredAssetsCompleted is called exactly once for each supported
+  // chain
+  // 2. kBraveWalletAssetsLastDiscoveredAt pref is updated
+  // 3. kBraveWalletNextAssetDiscoveryFromBlocks pref is not updated
+  observer_ = std::make_unique<TestJsonRpcServiceObserver>();
+  json_rpc_service_->AddObserver(observer_->GetReceiver());
+  const std::vector<std::string> supported_chain_ids =
+      GetAssetDiscoverySupportedChains();
+  std::map<std::string, std::string> responses;
+  std::map<std::string, std::string> expected_from_blocks;
+  std::map<std::string, std::string> expected_to_blocks;
+  std::vector<std::string> expected_error_messages;
+  std::string default_response = R"({ "jsonrpc":"2.0", "id":1, "result":[] })";
+  for (std::string chain_id : supported_chain_ids) {
+    GURL network_url = GetNetwork(chain_id, mojom::CoinType::ETH);
+    responses[network_url.spec()] = default_response;
+    expected_from_blocks[network_url.spec()] = "earliest";
+    expected_to_blocks[network_url.spec()] = "latest";
+    expected_error_messages.push_back("");  // Expect no error
+  }
+  base::Time assets_last_discovered_at_before =
+      prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
+
+  base::Value::Dict expected_next_asset_discovery_from_blocks;  // Expect empty
+  SetDiscoverAssetsOnAllSupportedChainsInterceptor(
+      responses, expected_from_blocks, expected_to_blocks);
+  TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      assets_last_discovered_at_before,
+      base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
+        EXPECT_TRUE(previous < current);
+      }),
+      std::move(expected_next_asset_discovery_from_blocks));
+
+  // Send valid requests that yield no results that are aborted because of rate
+  // limiting rules and verify
+  // 1. OnDiscoveredAssetsCompleted is called exactly once for each supported
+  // chain
+  // 2. kBraveWalletLastDiscoveredAssetsAt stays the same
+  // 3. kBraveWalletNextAssetDiscoveryFromBlocks stays the same (not
+  // actually tested since the value is null...)
+  expected_next_asset_discovery_from_blocks.clear();
+  assets_last_discovered_at_before =
+      prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
+  TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      assets_last_discovered_at_before,
+      base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
+        EXPECT_EQ(previous, current);
+      }),
+      std::move(expected_next_asset_discovery_from_blocks));
+
+  // Send valid requests that yield new assets on multiple chains and verify
+  // 1. OnDiscoveredAssetsCompleted is called exactly once for each supported
+  // chain
+  // 2. Rate limit pref is updated
+  // 3. Dict pref is is updated
+  expected_next_asset_discovery_from_blocks.clear();
+  observer_->Reset();
+  responses.clear();
+  task_environment_.FastForwardBy(
+      base::Minutes(kAssetDiscoveryMinutesPerRequest));
+
+  std::string token_list_json = R"({
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef": {
+        "name": "Basic Attention Token",
+        "logo": "bat.svg",
+        "erc20": true,
+        "symbol": "BAT",
+        "chainId": "0x1",
+        "decimals": 18
+      },
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F": {
+        "name": "Dai Stablecoin",
+        "logo": "dai.svg",
+        "erc20": true,
+        "symbol": "DAI",
+        "chainId": "0x1",
+        "decimals": 18
+      },
+      "0x4200000000000000000000000000000000000006": {
+        "name": "WETH Optimism",
+        "logo": "weth.svg",
+        "erc20": true,
+        "symbol": "WETH",
+        "chainId": "0xa",
+        "decimals": 18
+      },
+      "0x0000000000000000000000000000000000001010": {
+        "name": "MATIC Polygon",
+        "logo": "matic.svg",
+        "erc20": true,
+        "symbol": "WETH",
+        "chainId": "0x89",
+        "decimals": 18
+      }})";
+
+  auto* blockchain_registry = BlockchainRegistry::GetInstance();
+  TokenListMap token_list_map;
+
+  ASSERT_TRUE(
+      ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::ETH));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+
+  // Add responses for mainnet Ethereum, Optimism, then Polygon
+  // Mainnet Ethereum
+  GURL network_url = GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH);
+  responses[network_url.spec()] = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x0d8775f648430679a709e98d2b0cb6250d2887ef",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464d",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  expected_from_blocks[network_url.spec()] = "earliest";
+  expected_next_asset_discovery_from_blocks.Set(mojom::kMainnetChainId,
+                                                "0xd6464e");
+
+  // Optimism
+  network_url =
+      GetNetwork(mojom::kOptimismMainnetChainId, mojom::CoinType::ETH);
+  responses[network_url.spec()] = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x4200000000000000000000000000000000000006",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464d",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  expected_from_blocks[network_url.spec()] = "earliest";
+  expected_next_asset_discovery_from_blocks.Set(mojom::kOptimismMainnetChainId,
+                                                "0xd6464e");
+
+  // Polygon
+  network_url = GetNetwork(mojom::kPolygonMainnetChainId, mojom::CoinType::ETH);
+  responses[network_url.spec()] = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x0000000000000000000000000000000000001010",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464d",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  expected_from_blocks[network_url.spec()] = "earliest";
+  expected_next_asset_discovery_from_blocks.Set(mojom::kPolygonMainnetChainId,
+                                                "0xd6464e");
+  SetDiscoverAssetsOnAllSupportedChainsInterceptor(
+      responses, expected_from_blocks, expected_to_blocks);
+  TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      assets_last_discovered_at_before,
+      base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
+        EXPECT_TRUE(previous < current);
+      }),
+      std::move(expected_next_asset_discovery_from_blocks));
+
+  // Send valid request that for Ethereum mainnet (not rate limited) that yields
+  // new assets at blocks after the previous largest block and verify
+  // 1. from_block in eth_getLogs request is the
+  // kBraveWalletNextAssetDiscoveryFromBlocks set from the previous
+  // request Ethereum mainnet
+  // 2. kBraveWalletNextAssetDiscoveryFromBlocks is incremented for
+  // Ethereum mainnet
+  expected_next_asset_discovery_from_blocks.clear();
+  responses.clear();
+  expected_from_blocks.clear();
+  observer_->Reset();
+
+  task_environment_.FastForwardBy(
+      base::Minutes(kAssetDiscoveryMinutesPerRequest));
+  assets_last_discovered_at_before =
+      prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
+
+  network_url = GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH);
+  responses[network_url.spec()] = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464e",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  expected_from_blocks[network_url.spec()] = "0xd6464e";
+  expected_next_asset_discovery_from_blocks.Set(mojom::kMainnetChainId,
+                                                "0xd6464f");
+  expected_next_asset_discovery_from_blocks.Set(mojom::kOptimismMainnetChainId,
+                                                "0xd6464e");
+  expected_next_asset_discovery_from_blocks.Set(mojom::kPolygonMainnetChainId,
+                                                "0xd6464e");
+
+  SetDiscoverAssetsOnAllSupportedChainsInterceptor(
+      responses, expected_from_blocks, expected_to_blocks);
+  TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      assets_last_discovered_at_before,
+      base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
+        EXPECT_TRUE(previous < current);
+      }),
+      std::move(expected_next_asset_discovery_from_blocks));
 }
 
 TEST_F(JsonRpcServiceUnitTest, Reset) {

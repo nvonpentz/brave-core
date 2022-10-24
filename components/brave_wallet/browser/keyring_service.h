@@ -244,6 +244,7 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   absl::optional<std::string> GetSelectedAccount(mojom::CoinType coin) const;
   absl::optional<std::string> GetFilecoinSelectedAccount(
       const std::string& net) const;
+  void ContinueDiscoverAssetsOnAllSupportedChains(mojom::KeyringInfoPtr);
 
   void AddObserver(
       ::mojo::PendingRemote<mojom::KeyringServiceObserver> observer) override;
@@ -266,6 +267,8 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
                              GetChecksumEthAddressCallback callback) override;
   void HasPendingUnlockRequest(
       HasPendingUnlockRequestCallback callback) override;
+
+  void DiscoverAssetsOnAllSupportedChains() override;
 
  private:
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, GetOrCreateNonceForKeyring);

@@ -673,6 +673,8 @@ interface KeyringService {
   // Note that there is no need for an API to notify unlocked
   // because the KeyringServiceObserver Unlocked event can be used for that.
   HasPendingUnlockRequest() => (bool pending);
+
+  DiscoverAssetsOnAllSupportedChains();
 };
 
 // Used for cryptocurrency prices over time.
@@ -734,6 +736,9 @@ interface JsonRpcServiceObserver {
 
   // Fired when a chain ID's 1559 status changes
   OnIsEip1559Changed(string chain_id, bool is_eip1559);
+
+  // Fired when a discovered asset query completes
+  OnDiscoveredAssetsCompleted(string chain_id, ProviderError error, string error_message);
 };
 
 struct TxData {

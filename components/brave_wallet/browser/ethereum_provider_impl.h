@@ -180,6 +180,10 @@ class EthereumProviderImpl final
                                           const std::string& error) override;
   void OnIsEip1559Changed(const std::string& chain_id,
                           bool is_eip1559) override {}
+  void OnDiscoveredAssetsCompleted(const std::string& chain_id,
+                                   mojom::ProviderError error,
+                                   const std::string& error_message) override {}
+
   void OnSwitchEthereumChainRequested(const std::string& chain_id,
                                       const GURL& origin) {}
   void OnSwitchEthereumChainRequestProcessed(bool approved,
