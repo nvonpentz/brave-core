@@ -70,15 +70,14 @@ export const ConnectHardwareWalletPanel = ({
       return getLocale('braveWalletConnectHardwarePanelConfirmation')
     }
 
-    // Not connected
-    if (hardwareWalletCode === 'deviceNotConnected' || hardwareWalletCode === 'unauthorized') {
-      return getLocale('braveWalletConnectHardwarePanelConnect').replace('$1', walletName)
+    if (hardwareWalletCode === 'openLedgerApp') {
+      let network = getAppName(coinType)
+      return getLocale('braveWalletConnectHardwarePanelOpenApp')
+        .replace('$1', network)
+        .replace('$2', walletName)
     }
 
-    const network = getAppName(coinType)
-    return getLocale('braveWalletConnectHardwarePanelOpenApp')
-      .replace('$1', network)
-      .replace('$2', walletName)
+    return getLocale('braveWalletConnectHardwarePanelConnect').replace('$1', walletName)
   }, [hardwareWalletCode])
 
   // custom hooks
