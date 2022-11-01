@@ -27,7 +27,6 @@ constexpr uint256_t kDefaultERC20ApproveGasLimit = 300000;
 constexpr int32_t kAutoLockMinutesMin = 1;
 constexpr int32_t kAutoLockMinutesMax = 10080;
 
-constexpr int32_t kAssetDiscoveryRequestsPerMinuteLimit = 1;
 constexpr int32_t kAssetDiscoveryMinutesPerRequest = 1;
 
 constexpr char kWalletBaseDirectory[] = "BraveWallet";
