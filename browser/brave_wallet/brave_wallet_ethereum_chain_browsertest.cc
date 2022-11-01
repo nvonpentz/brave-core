@@ -135,6 +135,10 @@ class TestJsonRpcServiceObserver
   void OnIsEip1559Changed(const std::string& chain_id,
                           bool is_eip1559) override {}
 
+  void OnDiscoveredAssetsCompleted(const std::string& chain_id,
+                                   brave_wallet::mojom::ProviderError error,
+                                   const std::string& error_message) override {}
+
   bool chain_changed_called() {
     base::RunLoop().RunUntilIdle();
     return chain_changed_called_;
