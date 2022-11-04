@@ -2263,23 +2263,4 @@ void KeyringService::HasPendingUnlockRequest(
   std::move(callback).Run(HasPendingUnlockRequest());
 }
 
-void KeyringService::DiscoverAssetsOnAllSupportedChains() {
-  KeyringService::GetKeyringInfo(
-      brave_wallet::mojom::kDefaultKeyringId,
-      base::BindOnce(
-          &KeyringService::ContinueDiscoverAssetsOnAllSupportedChains,
-          discovery_weak_factory_.GetWeakPtr()));
-}
-
-void KeyringService::ContinueDiscoverAssetsOnAllSupportedChains(
-    mojom::KeyringInfoPtr keyring_info) {
-  std::vector<std::string> account_addresses;
-  for (auto& account_info : keyring_info->account_infos) {
-    account_addresses.push_back(account_info->address);
-  }
-
-  json_rpc_service_->DiscoverAssetsOnAllSupportedChainsOnRefresh(
-      std::move(account_addresses));
-}
-
 }  // namespace brave_wallet

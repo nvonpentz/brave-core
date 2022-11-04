@@ -190,6 +190,8 @@ class BraveWalletService : public KeyedService,
   void Base58Encode(const std::vector<std::vector<std::uint8_t>>& addresses,
                     Base58EncodeCallback callback) override;
 
+  void DiscoverAssetsOnAllSupportedChains() override;
+
   // BraveWalletServiceDelegate::Observer:
   void OnActiveOriginChanged(const mojom::OriginInfoPtr& origin_info) override;
 
@@ -261,6 +263,9 @@ class BraveWalletService : public KeyedService,
       bool result,
       ImportInfo info,
       ImportError error);
+
+  void ContinueDiscoverAssetsOnAllSupportedChains(
+      mojom::KeyringInfoPtr keyring_info);
 
   bool AddUserAsset(mojom::BlockchainTokenPtr token);
   bool RemoveUserAsset(mojom::BlockchainTokenPtr token);

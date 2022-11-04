@@ -673,8 +673,6 @@ interface KeyringService {
   // Note that there is no need for an API to notify unlocked
   // because the KeyringServiceObserver Unlocked event can be used for that.
   HasPendingUnlockRequest() => (bool pending);
-
-  DiscoverAssetsOnAllSupportedChains();
 };
 
 // Used for cryptocurrency prices over time.
@@ -1322,6 +1320,8 @@ interface BraveWalletService {
   IsBase58EncodedSolanaPubkey(string key) => (bool result);
 
   Base58Encode(array<array<uint8>> addresses) => (array<string> addresses);
+
+  DiscoverAssetsOnAllSupportedChains();
 
   // Resets the keyring and the related preferences
   Reset();

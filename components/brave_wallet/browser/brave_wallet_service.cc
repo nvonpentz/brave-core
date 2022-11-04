@@ -1441,6 +1441,25 @@ void BraveWalletService::Base58Encode(
   std::move(callback).Run(std::move(encoded_addresses));
 }
 
+void BraveWalletService::DiscoverAssetsOnAllSupportedChains() {
+  keyring_service_->GetKeyringInfo(
+      brave_wallet::mojom::kDefaultKeyringId,
+      base::BindOnce(
+          &BraveWalletService::ContinueDiscoverAssetsOnAllSupportedChains,
+          weak_ptr_factory_.GetWeakPtr()));
+}
+
+void BraveWalletService::ContinueDiscoverAssetsOnAllSupportedChains(
+    mojom::KeyringInfoPtr keyring_info) {
+  std::vector<std::string> account_addresses;
+  for (auto& account_info : keyring_info->account_infos) {
+    account_addresses.push_back(account_info->address);
+  }
+
+  json_rpc_service_->DiscoverAssetsOnAllSupportedChainsOnRefresh(
+      std::move(account_addresses));
+}
+
 void BraveWalletService::CancelAllSuggestedTokenCallbacks() {
   add_suggest_token_requests_.clear();
   // Reject pending suggest token requests when network changed.
