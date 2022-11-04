@@ -2236,9 +2236,8 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
       from_block = *next_asset_discovery_from_block;
     }
 
-    JsonRpcService::DiscoverAssets(chain_id, mojom::CoinType::ETH,
-                                   account_addresses, true, from_block,
-                                   to_block, std::move(internal_callback));
+    DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
+                   from_block, to_block, std::move(internal_callback));
   }
 }
 
@@ -2248,10 +2247,9 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChains(
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnDiscoverAssetsCompleted,
                        weak_ptr_factory_.GetWeakPtr());
-    JsonRpcService::DiscoverAssets(
-        chain_id, mojom::CoinType::ETH, account_addresses, false,
-        kEthereumBlockTagEarliest, kEthereumBlockTagLatest,
-        std::move(internal_callback));
+    DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, false,
+                   kEthereumBlockTagEarliest, kEthereumBlockTagLatest,
+                   std::move(internal_callback));
   }
 }
 
@@ -2292,7 +2290,7 @@ void JsonRpcService::DiscoverAssets(
   // Asset discovery only supported on select EVM chains
   if (coin != mojom::CoinType::ETH ||
       !base::Contains(GetAssetDiscoverySupportedChains(), chain_id)) {
-    JsonRpcService::CompleteDiscoverAssets(
+    CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kMethodNotSupported,
         l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR),
@@ -2304,7 +2302,7 @@ void JsonRpcService::DiscoverAssets(
   GURL infura_url = GetInfuraURLForKnownChainId(chain_id);
   GURL active_url = GetNetworkURL(prefs_, chain_id, coin);
   if (infura_url.host() != active_url.host()) {
-    JsonRpcService::CompleteDiscoverAssets(
+    CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kMethodNotSupported,
         l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR),
@@ -2313,7 +2311,7 @@ void JsonRpcService::DiscoverAssets(
   }
 
   if (account_addresses.empty()) {
-    JsonRpcService::CompleteDiscoverAssets(
+    CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
@@ -2323,7 +2321,7 @@ void JsonRpcService::DiscoverAssets(
 
   for (const auto& account_address : account_addresses) {
     if (!EthAddress::IsValidAddress(account_address)) {
-      JsonRpcService::CompleteDiscoverAssets(
+      CompleteDiscoverAssets(
           chain_id, std::vector<mojom::BlockchainTokenPtr>(),
           mojom::ProviderError::kInvalidParams,
           l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
@@ -2355,7 +2353,7 @@ void JsonRpcService::OnGetAllTokensDiscoverAssets(
     std::vector<mojom::BlockchainTokenPtr> token_registry) {
   auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::ETH);
   if (!network_url.is_valid()) {
-    JsonRpcService::CompleteDiscoverAssets(
+    CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
@@ -2365,7 +2363,7 @@ void JsonRpcService::OnGetAllTokensDiscoverAssets(
 
   base::Value::List topics;
   if (!MakeAssetDiscoveryTopics(account_addresses, &topics)) {
-    JsonRpcService::CompleteDiscoverAssets(
+    CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
@@ -2425,21 +2423,19 @@ void JsonRpcService::OnGetTransferLogs(
       base::BindOnce(&JsonRpcService::OnDiscoverAssetsCompleted,
                      weak_ptr_factory_.GetWeakPtr());
   if (!api_request_result.Is2XXResponseCode()) {
-    JsonRpcService::CompleteDiscoverAssets(
-        chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderError::kInternalError,
-        l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR),
-        std::move(callback));
+    CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
+                           mojom::ProviderError::kInternalError,
+                           l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR),
+                           std::move(callback));
     return;
   }
 
   std::vector<Log> logs;
   if (!eth::ParseEthGetLogs(api_request_result.body(), &logs)) {
-    JsonRpcService::CompleteDiscoverAssets(
-        chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderError::kParsingError,
-        l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
-        std::move(callback));
+    CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
+                           mojom::ProviderError::kParsingError,
+                           l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+                           std::move(callback));
     return;
   }
 
@@ -2492,9 +2488,9 @@ void JsonRpcService::OnGetTransferLogs(
           chain_id, Uint256ValueToHex(largest_block + 1));
     }
   }
-  JsonRpcService::CompleteDiscoverAssets(chain_id, std::move(discovered_assets),
-                                         mojom::ProviderError::kSuccess, "",
-                                         std::move(callback));
+  CompleteDiscoverAssets(chain_id, std::move(discovered_assets),
+                         mojom::ProviderError::kSuccess, "",
+                         std::move(callback));
 }
 
 void JsonRpcService::GetSupportsInterface(
