@@ -2286,8 +2286,8 @@ void JsonRpcService::DiscoverAssets(
     mojom::CoinType coin,
     const std::vector<std::string>& account_addresses,
     bool update_next_asset_discovery_from_block,
-    const std::string from_block,
-    const std::string to_block,
+    const std::string& from_block,
+    const std::string& to_block,
     DiscoverAssetsCallback callback) {
   // Asset discovery only supported on select EVM chains
   if (coin != mojom::CoinType::ETH ||
@@ -2349,8 +2349,8 @@ void JsonRpcService::OnGetAllTokensDiscoverAssets(
     const std::vector<std::string>& account_addresses,
     std::vector<mojom::BlockchainTokenPtr> user_assets,
     bool update_next_asset_discovery_from_block,
-    const std::string from_block,
-    const std::string to_block,
+    const std::string& from_block,
+    const std::string& to_block,
     DiscoverAssetsCallback callback,
     std::vector<mojom::BlockchainTokenPtr> token_registry) {
   auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::ETH);

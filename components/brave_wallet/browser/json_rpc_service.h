@@ -332,8 +332,8 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                       mojom::CoinType coin,
                       const std::vector<std::string>& account_addresses,
                       bool update_prefs,
-                      const std::string from_block,
-                      const std::string to_block,
+                      const std::string& from_block,
+                      const std::string& to_block,
                       DiscoverAssetsCallback callback);
 
   void OnGetAllTokensDiscoverAssets(
@@ -341,8 +341,8 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
       const std::vector<std::string>& account_addresses,
       std::vector<mojom::BlockchainTokenPtr> user_assets,
       bool update_prefs,
-      const std::string from_block,
-      const std::string to_block,
+      const std::string& from_block,
+      const std::string& to_block,
       DiscoverAssetsCallback callback,
       std::vector<mojom::BlockchainTokenPtr> token_list);
 
