@@ -21,6 +21,7 @@
 #include "base/json/json_writer.h"
 #include "base/notreached.h"
 #include "base/ranges/algorithm.h"
+#include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
@@ -1221,8 +1222,9 @@ class JsonRpcServiceUnitTest : public testing::Test {
                   prefs()
                       ->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks)
                       .Clone();
+              const auto path = base::StrCat({kEthereumPrefKey, ".", chain_id});
               const std::string* next_asset_discovery_from_block =
-                  next_asset_discovery_from_blocks.FindString(chain_id);
+                  next_asset_discovery_from_blocks.FindStringByDottedPath(path);
               if (next_asset_discovery_from_block) {
                 EXPECT_EQ(*next_asset_discovery_from_block,
                           expected_next_asset_discovery_from_block);
@@ -4497,8 +4499,9 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
     ]
   })";
   expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
-  expected_next_asset_discovery_from_blocks.Set(mojom::kMainnetChainId,
-                                                "0xd6464e");
+  expected_next_asset_discovery_from_blocks.SetByDottedPath(
+      base::StrCat({kEthereumPrefKey, ".", mojom::kMainnetChainId}),
+      "0xd6464e");
 
   // Optimism
   network_url =
@@ -4525,8 +4528,9 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
     ]
   })";
   expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
-  expected_next_asset_discovery_from_blocks.Set(mojom::kOptimismMainnetChainId,
-                                                "0xd6464e");
+  expected_next_asset_discovery_from_blocks.SetByDottedPath(
+      base::StrCat({kEthereumPrefKey, ".", mojom::kOptimismMainnetChainId}),
+      "0xd6464e");
 
   // Polygon
   network_url = GetNetwork(mojom::kPolygonMainnetChainId, mojom::CoinType::ETH);
@@ -4552,8 +4556,9 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
     ]
   })";
   expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
-  expected_next_asset_discovery_from_blocks.Set(mojom::kPolygonMainnetChainId,
-                                                "0xd6464e");
+  expected_next_asset_discovery_from_blocks.SetByDottedPath(
+      base::StrCat({kEthereumPrefKey, ".", mojom::kPolygonMainnetChainId}),
+      "0xd6464e");
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(
       responses, expected_from_blocks, expected_to_blocks);
   TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
@@ -4604,12 +4609,15 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
     ]
   })";
   expected_from_blocks[network_url.spec()] = "0xd6464e";
-  expected_next_asset_discovery_from_blocks.Set(mojom::kMainnetChainId,
-                                                "0xd6464f");
-  expected_next_asset_discovery_from_blocks.Set(mojom::kOptimismMainnetChainId,
-                                                "0xd6464e");
-  expected_next_asset_discovery_from_blocks.Set(mojom::kPolygonMainnetChainId,
-                                                "0xd6464e");
+  expected_next_asset_discovery_from_blocks.SetByDottedPath(
+      base::StrCat({kEthereumPrefKey, ".", mojom::kMainnetChainId}),
+      "0xd6464f");
+  expected_next_asset_discovery_from_blocks.SetByDottedPath(
+      base::StrCat({kEthereumPrefKey, ".", mojom::kOptimismMainnetChainId}),
+      "0xd6464e");
+  expected_next_asset_discovery_from_blocks.SetByDottedPath(
+      base::StrCat({kEthereumPrefKey, ".", mojom::kPolygonMainnetChainId}),
+      "0xd6464e");
 
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(
       responses, expected_from_blocks, expected_to_blocks);

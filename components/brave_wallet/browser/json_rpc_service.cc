@@ -15,6 +15,7 @@
 #include "base/json/json_writer.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/components/brave_wallet/browser/blockchain_registry.h"
@@ -2230,8 +2231,9 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
     // as the from_block of the eth_getLogs query.
     std::string from_block = kEthereumBlockTagEarliest;
     std::string to_block = kEthereumBlockTagLatest;
+    const auto path = base::StrCat({kEthereumPrefKey, ".", chain_id});
     const std::string* next_asset_discovery_from_block =
-        next_asset_discovery_from_blocks.FindString(chain_id);
+        next_asset_discovery_from_blocks.FindStringByDottedPath(path);
     if (next_asset_discovery_from_block) {
       from_block = *next_asset_discovery_from_block;
     }
@@ -2469,8 +2471,9 @@ void JsonRpcService::OnGetTransferLogs(
                                 kBraveWalletNextAssetDiscoveryFromBlocks);
     auto* next_asset_discovery_from_blocks = update.Get()->GetIfDict();
     DCHECK(next_asset_discovery_from_blocks);
+    const auto path = base::StrCat({kEthereumPrefKey, ".", chain_id});
     const std::string* current =
-        next_asset_discovery_from_blocks->FindString(chain_id);
+        next_asset_discovery_from_blocks->FindStringByDottedPath(path);
     uint256_t current_int = 0;
     if (current) {
       if (!HexValueToUint256(*current, &current_int)) {
@@ -2484,8 +2487,8 @@ void JsonRpcService::OnGetTransferLogs(
     }
 
     if ((!current || current_int <= largest_block) && largest_block > 0) {
-      next_asset_discovery_from_blocks->Set(
-          chain_id, Uint256ValueToHex(largest_block + 1));
+      next_asset_discovery_from_blocks->SetByDottedPath(
+          path, Uint256ValueToHex(largest_block + 1));
     }
   }
   CompleteDiscoverAssets(chain_id, std::move(discovered_assets),
