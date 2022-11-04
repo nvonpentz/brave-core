@@ -1018,6 +1018,9 @@ constexpr char kEthereumPrefKey[] = "ethereum";
 constexpr char kFilecoinPrefKey[] = "filecoin";
 constexpr char kSolanaPrefKey[] = "solana";
 
+constexpr char kEthereumBlockTagEarliest[] = "earliest";
+constexpr char kEthereumBlockTagLatest[] = "latest";
+
 const std::vector<mojom::BlockchainToken>& GetWyreBuyTokens();
 const std::vector<mojom::BlockchainToken>& GetRampBuyTokens();
 const std::vector<mojom::OnRampCurrency>& GetOnRampCurrenciesList();

@@ -1195,8 +1195,8 @@ class JsonRpcServiceUnitTest : public testing::Test {
       const std::string& expected_error_message,
       const std::string& expected_next_asset_discovery_from_block,
       bool update_prefs = true,
-      const std::string& start_block = "earliest",
-      const std::string& end_block = "latest") {
+      const std::string& start_block = kEthereumBlockTagEarliest,
+      const std::string& end_block = kEthereumBlockTagLatest) {
     base::RunLoop run_loop;
     std::vector<mojom::BlockchainTokenPtr> expected_tokens;
     json_rpc_service_->DiscoverAssets(
@@ -4349,8 +4349,8 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChains) {
   for (std::string chain_id : supported_chain_ids) {
     GURL network_url = GetNetwork(chain_id, mojom::CoinType::ETH);
     responses[network_url.spec()] = default_response;
-    expected_from_blocks[network_url.spec()] = "earliest";
-    expected_to_blocks[network_url.spec()] = "latest";
+    expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
+    expected_to_blocks[network_url.spec()] = kEthereumBlockTagLatest;
     expected_error_messages.push_back("");  // Expect no error
   }
   const base::Time assets_last_discovered_at =
@@ -4384,8 +4384,8 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   for (std::string chain_id : supported_chain_ids) {
     GURL network_url = GetNetwork(chain_id, mojom::CoinType::ETH);
     responses[network_url.spec()] = default_response;
-    expected_from_blocks[network_url.spec()] = "earliest";
-    expected_to_blocks[network_url.spec()] = "latest";
+    expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
+    expected_to_blocks[network_url.spec()] = kEthereumBlockTagLatest;
     expected_error_messages.push_back("");  // Expect no error
   }
   base::Time assets_last_discovered_at_before =
@@ -4496,7 +4496,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
       }
     ]
   })";
-  expected_from_blocks[network_url.spec()] = "earliest";
+  expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
   expected_next_asset_discovery_from_blocks.Set(mojom::kMainnetChainId,
                                                 "0xd6464e");
 
@@ -4524,7 +4524,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
       }
     ]
   })";
-  expected_from_blocks[network_url.spec()] = "earliest";
+  expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
   expected_next_asset_discovery_from_blocks.Set(mojom::kOptimismMainnetChainId,
                                                 "0xd6464e");
 
@@ -4551,7 +4551,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
       }
     ]
   })";
-  expected_from_blocks[network_url.spec()] = "earliest";
+  expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
   expected_next_asset_discovery_from_blocks.Set(mojom::kPolygonMainnetChainId,
                                                 "0xd6464e");
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(

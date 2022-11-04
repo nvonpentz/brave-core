@@ -692,10 +692,11 @@ void JsonRpcService::GetFeeHistory(GetFeeHistoryCallback callback) {
       base::BindOnce(&JsonRpcService::OnGetFeeHistory,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
-  RequestInternal(
-      eth::eth_feeHistory("0x28",  // blockCount = 40
-                          "latest", std::vector<double>{20, 50, 80}),
-      true, network_urls_[mojom::CoinType::ETH], std::move(internal_callback));
+  RequestInternal(eth::eth_feeHistory("0x28",  // blockCount = 40
+                                      kEthereumBlockTagLatest,
+                                      std::vector<double>{20, 50, 80}),
+                  true, network_urls_[mojom::CoinType::ETH],
+                  std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetFeeHistory(GetFeeHistoryCallback callback,
@@ -743,8 +744,8 @@ void JsonRpcService::GetBalance(const std::string& address,
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnEthGetBalance,
                        weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-    RequestInternal(eth::eth_getBalance(address, "latest"), true, network_url,
-                    std::move(internal_callback));
+    RequestInternal(eth::eth_getBalance(address, kEthereumBlockTagLatest), true,
+                    network_url, std::move(internal_callback));
     return;
   } else if (coin == mojom::CoinType::FIL) {
     auto internal_callback =
@@ -889,8 +890,9 @@ void JsonRpcService::GetEthTransactionCount(const std::string& address,
       base::BindOnce(&JsonRpcService::OnEthGetTransactionCount,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
-  RequestInternal(eth::eth_getTransactionCount(address, "latest"), true,
-                  network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_getTransactionCount(address, kEthereumBlockTagLatest), true,
+      network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnFilGetTransactionCount(
@@ -1019,8 +1021,9 @@ void JsonRpcService::GetERC20TokenBalance(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC20TokenBalance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(eth::eth_call("", contract, "", "", "", data, "latest"), true,
-                  network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_call("", contract, "", "", "", data, kEthereumBlockTagLatest),
+      true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetERC20TokenBalance(
@@ -1069,9 +1072,10 @@ void JsonRpcService::GetERC20TokenAllowance(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC20TokenAllowance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(
-      eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
-      network_urls_[mojom::CoinType::ETH], std::move(internal_callback));
+  RequestInternal(eth::eth_call("", contract_address, "", "", "", data,
+                                kEthereumBlockTagLatest),
+                  true, network_urls_[mojom::CoinType::ETH],
+                  std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetERC20TokenAllowance(
@@ -1129,9 +1133,9 @@ void JsonRpcService::EnsRegistryGetResolver(const std::string& domain,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEnsRegistryGetResolver,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(
-      eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
-      network_url, std::move(internal_callback));
+  RequestInternal(eth::eth_call("", contract_address, "", "", "", data,
+                                kEthereumBlockTagLatest),
+                  true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnEnsRegistryGetResolver(
@@ -1234,9 +1238,9 @@ void JsonRpcService::ContinueEnsGetContentHash(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEnsGetContentHash,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(
-      eth::eth_call("", resolver_address, "", "", "", data, "latest"), true,
-      network_url, std::move(internal_callback));
+  RequestInternal(eth::eth_call("", resolver_address, "", "", "", data,
+                                kEthereumBlockTagLatest),
+                  true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnEnsGetContentHash(EnsGetContentHashCallback callback,
@@ -1487,9 +1491,10 @@ void JsonRpcService::ContinueEnsGetEthAddr(const std::string& domain,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEnsGetEthAddr,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(
-      eth::eth_call("", resolver_address, "", "", "", data, "latest"), true,
-      network_urls_[mojom::CoinType::ETH], std::move(internal_callback));
+  RequestInternal(eth::eth_call("", resolver_address, "", "", "", data,
+                                kEthereumBlockTagLatest),
+                  true, network_urls_[mojom::CoinType::ETH],
+                  std::move(internal_callback));
 }
 
 void JsonRpcService::OnEnsGetEthAddr(EnsGetEthAddrCallback callback,
@@ -1554,7 +1559,7 @@ void JsonRpcService::UnstoppableDomainsResolveDns(
                        weak_ptr_factory_.GetWeakPtr(), domain, chain_id);
     auto eth_call = eth::eth_call(
         "", GetUnstoppableDomainsProxyReaderContractAddress(chain_id), "", "",
-        "", *data, "latest");
+        "", *data, kEthereumBlockTagLatest);
     RequestInternal(std::move(eth_call), true,
                     GetUnstoppableDomainsRpcUrl(chain_id),
                     std::move(internal_callback));
@@ -1800,8 +1805,8 @@ void JsonRpcService::GetIsEip1559(GetIsEip1559Callback callback) {
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetIsEip1559,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(eth::eth_getBlockByNumber("latest", false), true,
-                  network_urls_[mojom::CoinType::ETH],
+  RequestInternal(eth::eth_getBlockByNumber(kEthereumBlockTagLatest, false),
+                  true, network_urls_[mojom::CoinType::ETH],
                   std::move(internal_callback));
 }
 
@@ -1872,8 +1877,9 @@ void JsonRpcService::GetERC721OwnerOf(const std::string& contract,
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC721OwnerOf,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(eth::eth_call("", contract, "", "", "", data, "latest"), true,
-                  network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_call("", contract, "", "", "", data, kEthereumBlockTagLatest),
+      true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetERC721OwnerOf(GetERC721OwnerOfCallback callback,
@@ -2040,7 +2046,7 @@ void JsonRpcService::OnGetSupportsInterfaceTokenMetadata(
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
   RequestInternal(eth::eth_call("", contract_address, "", "", "",
-                                function_signature, "latest"),
+                                function_signature, kEthereumBlockTagLatest),
                   true, network_url, std::move(internal_callback));
 }
 
@@ -2194,9 +2200,9 @@ void JsonRpcService::GetERC1155TokenBalance(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnEthGetBalance,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(
-      eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
-      network_url, std::move(internal_callback));
+  RequestInternal(eth::eth_call("", contract_address, "", "", "", data,
+                                kEthereumBlockTagLatest),
+                  true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
@@ -2222,8 +2228,8 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
     // Call DiscoverAssets for the supported chain ID
     // using the kBraveWalletNextAssetDiscoveryFromBlocks pref
     // as the from_block of the eth_getLogs query.
-    std::string from_block = "earliest";
-    std::string to_block = "latest";
+    std::string from_block = kEthereumBlockTagEarliest;
+    std::string to_block = kEthereumBlockTagLatest;
     const std::string* next_asset_discovery_from_block =
         next_asset_discovery_from_blocks.FindString(chain_id);
     if (next_asset_discovery_from_block) {
@@ -2242,9 +2248,10 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChains(
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnDiscoverAssetsCompleted,
                        weak_ptr_factory_.GetWeakPtr());
-    JsonRpcService::DiscoverAssets(chain_id, mojom::CoinType::ETH,
-                                   account_addresses, false, "earliest",
-                                   "latest", std::move(internal_callback));
+    JsonRpcService::DiscoverAssets(
+        chain_id, mojom::CoinType::ETH, account_addresses, false,
+        kEthereumBlockTagEarliest, kEthereumBlockTagLatest,
+        std::move(internal_callback));
   }
 }
 
@@ -2516,9 +2523,9 @@ void JsonRpcService::GetSupportsInterface(
       base::BindOnce(&JsonRpcService::OnGetSupportsInterface,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
   DCHECK(network_urls_.contains(mojom::CoinType::ETH));
-  RequestInternal(
-      eth::eth_call("", contract_address, "", "", "", data, "latest"), true,
-      network_url, std::move(internal_callback));
+  RequestInternal(eth::eth_call("", contract_address, "", "", "", data,
+                                kEthereumBlockTagLatest),
+                  true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetSupportsInterface(
