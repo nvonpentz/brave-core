@@ -2214,7 +2214,7 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
   // Fetch block numbers for which asset discovery has been run through
   auto next_asset_discovery_from_blocks =
       prefs_->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
-  for (std::string chain_id : GetAssetDiscoverySupportedChains()) {
+  for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnDiscoverAssetsCompleted,
                        weak_ptr_factory_.GetWeakPtr());
@@ -2238,7 +2238,7 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
 
 void JsonRpcService::DiscoverAssetsOnAllSupportedChains(
     const std::vector<std::string>& account_addresses) {
-  for (std::string chain_id : GetAssetDiscoverySupportedChains()) {
+  for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnDiscoverAssetsCompleted,
                        weak_ptr_factory_.GetWeakPtr());
