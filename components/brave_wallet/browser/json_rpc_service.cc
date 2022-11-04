@@ -2218,8 +2218,8 @@ void JsonRpcService::DiscoverAssetsOnAllSupportedChainsOnRefresh(
   prefs_->SetTime(kBraveWalletLastDiscoveredAssetsAt, base::Time::Now());
 
   // Fetch block numbers for which asset discovery has been run through
-  auto next_asset_discovery_from_blocks =
-      prefs_->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
+  auto& next_asset_discovery_from_blocks =
+      prefs_->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks);
   for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnDiscoverAssetsCompleted,
