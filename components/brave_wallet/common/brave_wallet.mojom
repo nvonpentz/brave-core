@@ -736,7 +736,7 @@ interface JsonRpcServiceObserver {
   OnIsEip1559Changed(string chain_id, bool is_eip1559);
 
   // Fired when a discovered asset query completes
-  OnDiscoveredAssetsCompleted(string chain_id, ProviderError error, string error_message);
+  OnDiscoveredAssetsCompleted(string chain_id, ProviderError error, string error_message, array<BlockchainToken> discovered_assets);
 };
 
 struct TxData {

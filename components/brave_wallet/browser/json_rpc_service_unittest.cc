@@ -281,15 +281,17 @@ class TestJsonRpcServiceObserver
   void Reset(const std::string& expected_chain_id, bool expected_is_eip1559) {
     expected_chain_id_ = expected_chain_id;
     expected_is_eip1559_ = expected_is_eip1559;
-    discovered_assets_chain_ids_.clear();
-    discovered_assets_error_messages_.clear();
+    discovered_assets_chain_id_.clear();
+    discovered_assets_error_message_.clear();
+    discovered_assets_.clear();
     chain_changed_called_ = false;
     is_eip1559_changed_called_ = false;
   }
 
   void Reset() {
-    discovered_assets_chain_ids_.clear();
-    discovered_assets_error_messages_.clear();
+    discovered_assets_chain_id_.clear();
+    discovered_assets_error_message_.clear();
+    discovered_assets_.clear();
   }
 
   void OnAddEthereumChainRequestCompleted(const std::string& chain_id,
@@ -313,23 +315,32 @@ class TestJsonRpcServiceObserver
     EXPECT_EQ(is_eip1559, expected_is_eip1559_);
   }
 
-  void OnDiscoveredAssetsCompleted(const std::string& chain_id,
-                                   mojom::ProviderError error,
-                                   const std::string& error_message) override {
-    discovered_assets_chain_ids_.push_back(chain_id);
-    discovered_assets_error_messages_.push_back(error_message);
+  void OnDiscoveredAssetsCompleted(
+      const std::string& chain_id,
+      mojom::ProviderError error,
+      const std::string& error_message,
+      std::vector<mojom::BlockchainTokenPtr> discovered_assets) override {
+    discovered_assets_chain_id_ = chain_id;
+    discovered_assets_error_message_ = error_message;
+    discovered_assets_ = std::move(discovered_assets);
   }
 
   // TestOnDiscoveredAssetsCompletedResults verifies
   // that the chain_ids and error messages passed as arguments to
   // OnDiscoveredAssetsCompleted are as expected
   void TestOnDiscoveredAssetsCompletedResults(
-      std::vector<std::string> expected_chain_ids,
-      std::vector<std::string> expected_error_messages) {
-    ASSERT_EQ(expected_error_messages.size(), expected_chain_ids.size());
-    ASSERT_EQ(discovered_assets_error_messages_.size(),
-              discovered_assets_chain_ids_.size());
-    EXPECT_EQ(expected_chain_ids.size(), discovered_assets_chain_ids_.size());
+      std::string expected_chain_id,
+      std::string expected_error_message,
+      std::vector<std::string> expected_discovered_assets_contract_addresses) {
+    EXPECT_EQ(expected_chain_id, discovered_assets_chain_id_);
+    EXPECT_EQ(expected_error_message, discovered_assets_error_message_);
+    EXPECT_EQ(expected_discovered_assets_contract_addresses.size(),
+              discovered_assets_.size());
+    EXPECT_EQ(expected_error_message, discovered_assets_error_message_);
+    for (size_t i = 0; i < discovered_assets_.size(); i++) {
+      EXPECT_EQ(expected_discovered_assets_contract_addresses[i],
+                discovered_assets_[i]->contract_address);
+    }
   }
 
   bool is_eip1559_changed_called() {
@@ -351,8 +362,9 @@ class TestJsonRpcServiceObserver
   std::string expected_chain_id_;
   mojom::CoinType expected_coin_;
   std::string expected_error_;
-  std::vector<std::string> discovered_assets_chain_ids_;
-  std::vector<std::string> discovered_assets_error_messages_;
+  std::string discovered_assets_chain_id_;
+  std::string discovered_assets_error_message_;
+  std::vector<mojom::BlockchainTokenPtr> discovered_assets_;
   bool expected_is_eip1559_;
   bool chain_changed_called_ = false;
   bool is_eip1559_changed_called_ = false;
@@ -1199,50 +1211,30 @@ class JsonRpcServiceUnitTest : public testing::Test {
       const std::string& start_block = kEthereumBlockTagEarliest,
       const std::string& end_block = kEthereumBlockTagLatest) {
     base::RunLoop run_loop;
-    std::vector<mojom::BlockchainTokenPtr> expected_tokens;
-    json_rpc_service_->DiscoverAssets(
-        chain_id, mojom::CoinType::ETH, account_addresses, update_prefs,
-        start_block, end_block,
-        base::BindLambdaForTesting(
-            [&](const std::string& returned_chain_id,
-                std::vector<mojom::BlockchainTokenPtr> tokens,
-                mojom::ProviderError error, const std::string& error_message) {
-              ASSERT_EQ(chain_id, returned_chain_id);
-              ASSERT_EQ(tokens.size(),
-                        expected_token_contract_addresses.size());
-              for (size_t i = 0; i < expected_token_contract_addresses.size();
-                   i++) {
-                EXPECT_EQ(tokens[i]->contract_address,
-                          expected_token_contract_addresses[i]);
-              }
-              EXPECT_EQ(error, expected_error);
-              EXPECT_EQ(error_message, expected_error_message);
-
-              auto next_asset_discovery_from_blocks =
-                  prefs()
-                      ->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks)
-                      .Clone();
-              const auto path = base::StrCat({kEthereumPrefKey, ".", chain_id});
-              const std::string* next_asset_discovery_from_block =
-                  next_asset_discovery_from_blocks.FindStringByDottedPath(path);
-              if (next_asset_discovery_from_block) {
-                EXPECT_EQ(*next_asset_discovery_from_block,
-                          expected_next_asset_discovery_from_block);
-              } else {
-                ASSERT_EQ(expected_next_asset_discovery_from_block, "");
-              }
-              run_loop.QuitWhenIdle();
-            }));
-    run_loop.Run();
-    observer_->TestOnDiscoveredAssetsCompletedResults({chain_id},
-                                                      {expected_error_message});
+    json_rpc_service_->DiscoverAssets(chain_id, mojom::CoinType::ETH,
+                                      account_addresses, update_prefs,
+                                      start_block, end_block);
+    run_loop.RunUntilIdle();
+    auto next_asset_discovery_from_blocks =
+        prefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
+    const auto path = base::StrCat({kEthereumPrefKey, ".", chain_id});
+    const std::string* next_asset_discovery_from_block =
+        next_asset_discovery_from_blocks.FindStringByDottedPath(path);
+    if (next_asset_discovery_from_block) {
+      EXPECT_EQ(*next_asset_discovery_from_block,
+                expected_next_asset_discovery_from_block);
+    } else {
+      ASSERT_EQ(expected_next_asset_discovery_from_block, "");
+    }
+    observer_->TestOnDiscoveredAssetsCompletedResults(
+        chain_id, expected_error_message,
+        std::move(expected_token_contract_addresses));
     observer_->Reset();
   }
 
   void TestDiscoverAssetsOnAllSupportedChains(
       const std::vector<std::string>& account_addresses,
       const std::vector<std::string>& expected_chain_ids,
-      const std::vector<std::string>& expected_error_messages,
       const base::Time expected_assets_last_discovered_at_pref,
       const base::Value::Dict expected_next_asset_discovery_from_blocks) {
     json_rpc_service_->DiscoverAssetsOnAllSupportedChains(account_addresses);
@@ -1251,14 +1243,10 @@ class JsonRpcServiceUnitTest : public testing::Test {
               expected_assets_last_discovered_at_pref);
     EXPECT_EQ(prefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks),
               expected_next_asset_discovery_from_blocks);
-    observer_->TestOnDiscoveredAssetsCompletedResults(expected_chain_ids,
-                                                      expected_error_messages);
-    observer_->Reset();
   }
 
   void TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
       const std::vector<std::string>& account_addresses,
-      const std::vector<std::string>& expected_error_messages,
       const base::Time previous_assets_last_discovered_at,
       base::OnceCallback<void(base::Time previous, base::Time current)>
           assets_last_discovered_at_test_fn,
@@ -1276,8 +1264,6 @@ class JsonRpcServiceUnitTest : public testing::Test {
         prefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
     EXPECT_EQ(previous_next_asset_discovery_from_blocks,
               current_next_asset_discovery_from_blocks);
-    observer_->TestOnDiscoveredAssetsCompletedResults(
-        GetAssetDiscoverySupportedChains(), expected_error_messages);
   }
 
   void TestGetSolanaBalance(uint64_t expected_balance,
@@ -4346,14 +4332,12 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChains) {
   std::map<std::string, std::string> responses;
   std::map<std::string, std::string> expected_from_blocks;
   std::map<std::string, std::string> expected_to_blocks;
-  std::vector<std::string> expected_error_messages;
   std::string default_response = R"({ "jsonrpc":"2.0", "id":1, "result":[] })";
   for (std::string chain_id : supported_chain_ids) {
     GURL network_url = GetNetwork(chain_id, mojom::CoinType::ETH);
     responses[network_url.spec()] = default_response;
     expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
     expected_to_blocks[network_url.spec()] = kEthereumBlockTagLatest;
-    expected_error_messages.push_back("");  // Expect no error
   }
   const base::Time assets_last_discovered_at =
       prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
@@ -4363,8 +4347,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChains) {
       responses, expected_from_blocks, expected_to_blocks);
   TestDiscoverAssetsOnAllSupportedChains(
       {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
-      GetAssetDiscoverySupportedChains(), expected_error_messages,
-      assets_last_discovered_at,
+      GetAssetDiscoverySupportedChains(), assets_last_discovered_at,
       std::move(previous_next_asset_discovery_from_blocks));
 }
 
@@ -4374,21 +4357,17 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   // chain
   // 2. kBraveWalletAssetsLastDiscoveredAt pref is updated
   // 3. kBraveWalletNextAssetDiscoveryFromBlocks pref is not updated
-  observer_ = std::make_unique<TestJsonRpcServiceObserver>();
-  json_rpc_service_->AddObserver(observer_->GetReceiver());
   const std::vector<std::string> supported_chain_ids =
       GetAssetDiscoverySupportedChains();
   std::map<std::string, std::string> responses;
   std::map<std::string, std::string> expected_from_blocks;
   std::map<std::string, std::string> expected_to_blocks;
-  std::vector<std::string> expected_error_messages;
   std::string default_response = R"({ "jsonrpc":"2.0", "id":1, "result":[] })";
   for (std::string chain_id : supported_chain_ids) {
     GURL network_url = GetNetwork(chain_id, mojom::CoinType::ETH);
     responses[network_url.spec()] = default_response;
     expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
     expected_to_blocks[network_url.spec()] = kEthereumBlockTagLatest;
-    expected_error_messages.push_back("");  // Expect no error
   }
   base::Time assets_last_discovered_at_before =
       prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
@@ -4397,7 +4376,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(
       responses, expected_from_blocks, expected_to_blocks);
   TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
       assets_last_discovered_at_before,
       base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
         EXPECT_TRUE(previous < current);
@@ -4415,7 +4394,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   assets_last_discovered_at_before =
       prefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
   TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
       assets_last_discovered_at_before,
       base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
         EXPECT_EQ(previous, current);
@@ -4428,7 +4407,6 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   // 2. Rate limit pref is updated
   // 3. Dict pref is is updated
   expected_next_asset_discovery_from_blocks.clear();
-  observer_->Reset();
   responses.clear();
   task_environment_.FastForwardBy(
       base::Minutes(kAssetDiscoveryMinutesPerRequest));
@@ -4562,7 +4540,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(
       responses, expected_from_blocks, expected_to_blocks);
   TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
       assets_last_discovered_at_before,
       base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
         EXPECT_TRUE(previous < current);
@@ -4579,7 +4557,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   expected_next_asset_discovery_from_blocks.clear();
   responses.clear();
   expected_from_blocks.clear();
-  observer_->Reset();
+  // observer_->Reset();
 
   task_environment_.FastForwardBy(
       base::Minutes(kAssetDiscoveryMinutesPerRequest));
@@ -4622,7 +4600,7 @@ TEST_F(JsonRpcServiceUnitTest, DiscoverAssetsOnAllSupportedChainsOnRefresh) {
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(
       responses, expected_from_blocks, expected_to_blocks);
   TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, expected_error_messages,
+      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
       assets_last_discovered_at_before,
       base::BindLambdaForTesting([&](base::Time previous, base::Time current) {
         EXPECT_TRUE(previous < current);

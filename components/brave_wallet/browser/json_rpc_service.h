@@ -308,12 +308,6 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                           const std::string& chain_id,
                           GetTokenMetadataCallback callback) override;
 
-  using DiscoverAssetsCallback = base::OnceCallback<void(
-      const std::string& chain_id,
-      std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-      mojom::ProviderError error,
-      const std::string& error_message)>;
-
   // Called by KeyringService when the user adds a new account.
   // Rate limits will be ignored, and eth_getLogs query
   // will run against all blocks, "earliest" to "latest".
@@ -333,8 +327,7 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                       const std::vector<std::string>& account_addresses,
                       bool update_prefs,
                       const std::string& from_block,
-                      const std::string& to_block,
-                      DiscoverAssetsCallback callback);
+                      const std::string& to_block);
 
   void OnGetAllTokensDiscoverAssets(
       const std::string& chain_id,
@@ -343,24 +336,15 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
       bool update_prefs,
       const std::string& from_block,
       const std::string& to_block,
-      DiscoverAssetsCallback callback,
       std::vector<mojom::BlockchainTokenPtr> token_list);
 
   void OnGetTransferLogs(
-      DiscoverAssetsCallback callback,
       base::flat_map<std::string, mojom::BlockchainTokenPtr>& user_assets_map,
       bool update_prefs,
       const std::string& chain_id,
       APIRequestResult api_request_result);
 
   void CompleteDiscoverAssets(
-      const std::string& chain_id,
-      std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-      mojom::ProviderError error,
-      const std::string& error_message,
-      DiscoverAssetsCallback callback);
-
-  void OnDiscoverAssetsCompleted(
       const std::string& chain_id,
       std::vector<mojom::BlockchainTokenPtr> discovered_assets,
       mojom::ProviderError error,
