@@ -734,9 +734,6 @@ interface JsonRpcServiceObserver {
 
   // Fired when a chain ID's 1559 status changes
   OnIsEip1559Changed(string chain_id, bool is_eip1559);
-
-  // Fired when a discovered asset query completes
-  OnDiscoveredAssetsCompleted(string chain_id, ProviderError error, string error_message, array<BlockchainToken> discovered_assets);
 };
 
 struct TxData {
@@ -1141,6 +1138,9 @@ interface BraveWalletServiceObserver {
 
   // Fired when the list of networks changes
   OnNetworkListChanged();
+
+  // Fired when a discovered asset query completes
+  OnDiscoveredAssetsCompleted(string chain_id, ProviderError error, string error_message, array<BlockchainToken> discovered_assets);
 };
 
 struct SignMessageRequest {

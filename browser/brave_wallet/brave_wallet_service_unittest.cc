@@ -180,6 +180,12 @@ class TestBraveWalletServiceObserver
 
   void OnNetworkListChanged() override { network_list_changed_fired_ = true; }
 
+  void OnDiscoveredAssetsCompleted(
+      const std::string& chain_id,
+      mojom::ProviderError error,
+      const std::string& error_message,
+      std::vector<mojom::BlockchainTokenPtr> discovered_assets) override {}
+
   mojom::DefaultWallet GetDefaultEthereumWallet() {
     return default_ethereum_wallet_;
   }

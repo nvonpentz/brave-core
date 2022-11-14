@@ -86,6 +86,11 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
       const std::vector<std::vector<std::string>>& reward,
       mojom::ProviderError error,
       const std::string& error_message)>;
+
+  using EthGetLogsCallback =
+      base::OnceCallback<void(const std::vector<Log>& logs,
+                              mojom::ProviderError error,
+                              const std::string& error_message)>;
   void GetBlockNumber(GetBlockNumberCallback callback);
   void GetFeeHistory(GetFeeHistoryCallback callback);
 
@@ -308,47 +313,57 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                           const std::string& chain_id,
                           GetTokenMetadataCallback callback) override;
 
-  // Called by KeyringService when the user adds a new account.
-  // Rate limits will be ignored, and eth_getLogs query
-  // will run against all blocks, "earliest" to "latest".
-  void DiscoverAssetsOnAllSupportedChains(
-      const std::vector<std::string>& account_addresses);
+  // // Called by KeyringService when the user adds a new account.
+  // // Rate limits will be ignored, and eth_getLogs query
+  // // will run against all blocks, "earliest" to "latest".
+  // void DiscoverAssetsOnAllSupportedChains(
+  //     const std::vector<std::string>& account_addresses);
 
-  // Called by frontend via KeyringService::DiscoverAssetsOnAllSupportedChains.
-  // Subject to client side rate limiting based on
-  // kBraveWalletLastDiscoveredAssetsAt pref value. Only runs eth_getLogs
-  // against block range between
-  // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest".
-  void DiscoverAssetsOnAllSupportedChainsOnRefresh(
-      const std::vector<std::string>& account_addresses);
+  // // Called by frontend via
+  // KeyringService::DiscoverAssetsOnAllSupportedChains.
+  // // Subject to client side rate limiting based on
+  // // kBraveWalletLastDiscoveredAssetsAt pref value. Only runs eth_getLogs
+  // // against block range between
+  // // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest".
+  // void DiscoverAssetsOnAllSupportedChainsOnRefresh(
+  //     const std::vector<std::string>& account_addresses);
 
-  void DiscoverAssets(const std::string& chain_id,
-                      mojom::CoinType coin,
-                      const std::vector<std::string>& account_addresses,
-                      bool update_prefs,
-                      const std::string& from_block,
-                      const std::string& to_block);
+  // void DiscoverAssets(const std::string& chain_id,
+  //                     mojom::CoinType coin,
+  //                     const std::vector<std::string>& account_addresses,
+  //                     bool update_prefs,
+  //                     const std::string& from_block,
+  //                     const std::string& to_block);
 
-  void OnGetAllTokensDiscoverAssets(
-      const std::string& chain_id,
-      const std::vector<std::string>& account_addresses,
-      std::vector<mojom::BlockchainTokenPtr> user_assets,
-      bool update_prefs,
-      const std::string& from_block,
-      const std::string& to_block,
-      std::vector<mojom::BlockchainTokenPtr> token_list);
+  // void OnGetAllTokensDiscoverAssets(
+  //     const std::string& chain_id,
+  //     const std::vector<std::string>& account_addresses,
+  //     std::vector<mojom::BlockchainTokenPtr> user_assets,
+  //     bool update_prefs,
+  //     const std::string& from_block,
+  //     const std::string& to_block,
+  //     std::vector<mojom::BlockchainTokenPtr> token_list);
 
-  void OnGetTransferLogs(
-      base::flat_map<std::string, mojom::BlockchainTokenPtr>& user_assets_map,
-      bool update_prefs,
-      const std::string& chain_id,
-      APIRequestResult api_request_result);
+  void EthGetLogs(const std::string& chain_id,
+                  const std::string& from_block,
+                  const std::string& to_block,
+                  base::Value::List addresses,
+                  base::Value::List topics,
+                  EthGetLogsCallback callback);
 
-  void CompleteDiscoverAssets(
-      const std::string& chain_id,
-      std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-      mojom::ProviderError error,
-      const std::string& error_message);
+  void OnEthGetLogs(EthGetLogsCallback callback,
+                    APIRequestResult api_request_result);
+
+  // void OnGetTransferLogs(
+  //     base::flat_map<std::string, mojom::BlockchainTokenPtr>&
+  //     tokens_to_search, bool update_prefs, const std::string& chain_id,
+  //     APIRequestResult api_request_result);
+
+  // void CompleteDiscoverAssets(
+  //     const std::string& chain_id,
+  //     std::vector<mojom::BlockchainTokenPtr> discovered_assets,
+  //     mojom::ProviderError error,
+  //     const std::string& error_message);
 
   // Resets things back to the original state of BraveWalletService.
   // To be used when the Wallet is reset / erased

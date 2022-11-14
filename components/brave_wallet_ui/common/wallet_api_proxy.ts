@@ -35,9 +35,6 @@ export class WalletApiProxy {
       },
       onIsEip1559Changed: function (chainId, isEip1559) {
         store.dispatch(WalletActions.isEip1559Changed({ chainId, isEip1559 }))
-      },
-      onDiscoveredAssetsCompleted: function (chainId, providerError, error) {
-        // TODO: Handle this event.
       }
     })
     this.jsonRpcService.addObserver(jsonRpcServiceObserverReceiver.$.bindNewPipeAndPassRemote())
@@ -118,6 +115,9 @@ export class WalletApiProxy {
       },
       onNetworkListChanged: function () {
         store.dispatch(WalletActions.getAllNetworks())
+      },
+      onDiscoveredAssetsCompleted: function (chainId, providerError, error) {
+        // TODO: Handle this event.
       }
     })
     this.braveWalletService.addObserver(braveWalletServiceObserverReceiver.$.bindNewPipeAndPassRemote())

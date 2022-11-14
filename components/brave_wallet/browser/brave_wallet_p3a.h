@@ -7,6 +7,7 @@
 #define BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_BRAVE_WALLET_P3A_H_
 
 #include <string>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
@@ -80,6 +81,11 @@ class BraveWalletP3A : public mojom::BraveWalletServiceObserver,
   void OnDefaultBaseCryptocurrencyChanged(
       const std::string& cryptocurrency) override {}
   void OnNetworkListChanged() override {}
+  void OnDiscoveredAssetsCompleted(
+      const std::string& chain_id,
+      mojom::ProviderError error,
+      const std::string& error_message,
+      std::vector<mojom::BlockchainTokenPtr> discovered_assets) override {}
 
  private:
   void RecordInitialBraveWalletP3AState();

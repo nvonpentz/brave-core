@@ -168,6 +168,7 @@ BraveWalletService::BraveWalletService(
       tx_service_(tx_service),
       prefs_(prefs),
       brave_wallet_p3a_(this, keyring_service, prefs),
+      asset_discovery_service_(this, json_rpc_service, prefs),
       weak_ptr_factory_(this) {
   if (delegate_)
     delegate_->AddObserver(this);
@@ -1115,6 +1116,21 @@ void BraveWalletService::OnActiveOriginChanged(
   }
 }
 
+void BraveWalletService::OnDiscoveredAssetsCompleted(
+    const std::string& chain_id,
+    mojom::ProviderError error,
+    const std::string& error_message,
+    std::vector<mojom::BlockchainTokenPtr> discovered_assets) {
+  for (const auto& observer : observers_) {
+    std::vector<mojom::BlockchainTokenPtr> discovered_assets_copy;
+    for (auto& asset : discovered_assets) {
+      discovered_assets_copy.push_back(asset.Clone());
+    }
+    observer->OnDiscoveredAssetsCompleted(chain_id, error, error_message,
+                                          std::move(discovered_assets_copy));
+  }
+}
+
 void BraveWalletService::OnGetImportInfo(
     const std::string& new_password,
     base::OnceCallback<void(bool, const absl::optional<std::string>&)> callback,
@@ -1456,8 +1472,8 @@ void BraveWalletService::ContinueDiscoverAssetsOnAllSupportedChains(
     account_addresses.push_back(account_info->address);
   }
 
-  json_rpc_service_->DiscoverAssetsOnAllSupportedChainsOnRefresh(
-      std::move(account_addresses));
+  // json_rpc_service_->DiscoverAssetsOnAllSupportedChainsOnRefresh(
+  //     std::move(account_addresses));
 }
 
 void BraveWalletService::CancelAllSuggestedTokenCallbacks() {
