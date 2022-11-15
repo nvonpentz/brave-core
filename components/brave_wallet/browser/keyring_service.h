@@ -244,7 +244,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   absl::optional<std::string> GetSelectedAccount(mojom::CoinType coin) const;
   absl::optional<std::string> GetFilecoinSelectedAccount(
       const std::string& net) const;
-  void ContinueDiscoverAssetsOnAllSupportedChains(mojom::KeyringInfoPtr);
 
   void AddObserver(
       ::mojo::PendingRemote<mojom::KeyringServiceObserver> observer) override;
@@ -298,8 +297,7 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, DefaultSolanaAccountCreated);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest,
                            DefaultSolanaAccountRestored);
-  FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, DiscoverAssets);
-
+  FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, AccountsAdded);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceAccountDiscoveryUnitTest,
                            AccountDiscovery);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceAccountDiscoveryUnitTest,
@@ -386,6 +384,8 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   void MaybeMigratePBKDF2Iterations(const std::string& password);
 
   void NotifyAccountsChanged();
+  void NotifyAccountsAdded(mojom::CoinType coin,
+                           const std::vector<std::string>& account_infos);
   void StopAutoLockTimer();
   void ResetAutoLockTimer();
   void OnAutoLockPreferenceChanged();

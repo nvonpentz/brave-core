@@ -313,6 +313,8 @@ class EthereumProviderImpl final
   void Unlocked() override;
   void BackedUp() override {}
   void AccountsChanged() override {}
+  void AccountsAdded(mojom::CoinType coin,
+                     const std::vector<std::string>& addresses) override {}
   void AutoLockMinutesChanged() override {}
   void SelectedAccountChanged(mojom::CoinType coin) override;
 

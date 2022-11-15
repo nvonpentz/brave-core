@@ -32,11 +32,11 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/sync_preferences/testing_pref_service_syncable.h"
 #include "content/public/test/browser_task_environment.h"
-#include "testing/gtest/include/gtest/gtest.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "services/data_decoder/public/cpp/test_support/in_process_data_decoder.h"
 #include "services/network/public/cpp/weak_wrapper_shared_url_loader_factory.h"
 #include "services/network/test/test_url_loader_factory.h"
+#include "testing/gtest/include/gtest/gtest.h"
+#include "ui/base/l10n/l10n_util.h"
 
 namespace brave_wallet {
 
@@ -78,8 +78,6 @@ class TestBraveWalletServiceObserver
       mojom::ProviderError error,
       const std::string& error_message,
       std::vector<mojom::BlockchainTokenPtr> discovered_assets) override {
-    VLOG(0) << "CALLED OnDiscoveredAssetsCompleted chain_id " << chain_id
-            << " error_message " << error_message;
     discovered_assets_chain_id_ = chain_id;
     discovered_assets_error_message_ = error_message;
     discovered_assets_ = std::move(discovered_assets);
@@ -92,7 +90,6 @@ class TestBraveWalletServiceObserver
       std::string expected_chain_id,
       std::string expected_error_message,
       std::vector<std::string> expected_discovered_assets_contract_addresses) {
-    VLOG(0) << "TestOnDiscoveredAssetsCompletedResults";
     EXPECT_EQ(expected_chain_id, discovered_assets_chain_id_);
     EXPECT_EQ(expected_error_message, discovered_assets_error_message_);
     EXPECT_EQ(expected_discovered_assets_contract_addresses.size(),
@@ -149,13 +146,14 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
     json_rpc_service_->SetAPIRequestHelperForTesting(
         shared_url_loader_factory_);
     tx_service = TxServiceFactory::GetServiceForContext(profile_.get());
-    // wallet_service_ =
-    // BraveWalletServiceFactory::GetServiceForContext(profile_.get());
     wallet_service_ = std::make_unique<BraveWalletService>(
         BraveWalletServiceDelegate::Create(profile_.get()), keyring_service_,
         json_rpc_service_, tx_service, GetPrefs());
     asset_discovery_manager_ = std::make_unique<AssetDiscoveryManager>(
         wallet_service_.get(), json_rpc_service_, GetPrefs());
+    wallet_service_observer_ =
+        std::make_unique<TestBraveWalletServiceObserver>();
+    wallet_service_->AddObserver(wallet_service_observer_->GetReceiver());
   }
 
   void SetInterceptor(const GURL& expected_url,
@@ -266,6 +264,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
               expected_assets_last_discovered_at_pref);
     EXPECT_EQ(GetPrefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks),
               expected_next_asset_discovery_from_blocks);
+    wallet_service_observer_->Reset();
   }
 
   void TestDiscoverAssetsOnAllSupportedChainsOnRefresh(
@@ -287,6 +286,22 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         GetPrefs()->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks).Clone();
     EXPECT_EQ(previous_next_asset_discovery_from_blocks,
               current_next_asset_discovery_from_blocks);
+    wallet_service_observer_->Reset();
+  }
+
+  void TestAccountsAdded(
+      mojom::CoinType coin,
+      const std::vector<std::string>& addresses,
+      const std::string& chain_id,
+      const std::string& expected_error_message,
+      const std::vector<std::string>& expected_token_contract_addresses) {
+    base::RunLoop run_loop;
+    asset_discovery_manager_->AccountsAdded(coin, std::move(addresses));
+    run_loop.RunUntilIdle();
+    wallet_service_observer_->TestOnDiscoveredAssetsCompletedResults(
+        chain_id, expected_error_message,
+        std::move(expected_token_contract_addresses));
+    wallet_service_observer_->Reset();
   }
 
   PrefService* GetPrefs() { return profile_->GetPrefs(); }
@@ -309,8 +324,9 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
 };
 
 TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssets) {
-  wallet_service_observer_ = std::make_unique<TestBraveWalletServiceObserver>();
-  wallet_service_->AddObserver(wallet_service_observer_->GetReceiver());
+  // wallet_service_observer_ =
+  // std::make_unique<TestBraveWalletServiceObserver>();
+  // wallet_service_->AddObserver(wallet_service_observer_->GetReceiver());
   auto* blockchain_registry = BlockchainRegistry::GetInstance();
   TokenListMap token_list_map;
   std::string response;
@@ -333,8 +349,6 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssets) {
                      {"0xinvalid"}, {}, mojom::ProviderError::kInvalidParams,
                      l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
                      "");
-
-  VLOG(0) << "BEFORE RELEVANT TEST";
 
   // Invalid RPC response json response triggers parsing error
   auto expected_network =
@@ -634,14 +648,16 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssets) {
 }
 
 TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssetsOnAllSupportedChains) {
+  // wallet_service_observer_ =
+  // std::make_unique<TestBraveWalletServiceObserver>();
+  // wallet_service_->AddObserver(wallet_service_observer_->GetReceiver());
+
   // Send valid requests that yield no results and verify
   // 1. OnDiscoveredAssetsCompleted is called exactly once for each supported
   // chain
   // 2. All eth_getLogs requests specify all block ranges (earliest to latest)
   // 3. kBraveWalletNextAssetDiscoveryFromBlocks &
   // kBraveWalletAssetsLastDiscoveredAt prefs are not updated
-  wallet_service_observer_ = std::make_unique<TestBraveWalletServiceObserver>();
-  wallet_service_->AddObserver(wallet_service_observer_->GetReceiver());
   const std::vector<std::string> supported_chain_ids =
       GetAssetDiscoverySupportedChains();
   std::map<std::string, std::string> responses;
@@ -873,8 +889,6 @@ TEST_F(AssetDiscoveryManagerUnitTest,
   expected_next_asset_discovery_from_blocks.clear();
   responses.clear();
   expected_from_blocks.clear();
-  // wallet_service_observer_->Reset();
-
   task_environment_.FastForwardBy(
       base::Minutes(kAssetDiscoveryMinutesPerRequest));
   assets_last_discovered_at_before =
@@ -922,6 +936,121 @@ TEST_F(AssetDiscoveryManagerUnitTest,
         EXPECT_TRUE(previous < current);
       }),
       std::move(expected_next_asset_discovery_from_blocks));
+}
+
+TEST_F(AssetDiscoveryManagerUnitTest, AccountsAdded) {
+  // Valid registry token DAI is discovered and added.
+  // Valid registry token WETH is discovered and added (tests insensitivity to
+  // lower case addresses in provider logs response).
+  // Valid BAT is not added because it is already a user asset.
+  // Invalid LilNoun is not added because it is an ERC721.
+  auto* blockchain_registry = BlockchainRegistry::GetInstance();
+  TokenListMap token_list_map;
+  std::string token_list_json = R"(
+     {
+      "0x0d8775f648430679a709e98d2b0cb6250d2887ef": {
+        "name": "Basic Attention Token",
+        "logo": "bat.svg",
+        "erc20": true,
+        "symbol": "BAT",
+        "decimals": 18
+      },
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F": {
+        "name": "Dai Stablecoin",
+        "logo": "dai.svg",
+        "erc20": true,
+        "symbol": "DAI",
+        "decimals": 18
+      },
+      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": {
+        "name": "Wrapped Eth",
+        "logo": "weth.svg",
+        "erc20": true,
+        "symbol": "WETH",
+        "decimals": 18,
+        "chainId": "0x1"
+      },
+      "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B": {
+        "name": "Lil Nouns",
+        "logo": "lilnouns.svg",
+        "erc20": false,
+        "erc721": true,
+        "symbol": "LilNouns",
+        "chainId": "0x1"
+      }
+     })";
+  ASSERT_TRUE(
+      ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::ETH));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+
+  // Note: the matching transfer log for WETH uses an all lowercase address
+  // while the token registry uses checksum address (contains uppercase)
+  std::string response = R"({
+    "jsonrpc":"2.0",
+    "id":1,
+    "result":[
+      {
+        "address":"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464a",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      },
+      {
+        "address":"0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464b",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      },
+      {
+        "address":"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "blockHash":"0x2961ceb6c16bab72a55f79e394a35f2bf1c62b30446e3537280f7c22c3115e6e",
+        "blockNumber":"0xd6464c",
+        "data":"0x00000000000000000000000000000000000000000000000555aff1f0fae8c000",
+        "logIndex":"0x159",
+        "removed":false,
+        "topics":[
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x000000000000000000000000503828976d22510aad0201ac7ec88293211d23da",
+          "0x000000000000000000000000b4b2802129071b2b9ebb8cbb01ea1e4d14b34961"
+        ],
+        "transactionHash":"0x2e652b70966c6a05f4b3e68f20d6540b7a5ab712385464a7ccf62774d39b7066",
+        "transactionIndex":"0x9f"
+      }
+    ]
+  })";
+  SetInterceptor(GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH),
+                 "eth_getLogs", "", response);
+  // Empty account address vector should not be run
+  TestAccountsAdded(mojom::CoinType::ETH, {}, "", "", {});
+
+  // Invalid CoinType address vector should be run
+  TestAccountsAdded(mojom::CoinType::SOL,
+                    {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, "", "", {});
+
+  // Valid
+  TestAccountsAdded(mojom::CoinType::ETH,
+                    {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+                    mojom::kMainnetChainId, "",
+                    {"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+                     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"});
 }
 
 }  // namespace brave_wallet

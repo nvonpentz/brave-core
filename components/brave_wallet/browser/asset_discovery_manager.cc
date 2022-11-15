@@ -42,7 +42,6 @@ void AssetDiscoveryManager::DiscoverAssets(
   // Asset discovery only supported on select EVM chains
   if (coin != mojom::CoinType::ETH ||
       !base::Contains(GetAssetDiscoverySupportedChains(), chain_id)) {
-    // wallet_service_->OnDiscoveredAssetsCompleted(chain_id, )
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kMethodNotSupported,
@@ -271,6 +270,16 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsOnRefresh(
     DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
                    from_block, to_block);
   }
+}
+
+void AssetDiscoveryManager::AccountsAdded(
+    mojom::CoinType coin,
+    const std::vector<std::string>& addresses) {
+  if (coin != mojom::CoinType::ETH || addresses.size() == 0u) {
+    return;
+  }
+  AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChains(
+      std::move(addresses));
 }
 
 }  // namespace brave_wallet

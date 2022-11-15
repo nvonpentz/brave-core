@@ -23,7 +23,7 @@ namespace brave_wallet {
 class BraveWalletService;
 class JsonRpcService;
 
-class AssetDiscoveryManager {
+class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
  public:
   AssetDiscoveryManager(BraveWalletService* wallet_service,
                         JsonRpcService* json_rpc_service,
@@ -31,7 +31,20 @@ class AssetDiscoveryManager {
 
   AssetDiscoveryManager(const AssetDiscoveryManager&) = delete;
   AssetDiscoveryManager& operator=(AssetDiscoveryManager&) = delete;
-  ~AssetDiscoveryManager();
+  ~AssetDiscoveryManager() override;
+
+  // KeyringServiceObserver
+  void KeyringCreated(const std::string& keyring_id) override {}
+  void KeyringRestored(const std::string& keyring_id) override {}
+  void KeyringReset() override {}
+  void Locked() override {}
+  void Unlocked() override {}
+  void BackedUp() override {}
+  void AccountsChanged() override {}
+  void AccountsAdded(mojom::CoinType coin,
+                     const std::vector<std::string>& addresses) override;
+  void AutoLockMinutesChanged() override {}
+  void SelectedAccountChanged(mojom::CoinType coin) override {}
 
   using APIRequestResult = api_request_helper::APIRequestResult;
   using EthGetLogsCallback =

@@ -514,6 +514,9 @@ interface KeyringServiceObserver {
   // Fired when the accounts list changes
   AccountsChanged();
 
+  // Fired when accounts are added
+  AccountsAdded(CoinType coin, array<string> addresses);
+
   // Fired when the autolock setting changes
   AutoLockMinutesChanged();
 
