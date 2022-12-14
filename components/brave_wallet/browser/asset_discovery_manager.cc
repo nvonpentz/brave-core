@@ -55,6 +55,9 @@ void AssetDiscoveryManager::DiscoverAssets(
     bool triggered_by_accounts_added,
     const std::string& from_block,
     const std::string& to_block) {
+  // TODO(nvonpentz): Probably should move most of this logic to an ETH specific
+  // function and createa another for Solana
+
   // Asset discovery only supported on select EVM chains
   if (coin != mojom::CoinType::ETH ||
       !base::Contains(GetAssetDiscoverySupportedChains(), chain_id)) {
@@ -285,10 +288,15 @@ void AssetDiscoveryManager::CompleteDiscoverAssets(
 }
 
 void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsAccountsAdded(
+    mojom::CoinType coin,
     const std::vector<std::string>& account_addresses) {
-  for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
-    DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
-                   kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
+  if (coin == mojom::CoinType::ETH) {
+    for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
+      DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
+                     kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
+    }
+  } else {
+    // TODO(nvonpentz) Add support for Solana
   }
 }
 
@@ -311,6 +319,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
     return;
   }
 
+  // TODO(nvonpentz) Add support for Solana
   const std::vector<std::string>& supported_chain_ids =
       GetAssetDiscoverySupportedChains();
   remaining_chains_ = supported_chain_ids.size();
@@ -339,10 +348,17 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
 void AssetDiscoveryManager::AccountsAdded(
     mojom::CoinType coin,
     const std::vector<std::string>& addresses) {
-  if (coin != mojom::CoinType::ETH || addresses.size() == 0u) {
+  if (!(coin == mojom::CoinType::ETH || coin == mojom::CoinType::SOL) || addresses.size() == 0u) {
     return;
   }
-  DiscoverAssetsOnAllSupportedChainsAccountsAdded(addresses);
+  DiscoverAssetsOnAllSupportedChainsAccountsAdded(coin, addresses);
+}
+
+// static
+absl::optional<mojom::BlockchainTokenPtr> DecodeSolTokenData(
+    const std::vector<uint8_t>& data) {
+  return absl::nullopt;
+  // TODO(nvonpentz) Implement
 }
 
 }  // namespace brave_wallet

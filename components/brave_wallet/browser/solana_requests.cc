@@ -99,6 +99,11 @@ std::string getBlockHeight() {
   return GetJsonRpcString("getBlockHeight");
 }
 
+std::string getTokenAccountsByOwner(const std::string& pubkey) {
+  return GetJsonRpcString("getTokenAccountsByOwner",
+                          mojom::kSolanaTokenProgramId);
+}
+
 }  // namespace solana
 
 }  // namespace brave_wallet

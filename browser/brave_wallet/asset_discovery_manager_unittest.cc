@@ -293,7 +293,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                   expected_chain_ids_remaining.end());
             }));
     asset_discovery_manager_->DiscoverAssetsOnAllSupportedChainsAccountsAdded(
-        account_addresses);
+        mojom::CoinType::ETH, account_addresses);
     base::RunLoop().RunUntilIdle();
     EXPECT_EQ(expected_chain_ids_remaining.size(), 0u);
     EXPECT_EQ(GetPrefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt),

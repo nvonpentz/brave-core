@@ -93,6 +93,12 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
                       const std::string& from_block,
                       const std::string& to_block);
 
+  void DiscoverSolanaAssets(const std::string& chain_id,
+                            const std::vector<std::string>& account_addresses,
+                            bool update_prefs,
+                            const std::string& from_block,
+                            const std::string& to_block);
+
   void OnGetAllTokensDiscoverAssets(
       const std::string& chain_id,
       const std::vector<std::string>& account_addresses,
@@ -121,7 +127,11 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   // Rate limits will be ignored, and eth_getLogs query
   // will run against all blocks, "earliest" to "latest".
   void DiscoverAssetsOnAllSupportedChainsAccountsAdded(
+      mojom::CoinType coin,
       const std::vector<std::string>& account_addresses);
+
+  static absl::optional<mojom::BlockchainTokenPtr> DecodeSolTokenData(
+      const std::vector<uint8_t>& data);
 
   // The number of supported chain_ids to search for assets for the current
   // DiscoverAssetsOnAllSupportedChainsRefresh request. Not used for

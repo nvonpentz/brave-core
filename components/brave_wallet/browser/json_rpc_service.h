@@ -416,6 +416,14 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                               const std::string& error_message)>;
   void GetSolanaBlockHeight(GetSolanaBlockHeightCallback callback);
 
+  using GetSolanaTokenAccountsByOwnerCallback = base::OnceCallback<void(
+      const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,
+      mojom::SolanaProviderError error,
+      const std::string& error_message)>;
+  void GetSolanaTokenAccountsByOwner(
+      const std::string& pubkey,
+      GetSolanaTokenAccountsByOwnerCallback callback);
+
  private:
   void FireNetworkChanged(mojom::CoinType coin);
   void FirePendingRequestCompleted(const std::string& chain_id,
@@ -562,6 +570,9 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                                 APIRequestResult api_request_result);
   void OnGetSolanaBlockHeight(GetSolanaBlockHeightCallback callback,
                               APIRequestResult api_request_result);
+  void OnGetSolanaTokenAccountsByOwner(
+      GetSolanaTokenAccountsByOwnerCallback callback,
+      APIRequestResult api_request_result);
 
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<APIRequestHelper> api_request_helper_;
