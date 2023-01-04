@@ -5,6 +5,7 @@
 
 #include "brave/components/brave_wallet/browser/asset_discovery_manager.h"
 
+#include "base/base64.h"
 #include "base/memory/raw_ptr.h"
 #include "base/strings/strcat.h"
 #include "base/test/bind.h"
@@ -226,6 +227,10 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
           }
           return;
         }));
+  }
+
+  void TestDiscoverSolanaAssets() {
+
   }
 
   void TestDiscoverAssets(
@@ -1206,6 +1211,19 @@ TEST_F(AssetDiscoveryManagerUnitTest, KeyringServiceObserver) {
       mojom::kMainnetChainId, mojom::CoinType::ETH, GetPrefs());
   EXPECT_EQ(user_assets[user_assets.size() - 1]->symbol, "RAI");
   EXPECT_EQ(user_assets.size(), 6u);
+}
+
+TEST_F(AssetDiscoveryManagerUnitTest, DecodeContractAddress) {
+  absl::optional<std::vector<uint8_t>> data =
+      base::Base64Decode("afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  ASSERT_TRUE(data);
+  absl::optional<std::string> mint_address = asset_discovery_manager_->DecodeContractAddress(*data);
+  ASSERT_TRUE(mint_address);
+  EXPECT_EQ(*mint_address, "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8");
+}
+
+TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
+  // TODO
 }
 
 }  // namespace brave_wallet
