@@ -16,7 +16,8 @@
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-
+#include "base/task/sequenced_task_runner.h"
+#include "base/synchronization/waitable_event.h"
 class PrefService;
 
 namespace brave_wallet {
@@ -98,10 +99,18 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       std::vector<mojom::BlockchainTokenPtr> token_registry);
 
   void OnGetSolanaTokenAccountsByOwner(
-      const std::string& chain_id,
+      size_t num_addresses,
+      base::WaitableEvent* done,
+      std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
       const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,
       mojom::SolanaProviderError error,
       const std::string& error_message);
+
+  void CombineResultsSync(
+    size_t num_addresses,
+    base::WaitableEvent* done,
+    std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
+    std::vector<std::string> discovered_contract_addresses);
 
   void DiscoverAssets(const std::string& chain_id,
                       mojom::CoinType coin,
@@ -141,8 +150,12 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       mojom::CoinType coin,
       const std::vector<std::string>& account_addresses);
 
-  static absl::optional<mojom::BlockchainTokenPtr> DecodeSolTokenData(
-      const std::vector<uint8_t>& data);
+  // static absl::optional<mojom::BlockchainTokenPtr> DecodeSolTokenData(
+  //     const std::vector<uint8_t>& data);
+  
+  static absl::optional<std::string> DecodeContractAddressFromSolTokenData(
+      // const std::vector<uint8_t>& data);
+      const std::string& data);
 
   // The number of supported chain_ids to search for assets for the current
   // DiscoverAssetsOnAllSupportedChainsRefresh request. Not used for
@@ -158,6 +171,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   raw_ptr<PrefService> prefs_;
   mojo::Receiver<brave_wallet::mojom::KeyringServiceObserver>
       keyring_service_observer_receiver_{this};
+  scoped_refptr<base::SequencedTaskRunner> sequenced_task_runner_;
   base::WeakPtrFactory<AssetDiscoveryManager> weak_ptr_factory_;
 };
 

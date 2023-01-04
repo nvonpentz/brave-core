@@ -285,6 +285,8 @@ void NftMetadataFetcher::GetSolTokenMetadata(
     return;
   }
 
+  VLOG(0) << "Associated metadata account: " << *associated_metadata_account;
+
   auto internal_callback =
       base::BindOnce(&NftMetadataFetcher::OnGetSolanaAccountInfoTokenMetadata,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));

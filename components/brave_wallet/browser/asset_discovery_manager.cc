@@ -21,6 +21,10 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "ui/base/l10n/l10n_util.h"
 
+#include "base/task/task_runner.h"
+#include "base/task/task_runner_util.h"
+#include "base/task/thread_pool.h"
+
 namespace brave_wallet {
 
 AssetDiscoveryManager::AssetDiscoveryManager(BraveWalletService* wallet_service,
@@ -31,6 +35,8 @@ AssetDiscoveryManager::AssetDiscoveryManager(BraveWalletService* wallet_service,
       json_rpc_service_(json_rpc_service),
       keyring_service_(keyring_service),
       prefs_(prefs),
+      sequenced_task_runner_(
+          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
       weak_ptr_factory_(this) {
   keyring_service_->AddObserver(
       keyring_service_observer_receiver_.BindNewPipeAndPassRemote());
@@ -46,6 +52,133 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
   static base::NoDestructor<std::vector<std::string>>
       asset_discovery_supported_chains({mojom::kMainnetChainId});
   return *asset_discovery_supported_chains;
+}
+
+void AssetDiscoveryManager::DiscoverSolanaAssets(const std::string& chain_id,
+                                                 const std::vector<std::string>& account_addresses,
+                                                 bool triggered_by_accounts_added) {
+  // TODO Get valid supported URLs and return if there aren't any
+  
+  // Get all tokens from the registry
+  std::vector<mojom::BlockchainTokenPtr> user_assets =
+      BraveWalletService::GetUserAssets(chain_id, mojom::CoinType::SOL, prefs_);
+  auto internal_callback =
+      base::BindOnce(&AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets,
+                     weak_ptr_factory_.GetWeakPtr(), chain_id,
+                     account_addresses, std::move(user_assets),
+                     triggered_by_accounts_added);
+
+  BlockchainRegistry::GetInstance()->GetAllTokens(
+      chain_id, mojom::CoinType::SOL, std::move(internal_callback));
+}
+
+void AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets(
+    const std::string& chain_id,
+    const std::vector<std::string>& account_addresses,
+    std::vector<mojom::BlockchainTokenPtr> user_assets,
+    bool triggered_by_accounts_added,
+    std::vector<mojom::BlockchainTokenPtr> token_registry) {
+  auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::SOL);
+  if (!network_url.is_valid()) {
+    CompleteDiscoverAssets(
+        chain_id, std::vector<mojom::BlockchainTokenPtr>(),
+        mojom::ProviderError::kInvalidParams,
+        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+        triggered_by_accounts_added);
+    return;
+  }
+
+  // Create set of contract addresses the user already has for easy lookups
+  base::flat_set<std::string> user_asset_contract_addresses;
+  for (const auto& user_asset : user_assets) {
+    user_asset_contract_addresses.insert(user_asset->contract_address);
+  }
+
+  // Create a list of contract addresses to search by removing
+  // all erc20s and assets the user has already added.
+  // base::Value::List contract_addresses_to_search;
+  std::vector<std::string> contract_addresses_to_search;
+
+  // Also create a map for addresses to blockchain tokens for easy lookup
+  // for blockchain tokens in <solana equaivalent>
+  // base::flat_map<std::string, mojom::BlockchainTokenPtr> tokens_to_search;
+  for (auto& registry_token : token_registry) {
+    // TODO should include NFTs?
+    if (!registry_token->is_nft && !registry_token->contract_address.empty() &&
+        !user_asset_contract_addresses.contains(
+            registry_token->contract_address)) {
+      // Use lowercase representation of hex address for comparisons
+      // because providers may return all lowercase addresses.
+      const std::string lower_case_contract_address =
+          base::ToLowerASCII(registry_token->contract_address);
+      contract_addresses_to_search.push_back(lower_case_contract_address);
+      // tokens_to_search[lower_case_contract_address] = std::move(registry_token);
+    }
+  }
+
+  if (contract_addresses_to_search.size() == 0) {
+    CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
+                           mojom::ProviderError::kSuccess, "",
+                           triggered_by_accounts_added);
+    return;
+  }
+
+  // Loop through each address the user has, call GetSolanaTokenAccountsByOwner for each address
+  // and combine the token accounts into a single list
+  std::vector<std::vector<std::string>> all_discovered_contract_addresses;
+
+  // Waitable event called done
+  base::WaitableEvent done(base::WaitableEvent::ResetPolicy::MANUAL,
+                           base::WaitableEvent::InitialState::NOT_SIGNALED);
+  for (const auto& account_address : account_addresses) {
+    json_rpc_service_->GetSolanaTokenAccountsByOwner(
+        account_address,
+        base::BindOnce(&AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner,
+                       weak_ptr_factory_.GetWeakPtr(),
+                       account_addresses.size(),
+                       &done, std::ref(all_discovered_contract_addresses)));
+  }
+}
+
+void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
+    size_t num_addresses,
+    base::WaitableEvent* done,
+    std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
+    const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,
+    mojom::SolanaProviderError error,
+    const std::string& error_message) {
+  // Add each token account to the all_discovered_contract_addresses list
+  std::vector<std::string> discovered_contract_addresses;
+  for (const auto& token_account : token_accounts) {
+    if (token_account.has_value()) {
+      // Call DecodeContractAddressFromSolTokenData to get the contract address from the token data
+      // and add it to the discovered_contract_addresses list
+      const absl::optional<std::string> contract_address =
+          DecodeContractAddressFromSolTokenData(token_account->data);
+      if (contract_address.has_value()) {
+        discovered_contract_addresses.push_back(contract_address.value());
+      }
+    }
+
+    sequenced_task_runner_->PostTask(
+      FROM_HERE,
+      base::BindOnce(&AssetDiscoveryManager::CombineResultsSync,
+        weak_ptr_factory_.GetWeakPtr(), num_addresses, done, std::ref(all_discovered_contract_addresses),
+        std::move(discovered_contract_addresses)));
+  }
+
+  done->Wait();
+}
+
+void AssetDiscoveryManager::CombineResultsSync(
+    size_t num_addresses,
+    base::WaitableEvent* done,
+    std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
+    std::vector<std::string> discovered_contract_addresses) {
+  all_discovered_contract_addresses.push_back(discovered_contract_addresses);
+  if (all_discovered_contract_addresses.size() == num_addresses) {
+    done->Signal();
+  }
 }
 
 void AssetDiscoveryManager::DiscoverAssets(
@@ -110,112 +243,6 @@ void AssetDiscoveryManager::DiscoverAssets(
 
   BlockchainRegistry::GetInstance()->GetAllTokens(
       chain_id, mojom::CoinType::ETH, std::move(internal_callback));
-}
-
-void AssetDiscoveryManager::DiscoverSolanaAssets(const std::string& chain_id,
-                                                 const std::vector<std::string>& account_addresses,
-                                                 bool triggered_by_accounts_added) {
-  // TODO Get valid supported URLs and return if there aren't any
-  
-  // Get all tokens from the registry
-  std::vector<mojom::BlockchainTokenPtr> user_assets =
-      BraveWalletService::GetUserAssets(chain_id, mojom::CoinType::SOL, prefs_);
-  auto internal_callback =
-      base::BindOnce(&AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets,
-                     weak_ptr_factory_.GetWeakPtr(), chain_id,
-                     account_addresses, std::move(user_assets),
-                     triggered_by_accounts_added);
-
-  BlockchainRegistry::GetInstance()->GetAllTokens(
-      chain_id, mojom::CoinType::SOL, std::move(internal_callback));
-}
-
-void AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets(
-    const std::string& chain_id,
-    const std::vector<std::string>& account_addresses,
-    std::vector<mojom::BlockchainTokenPtr> user_assets,
-    bool triggered_by_accounts_added,
-    std::vector<mojom::BlockchainTokenPtr> token_registry) {
-  auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::SOL);
-  if (!network_url.is_valid()) {
-    CompleteDiscoverAssets(
-        chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderError::kInvalidParams,
-        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
-        triggered_by_accounts_added);
-    return;
-  }
-
-  // Create set of contract addresses the user already has for easy lookups
-  base::flat_set<std::string> user_asset_contract_addresses;
-  for (const auto& user_asset : user_assets) {
-    user_asset_contract_addresses.insert(user_asset->contract_address);
-  }
-
-  // Create a list of contract addresses to search by removing
-  // all erc20s and assets the user has already added.
-  base::Value::List contract_addresses_to_search;
-  // Also create a map for addresses to blockchain tokens for easy lookup
-  // for blockchain tokens in OnGetTransferLogs
-  // base::flat_map<std::string, mojom::BlockchainTokenPtr> tokens_to_search;
-  for (auto& registry_token : token_registry) {
-    // TODO should include NFTs?
-    if (!registry_token->is_nft && !registry_token->contract_address.empty() &&
-        !user_asset_contract_addresses.contains(
-            registry_token->contract_address)) {
-      // Use lowercase representation of hex address for comparisons
-      // because providers may return all lowercase addresses.
-      const std::string lower_case_contract_address =
-          base::ToLowerASCII(registry_token->contract_address);
-      contract_addresses_to_search.Append(lower_case_contract_address);
-      // tokens_to_search[lower_case_contract_address] = std::move(registry_token);
-    }
-  }
-
-  if (contract_addresses_to_search.size() == 0) {
-    CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-                           mojom::ProviderError::kSuccess, "",
-                           triggered_by_accounts_added);
-    return;
-  }
-
-  // TODO modify this so it works as a loop
-  auto callback = base::BindOnce(&AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner,
-                                 weak_ptr_factory_.GetWeakPtr(), chain_id);
-  // TODO add relevent params
-  json_rpc_service_->GetSolanaTokenAccountsByOwner(account_addresses[0], std::move(callback));
-}
-
-void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
-      const std::string& chain_id,
-      // TODO figure out which other parameters I need to add to this fn
-      const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,
-      mojom::SolanaProviderError error,
-      const std::string& error_message) {
-  // if (error != mojom::SolanaProviderError::kSuccess) {
-  //   CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-  //                          std::move(error), error_message,
-  //                          triggered_by_accounts_added);
-  // }
-
-  // // Identify which tokens are already in the user's wallet and which are not
-  std::vector<mojom::BlockchainTokenPtr> discovered_assets;
-  // for (const auto& contract_address : matching_contract_addresses) {
-  //   if (!tokens_to_search.contains(contract_address)) {
-  //     continue;
-  //   }
-  //   mojom::BlockchainTokenPtr token =
-  //       std::move(tokens_to_search.at(contract_address));
-
-  //   if (!BraveWalletService::AddUserAsset(token.Clone(), prefs_)) {
-  //     continue;
-  //   }
-  //   discovered_assets.push_back(std::move(token));
-  // }
-
-  CompleteDiscoverAssets(chain_id, std::move(discovered_assets),
-                         mojom::ProviderError::kSuccess, std::string(),
-                         false); // TODO pass triggered_by_accounts_added, SolanaProviderError
 }
 
 void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
@@ -462,10 +489,17 @@ void AssetDiscoveryManager::AccountsAdded(
 }
 
 // static
-absl::optional<mojom::BlockchainTokenPtr> DecodeSolTokenData(
-    const std::vector<uint8_t>& data) {
-  return absl::nullopt;
+// absl::optional<mojom::BlockchainTokenPtr> DecodeSolTokenData(
+//     const std::vector<uint8_t>& data) {
+//   return absl::nullopt;
+//   // TODO(nvonpentz) Implement
+// }
+
+absl::optional<std::string> AssetDiscoveryManager::DecodeContractAddressFromSolTokenData(
+    // const std::vector<uint8_t>& data) {
+    const std::string& data) {
   // TODO(nvonpentz) Implement
+  return absl::nullopt;
 }
 
 }  // namespace brave_wallet
