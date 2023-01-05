@@ -108,7 +108,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
     size_t num_addresses,
     base::WaitableEvent* done,
     std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
-    std::vector<std::string> discovered_contract_addresses);
+    const std::vector<std::string> discovered_contract_addresses);
 
   void DiscoverAssets(const std::string& chain_id,
                       mojom::CoinType coin,

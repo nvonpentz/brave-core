@@ -98,12 +98,20 @@ void BlockchainRegistry::GetTokenBySymbol(const std::string& chain_id,
 void BlockchainRegistry::GetAllTokens(const std::string& chain_id,
                                       mojom::CoinType coin,
                                       GetAllTokensCallback callback) {
+  VLOG(0) << "BlockchainRegistry::GetAllTokens 0";
   const auto key = GetTokenListKey(coin, chain_id);
+
+  // print all keys in token_list_map_
+  for (auto const& [k, val] : token_list_map_) {
+    VLOG(0) << "BlockchainRegistry::GetAllTokens key: " << k;
+  }
+
   if (!token_list_map_.contains(key)) {
     std::move(callback).Run(
         std::vector<brave_wallet::mojom::BlockchainTokenPtr>());
     return;
   }
+  VLOG(0) << "BlockchainRegistry::GetAllTokens 1";
   const auto& tokens = token_list_map_[key];
   std::vector<brave_wallet::mojom::BlockchainTokenPtr> tokens_copy(
       tokens.size());

@@ -27,6 +27,9 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "brave/components/brave_wallet/common/solana_utils.h"
 
+#include "base/time/time.h"
+#include "base/threading/platform_thread.h"
+
 namespace brave_wallet {
 
 AssetDiscoveryManager::AssetDiscoveryManager(BraveWalletService* wallet_service,
@@ -58,6 +61,7 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
 
 void AssetDiscoveryManager::DiscoverSolanaAssets(const std::vector<std::string>& account_addresses,
                                                  bool triggered_by_accounts_added) {
+  VLOG(0) << "AssetDiscoveryManager::DiscoverSolanaAssets 0";
   // TODO Get valid supported URLs and return if there aren't any
   
   // Get all tokens from the registry
@@ -78,15 +82,17 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets(
     std::vector<mojom::BlockchainTokenPtr> user_assets,
     bool triggered_by_accounts_added,
     std::vector<mojom::BlockchainTokenPtr> token_registry) {
+  VLOG(0) << "AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets 0";
   auto network_url = GetNetworkURL(prefs_, mojom::kSolanaMainnet, mojom::CoinType::SOL);
   if (!network_url.is_valid()) {
-    CompleteDiscoverAssets(
-        mojom::kSolanaMainnet, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderError::kInvalidParams,
-        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
-        triggered_by_accounts_added);
+    // CompleteDiscoverAssets(
+    //     mojom::kSolanaMainnet, std::vector<mojom::BlockchainTokenPtr>(),
+    //     mojom::ProviderError::kInvalidParams,
+    //     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+    //     triggered_by_accounts_added);
     return;
   }
+  VLOG(0) << "AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets 1";
 
   // Create set of contract addresses the user already has for easy lookups
   base::flat_set<std::string> user_asset_contract_addresses;
@@ -117,20 +123,17 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets(
   }
 
   if (contract_addresses_to_search.size() == 0) {
-    CompleteDiscoverAssets(mojom::kSolanaMainnet, std::vector<mojom::BlockchainTokenPtr>(),
-                           mojom::ProviderError::kSuccess, "",
-                           triggered_by_accounts_added);
+    // CompleteDiscoverAssets(mojom::kSolanaMainnet, std::vector<mojom::BlockchainTokenPtr>(),
+    //                        mojom::ProviderError::kSuccess, "",
+    //                        triggered_by_accounts_added);
     return;
   }
 
-  // Loop through each address the user has, call GetSolanaTokenAccountsByOwner for each address
-  // and combine the token accounts into a single list
   std::vector<std::vector<std::string>> all_discovered_contract_addresses;
-
-  // Waitable event called done
-  base::WaitableEvent done(base::WaitableEvent::ResetPolicy::MANUAL,
-                           base::WaitableEvent::InitialState::NOT_SIGNALED);
+  base::WaitableEvent done;
   for (const auto& account_address : account_addresses) {
+    VLOG(0) << "account_address: " << account_address;
+    // CombineResultsSync(0, &done);
     json_rpc_service_->GetSolanaTokenAccountsByOwner(
         account_address,
         base::BindOnce(&AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner,
@@ -138,6 +141,7 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverSolanaAssets(
                        account_addresses.size(),
                        &done, std::ref(all_discovered_contract_addresses)));
   }
+  // done.Wait();
 }
 
 void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
@@ -147,6 +151,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
     const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
+  VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner 0, token_accounts size " << token_accounts.size();
   // Add each token account to the all_discovered_contract_addresses list
   std::vector<std::string> discovered_contract_addresses;
   for (const auto& token_account : token_accounts) {
@@ -165,26 +170,36 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
         }
       }
     }
-
-    sequenced_task_runner_->PostTask(
-      FROM_HERE,
-      base::BindOnce(&AssetDiscoveryManager::CombineResultsSync,
-        weak_ptr_factory_.GetWeakPtr(), num_addresses, done, std::ref(all_discovered_contract_addresses),
-        std::move(discovered_contract_addresses)));
   }
 
-  done->Wait();
+  // Add to all_discovered_contract_addresses synchronously
+  // base::SequencedTaskRunnerHandle::Get()->PostTask(
+    // sequenced_task_runner_->PostTask(
+    // FROM_HERE,
+    // base::BindOnce(&AssetDiscoveryManager::CombineResultsSync,
+    //   weak_ptr_factory_.GetWeakPtr(),
+    //   num_addresses,
+    //   done
+    //   ));
+
+  CombineResultsSync(
+      num_addresses,
+      done,
+      all_discovered_contract_addresses,
+      discovered_contract_addresses);
 }
 
 void AssetDiscoveryManager::CombineResultsSync(
     size_t num_addresses,
     base::WaitableEvent* done,
     std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
-    std::vector<std::string> discovered_contract_addresses) {
-  all_discovered_contract_addresses.push_back(discovered_contract_addresses);
-  if (all_discovered_contract_addresses.size() == num_addresses) {
-    done->Signal();
-  }
+    const std::vector<std::string> discovered_contract_addresses) {
+  VLOG(0) << "AssetDiscoveryManager::CombineResultsSync 0";
+  // all_discovered_contract_addresses.push_back(discovered_contract_addresses);
+  // done->Signal();
+  // if (all_discovered_contract_addresses.size() == num_addresses) {
+  //   done->Signal();
+  // }
 }
 
 void AssetDiscoveryManager::DiscoverAssets(
