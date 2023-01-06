@@ -10,14 +10,16 @@
 #include <utility>
 #include <vector>
 
+#include "base/barrier_callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/synchronization/waitable_event.h"
+#include "base/task/sequenced_task_runner.h"
 #include "brave/components/api_request_helper/api_request_helper.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-#include "base/task/sequenced_task_runner.h"
-#include "base/synchronization/waitable_event.h"
+
 class PrefService;
 
 namespace brave_wallet {
@@ -59,7 +61,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       base::RepeatingCallback<void(
           const std::string& chain_id,
           std::vector<mojom::BlockchainTokenPtr> discovered_assets_for_chain,
-          mojom::ProviderError error,
+          mojom::ProviderErrorUnionPtr error,
           const std::string& error_message)>;
   // Called by frontend via BraveWalletService.
   // Subject to client side rate limiting based on
@@ -90,25 +92,24 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   void DiscoverSolanaAssets(const std::vector<std::string>& account_addresses,
                             bool update_prefs);
 
-  void OnGetAllTokensDiscoverSolanaAssets(
-      const std::vector<std::string>& account_addresses,
-      std::vector<mojom::BlockchainTokenPtr> user_assets,
-      bool triggered_by_accounts_added,
-      std::vector<mojom::BlockchainTokenPtr> token_registry);
+  // void OnGetAllTokensDiscoverSolanaAssets(
+  //     const std::vector<std::string>& account_addresses,
+  //     std::vector<mojom::BlockchainTokenPtr> user_assets,
+  //     bool triggered_by_accounts_added,
+  //     std::vector<mojom::BlockchainTokenPtr> token_registry);
 
   void OnGetSolanaTokenAccountsByOwner(
-      size_t num_addresses,
-      base::WaitableEvent* done,
-      std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
+      base::OnceCallback<void(std::vector<std::string>)> barrier_callback,
       const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,
       mojom::SolanaProviderError error,
       const std::string& error_message);
 
-  void CombineResultsSync(
-    size_t num_addresses,
-    base::WaitableEvent* done,
-    std::vector<std::vector<std::string>>& all_discovered_contract_addresses,
-    const std::vector<std::string> discovered_contract_addresses);
+  void MergeDiscoveredSolanaAssets(const std::vector<std::vector<std::string>>&
+                                       all_discovered_contract_addresses);
+
+  void OnGetSolanaTokenRegistry(
+      const base::flat_set<std::string>& discovered_contract_addresses,
+      std::vector<mojom::BlockchainTokenPtr> sol_token_registry);
 
   void DiscoverAssets(const std::string& chain_id,
                       mojom::CoinType coin,
@@ -137,7 +138,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   void CompleteDiscoverAssets(
       const std::string& chain_id,
       std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-      mojom::ProviderError error,
+      mojom::ProviderErrorUnionPtr error,
       const std::string& error_message,
       bool triggered_by_accounts_added);
 
@@ -149,11 +150,12 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       const std::vector<std::string>& account_addresses);
 
   friend class AssetDiscoveryManagerUnitTest;
-  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest, DecodeContractAddress);
-  
+  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest,
+                           DecodeContractAddress);
+
   static absl::optional<std::string> DecodeContractAddress(
       const std::vector<uint8_t>& data);
-      // const std::string& data);
+  // const std::string& data);
 
   // The number of supported chain_ids to search for assets for the current
   // DiscoverAssetsOnAllSupportedChainsRefresh request. Not used for

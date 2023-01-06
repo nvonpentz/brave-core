@@ -230,19 +230,26 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
   }
 
   void TestDiscoverSolanaAssets(
-      const std::vector<std::string>& account_addresses) {
-    VLOG(0) << "TestDiscoverSolanaAssets 0";
+      const std::vector<std::string>& account_addresses,
+      const std::vector<std::string>& expected_contract_addresses,
+      mojom::SolanaProviderError expected_error) {
     asset_discovery_manager_->SetDiscoverAssetsCompletedCallbackForTesting(
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderError error, const std::string& error_message) {
-            VLOG(0) << "In the callback...";
-
+                mojom::ProviderErrorUnionPtr error,
+                const std::string& error_message) {
+              ASSERT_TRUE(error->is_solana_provider_error());
+              EXPECT_EQ(error->get_solana_provider_error(), expected_error);
+              ASSERT_EQ(discovered_assets.size(),
+                        expected_contract_addresses.size());
+              for (size_t i = 0; i < discovered_assets.size(); i++) {
+                EXPECT_EQ(discovered_assets[i]->contract_address,
+                          expected_contract_addresses[i]);
+              }
             }));
-    asset_discovery_manager_->DiscoverSolanaAssets(
-        account_addresses, false);
-    VLOG(0) << "TestDiscoverSolanaAssets 1";
+    asset_discovery_manager_->DiscoverSolanaAssets(account_addresses, false);
+    base::RunLoop().RunUntilIdle();
   }
 
   void TestDiscoverAssets(
@@ -262,9 +269,12 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderError error, const std::string& error_message) {
+                mojom::ProviderErrorUnionPtr error,
+                const std::string& error_message) {
               EXPECT_EQ(chain_id, chain_id);
-              EXPECT_EQ(expected_error, error);
+              ASSERT_TRUE(error->is_provider_error());
+              EXPECT_EQ(error->get_provider_error(), expected_error);
+              // EXPECT_EQ(expected_error, error);
               EXPECT_EQ(expected_error_message, error_message);
               ASSERT_EQ(expected_token_contract_addresses.size(),
                         discovered_assets.size());
@@ -303,7 +313,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderError error, const std::string& error_message) {
+                mojom::ProviderErrorUnionPtr error,
+                const std::string& error_message) {
               expected_chain_ids_remaining.erase(
                   std::remove(expected_chain_ids_remaining.begin(),
                               expected_chain_ids_remaining.end(), chain_id),
@@ -335,7 +346,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderError error, const std::string& error_message) {
+                mojom::ProviderErrorUnionPtr error,
+                const std::string& error_message) {
               expected_chain_ids_remaining.erase(
                   std::remove(expected_chain_ids_remaining.begin(),
                               expected_chain_ids_remaining.end(), chain_id),
@@ -1226,10 +1238,15 @@ TEST_F(AssetDiscoveryManagerUnitTest, KeyringServiceObserver) {
 }
 
 TEST_F(AssetDiscoveryManagerUnitTest, DecodeContractAddress) {
-  absl::optional<std::vector<uint8_t>> data =
-      base::Base64Decode("afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  absl::optional<std::vector<uint8_t>> data = base::Base64Decode(
+      "afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+"
+      "lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/"
+      "qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "AAA");
   ASSERT_TRUE(data);
-  absl::optional<std::string> mint_address = asset_discovery_manager_->DecodeContractAddress(*data);
+  absl::optional<std::string> mint_address =
+      asset_discovery_manager_->DecodeContractAddress(*data);
   ASSERT_TRUE(mint_address);
   EXPECT_EQ(*mint_address, "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8");
 }
@@ -1238,7 +1255,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   auto* blockchain_registry = BlockchainRegistry::GetInstance();
   TokenListMap token_list_map;
   std::string token_list_json = R"({
-    "So11111111111111111111111111111111111111112": {
+    "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8": {
       "name": "Wrapped SOL",
       "logo": "So11111111111111111111111111111111111111112.png",
       "erc20": false,
@@ -1247,7 +1264,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
       "chainId": "0x65",
       "coingeckoId": "solana"
     },
-    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+    "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b": {
       "name": "USD Coin",
       "logo": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v.png",
       "erc20": false,
@@ -1260,9 +1277,29 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   ASSERT_TRUE(
       ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::SOL));
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
-  // SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
+
+  // Empy Account addresses yields invalid params error
+  TestDiscoverSolanaAssets({}, {}, mojom::SolanaProviderError::kInvalidParams);
+
   auto expected_network_url =
       GetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL);
+  // TODO Empty response (no tokens found) yields success
+  // SetInterceptor(expected_network_url, R"({
+  //   "jsonrpc": "2.0",
+  //   "result": {
+  //     "context": {
+  //       "apiVersion": "1.13.5",
+  //       "slot": 171155478
+  //     },
+  //     "value": []
+  //   },
+  //   "id": 1
+  // })");
+  // TestDiscoverSolanaAssets(
+  //     {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+  //     {}, mojom::SolanaProviderError::kSuccess);
+
+  // Valid
   SetInterceptor(expected_network_url, R"({
     "jsonrpc": "2.0",
     "result": {
@@ -1301,66 +1338,14 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
     },
     "id": 1
   })");
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"});
-  base::RunLoop().RunUntilIdle();
-  ASSERT_TRUE(false);
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+                           {"88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8",
+                            "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b"},
+                           mojom::SolanaProviderError::kSuccess);
 }
 
-TEST_F(AssetDiscoveryManagerUnitTest, Dummy) {
-  auto expected_network_url =
-      GetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL);
-  SetInterceptor(expected_network_url, R"({
-    "jsonrpc": "2.0",
-    "result": {
-      "context": {
-        "apiVersion": "1.13.5",
-        "slot": 166895942
-      },
-      "value": [
-        {
-          "account": {
-            "data": [
-              "z6cxAUoRHIupvmezOL4EAsTLlwKTgwxzCg/xcNWSEu42kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "base64"
-            ],
-            "executable": false,
-            "lamports": 2039280,
-            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-            "rentEpoch": 361
-          },
-          "pubkey": "5gjGaTE41sPVS1Dzwg43ipdj9NTtApZLcK55ihRuVb6Y"
-        },
-        {
-          "account": {
-            "data": [
-              "afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "base64"
-            ],
-            "executable": false,
-            "lamports": 2039280,
-            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-            "rentEpoch": 361
-          },
-          "pubkey": "81ZdQjbr7FhEPmcyGJtG8BAUyWxAjb2iSiWFEQn8i8Da"
-        }
-      ]
-    },
-    "id": 1
-  })");
-  base::RunLoop run_loop;
-  json_rpc_service_->GetSolanaTokenAccountsByOwner(
-      "4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF",
-      base::BindLambdaForTesting(
-          [&](const std::vector<absl::optional<SolanaAccountInfo>>& accounts,
-              mojom::SolanaProviderError error,
-              const std::string& error_message) {
-            VLOG(0) << "accounts.size() = " << accounts.size();
-            VLOG(0) << "error = " << error;
-            VLOG(0) << "error_message = " << error_message;
-            run_loop.Quit();
-          }));
-  run_loop.Run();
-  ASSERT_TRUE(false);
-}
+// TEST_F(AssetDiscoveryManagerUnitTest, MergeDiscoveredSolanaAssets) {
+//   // TODO
+// }
 
 }  // namespace brave_wallet

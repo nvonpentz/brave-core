@@ -4378,20 +4378,16 @@ TEST_F(KeyringServiceUnitTest, AccountsAdded) {
   service.AddObserver(observer.GetReceiver());
 
   // RestoreWallet
-  RestoreWallet(
-      &service, kMnemonic1, kPasswordBrave,
-      false);
+  RestoreWallet(&service, kMnemonic1, kPasswordBrave, false);
   base::RunLoop().RunUntilIdle();
   observer.ExpectAddressesAddedEq(
       {{"0xf81229FE54D8a20fBc1e1e2a3451D1c7489437Db"},
-      {"BrG44HdsEhzapvs8bEqzvkq4egwevS3fRE6ze2ENo6S8"}});
+       {"BrG44HdsEhzapvs8bEqzvkq4egwevS3fRE6ze2ENo6S8"}});
   task_environment_.FastForwardBy(
       base::Minutes(kAssetDiscoveryMinutesPerRequest));
 
   // AddAccount ETH
-  ASSERT_TRUE(AddAccount(
-      &service, "Account",
-      mojom::CoinType::ETH));
+  ASSERT_TRUE(AddAccount(&service, "Account", mojom::CoinType::ETH));
   base::RunLoop().RunUntilIdle();
   observer.ExpectAddressesAddedEq(
       {{"0x00c0f72E601C31DEb7890612cB92Ac0Fb7090EB0"}});
@@ -4399,9 +4395,7 @@ TEST_F(KeyringServiceUnitTest, AccountsAdded) {
       base::Minutes(kAssetDiscoveryMinutesPerRequest));
 
   // AddAccount SOL
-  ASSERT_TRUE(AddAccount(
-      &service, "Account",
-      mojom::CoinType::SOL));
+  ASSERT_TRUE(AddAccount(&service, "Account", mojom::CoinType::SOL));
   base::RunLoop().RunUntilIdle();
   observer.ExpectAddressesAddedEq(
       {{"JDqrvDz8d8tFCADashbUKQDKfJZFobNy13ugN65t1wvV"}});
