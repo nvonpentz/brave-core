@@ -1279,25 +1279,29 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
 
   // Empy Account addresses yields invalid params error
-  TestDiscoverSolanaAssets({}, {}, mojom::SolanaProviderError::kInvalidParams);
+  // TestDiscoverSolanaAssets({}, {}, mojom::SolanaProviderError::kInvalidParams);
 
+  // Empty response (no tokens found) yields success
   auto expected_network_url =
       GetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL);
-  // TODO Empty response (no tokens found) yields success
-  // SetInterceptor(expected_network_url, R"({
-  //   "jsonrpc": "2.0",
-  //   "result": {
-  //     "context": {
-  //       "apiVersion": "1.13.5",
-  //       "slot": 171155478
-  //     },
-  //     "value": []
-  //   },
-  //   "id": 1
-  // })");
-  // TestDiscoverSolanaAssets(
-  //     {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-  //     {}, mojom::SolanaProviderError::kSuccess);
+  SetInterceptor(expected_network_url, R"({
+    "jsonrpc": "2.0",
+    "result": {
+      "context": {
+        "apiVersion": "1.13.5",
+        "slot": 171155478
+      },
+      "value": []
+    },
+    "id": 1
+  })");
+  TestDiscoverSolanaAssets(
+      {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+      {}, mojom::SolanaProviderError::kSuccess);
+
+  // Invalid response (no tokens found) yields
+  SetLimitExceededJsonErrorResponse();
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {}, mojom::SolanaProviderError::kSuccess);
 
   // Valid
   SetInterceptor(expected_network_url, R"({

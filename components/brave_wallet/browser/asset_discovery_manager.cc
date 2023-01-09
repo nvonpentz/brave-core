@@ -79,6 +79,7 @@ void AssetDiscoveryManager::DiscoverSolanaAssets(
       account_addresses.size(),
       base::BindOnce(&AssetDiscoveryManager::MergeDiscoveredSolanaAssets,
                      weak_ptr_factory_.GetWeakPtr()));
+  VLOG(0) << "account addresses.size(): " << account_addresses.size();
   for (const auto& account_address : account_addresses) {
     json_rpc_service_->GetSolanaTokenAccountsByOwner(
         account_address,
@@ -95,6 +96,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
     const std::string& error_message) {
   if (error != mojom::SolanaProviderError::kSuccess || token_accounts.empty()) {
     std::move(barrier_callback).Run(std::vector<std::string>());
+    return;
   }
 
   VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner 0, "
@@ -120,7 +122,10 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
     }
   }
 
-  std::move(barrier_callback).Run(discovered_contract_addresses);
+  VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner 1, "
+             "discovered_contract_addresses size "
+          << discovered_contract_addresses.size();
+  std::move(barrier_callback).Run(std::move(discovered_contract_addresses));
 }
 
 void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
@@ -153,6 +158,7 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
 void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
     const base::flat_set<std::string>& discovered_contract_addresses,
     std::vector<mojom::BlockchainTokenPtr> sol_token_registry) {
+  VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenRegistry 0";
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
   for (const auto& token : sol_token_registry) {
     if (discovered_contract_addresses.contains(token->contract_address)) {
