@@ -173,20 +173,17 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
     url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
         [&, intended_url, content](const network::ResourceRequest& request) {
           if (request.url.spec() == intended_url) {
-            base::StringPiece request_string(
-                request.request_body->elements()
-                    ->at(0)
-                    .As<network::DataElementBytes>()
-                    .AsStringPiece());
-            VLOG(0) << "************request_string: " << request_string;
-
             url_loader_factory_.ClearResponses();
             url_loader_factory_.AddResponse(request.url.spec(), content);
           }
         }));
   }
 
-  void SetInterceptorForDiscoverSolanaAssets(GURL& intended_url, const std::map<std::string, std::string>& requests) {
+  // SetInterceptorForDiscoverSolanaAssets takes a map of addresses to responses
+  // and adds the response if the address if found in the request string
+  void SetInterceptorForDiscoverSolanaAssets(
+      GURL& intended_url,
+      const std::map<std::string, std::string>& requests) {
     url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
         [&, intended_url, requests](const network::ResourceRequest& request) {
           if (request.url.spec() == intended_url) {
@@ -195,10 +192,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                     ->at(0)
                     .As<network::DataElementBytes>()
                     .AsStringPiece());
-
             std::string response;
-
-            // loop through requests and find the one exists in the request_string
             for (auto const& [key, val] : requests) {
               if (request_string.find(key) != std::string::npos) {
                 response = val;
@@ -206,10 +200,9 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
               }
             }
             ASSERT_FALSE(response.empty());
-
             url_loader_factory_.ClearResponses();
             url_loader_factory_.AddResponse(request.url.spec(), response);
-            } 
+          }
         }));
   }
 
@@ -1329,13 +1322,13 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
     },
     "id": 1
   })");
-  TestDiscoverSolanaAssets(
-      {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-      {});
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+                           {});
 
   // Invalid response (no tokens found) yields
   SetLimitExceededJsonErrorResponse();
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+                           {});
 
   // Valid response containing both tokens should add both tokens
   SetInterceptor(expected_network_url, R"({
@@ -1380,14 +1373,17 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
                            {"88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8",
                             "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b"});
 
-  // Making the same call again should not add any tokens (they've already been added)
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
+  // Making the same call again should not add any tokens (they've already been
+  // added)
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+                           {});
 
   // Should merge tokens from multiple accounts
-
-  // The first two items in the "value" list are matches for 
-  // mints BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2 and ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ
-  // 4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF
+  // (4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF and
+  // 8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB) Owner
+  // 4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF has mints
+  // BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2 and
+  // ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ
   const std::string first_response = R"({
     "jsonrpc": "2.0",
     "result": {
@@ -1427,8 +1423,9 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
     "id": 1
   })";
 
-  // mint 7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs and 4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g
-  // for owner 8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB
+  // Owner 8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB has mints
+  // 7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs and
+  // 4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g
   const std::string second_response = R"({
     "jsonrpc": "2.0",
     "result": {
@@ -1473,8 +1470,11 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
       {"8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB", second_response},
   };
   SetInterceptorForDiscoverSolanaAssets(expected_network_url, requests);
-  // mints BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2 and ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ
-  // mint 7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs and 4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g
+
+  // Add BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2,
+  // ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ,
+  // 7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs, and
+  // 4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g to token list
   token_list_json = R"({
     "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2": {
       "name": "Tesla Inc.",
@@ -1512,9 +1512,12 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   ASSERT_TRUE(
       ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::SOL));
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
-  VLOG(0) << "  BEGIN RELEVANT TEST -----------------------------";
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF", "8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB"}, 
-                           {"4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g", "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs", "ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ", "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2"});
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF",
+                            "8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB"},
+                           {"4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g",
+                            "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+                            "ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ",
+                            "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2"});
 }
 
 }  // namespace brave_wallet

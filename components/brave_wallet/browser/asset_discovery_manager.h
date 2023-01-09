@@ -92,12 +92,6 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   void DiscoverSolanaAssets(const std::vector<std::string>& account_addresses,
                             bool update_prefs);
 
-  // void OnGetAllTokensDiscoverSolanaAssets(
-  //     const std::vector<std::string>& account_addresses,
-  //     std::vector<mojom::BlockchainTokenPtr> user_assets,
-  //     bool triggered_by_accounts_added,
-  //     std::vector<mojom::BlockchainTokenPtr> token_registry);
-
   void OnGetSolanaTokenAccountsByOwner(
       base::OnceCallback<void(std::vector<std::string>)> barrier_callback,
       const std::vector<absl::optional<SolanaAccountInfo>>& token_accounts,

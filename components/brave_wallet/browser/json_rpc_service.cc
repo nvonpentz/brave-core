@@ -303,7 +303,6 @@ void JsonRpcService::RequestInternal(
     RequestIntermediateCallback callback,
     APIRequestHelper::ResponseConversionCallback conversion_callback =
         base::NullCallback()) {
-  // VLOG(0) << "JsonRpcService::RequestInternal 0";
   DCHECK(network_url.is_valid());
 
   api_request_helper_->Request("POST", network_url, json_payload,
@@ -2780,7 +2779,6 @@ void JsonRpcService::OnGetSolanaBlockHeight(
 void JsonRpcService::GetSolanaTokenAccountsByOwner(
     const std::string& pubkey,
     GetSolanaTokenAccountsByOwnerCallback callback) {
-  VLOG(0) << "JsonRpcService::GetSolanaTokenAccountsByOwner << pubkey " << pubkey;
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetSolanaTokenAccountsByOwner,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
@@ -2795,7 +2793,6 @@ void JsonRpcService::GetSolanaTokenAccountsByOwner(
 void JsonRpcService::OnGetSolanaTokenAccountsByOwner(
     GetSolanaTokenAccountsByOwnerCallback callback,
     APIRequestResult api_request_result) {
-  VLOG(0) << "JsonRpcService::OnGetSolanaTokenAccountsByOwner";
   if (!api_request_result.Is2XXResponseCode()) {
     std::move(callback).Run(
         {}, mojom::SolanaProviderError::kInternalError,
