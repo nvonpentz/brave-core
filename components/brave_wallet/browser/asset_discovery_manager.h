@@ -61,7 +61,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       base::RepeatingCallback<void(
           const std::string& chain_id,
           std::vector<mojom::BlockchainTokenPtr> discovered_assets_for_chain,
-          mojom::ProviderErrorUnionPtr error,
+          absl::optional<mojom::ProviderError> error,
           const std::string& error_message)>;
   // Called by frontend via BraveWalletService.
   // Subject to client side rate limiting based on
@@ -138,7 +138,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   void CompleteDiscoverAssets(
       const std::string& chain_id,
       std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-      mojom::ProviderErrorUnionPtr error,
+      absl::optional<mojom::ProviderError> error,
       const std::string& error_message,
       bool triggered_by_accounts_added);
 

@@ -65,8 +65,9 @@ void AssetDiscoveryManager::DiscoverSolanaAssets(
   if (account_addresses.empty()) {
     CompleteDiscoverAssets(
         mojom::kSolanaMainnet, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderErrorUnion::NewSolanaProviderError(
-            mojom::SolanaProviderError::kInvalidParams),
+        absl::nullopt,
+        // mojom::ProviderErrorUnion::NewSolanaProviderError(
+        //     mojom::SolanaProviderError::kInvalidParams),
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
         triggered_by_accounts_added);
     return;
@@ -81,6 +82,7 @@ void AssetDiscoveryManager::DiscoverSolanaAssets(
                      weak_ptr_factory_.GetWeakPtr()));
   VLOG(0) << "account addresses.size(): " << account_addresses.size();
   for (const auto& account_address : account_addresses) {
+    VLOG(0) << "account address: " << account_address;
     json_rpc_service_->GetSolanaTokenAccountsByOwner(
         account_address,
         base::BindOnce(&AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner,
@@ -125,7 +127,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
   VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner 1, "
              "discovered_contract_addresses size "
           << discovered_contract_addresses.size();
-  std::move(barrier_callback).Run(std::move(discovered_contract_addresses));
+  std::move(barrier_callback).Run(discovered_contract_addresses);
 }
 
 void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
@@ -158,7 +160,7 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
 void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
     const base::flat_set<std::string>& discovered_contract_addresses,
     std::vector<mojom::BlockchainTokenPtr> sol_token_registry) {
-  VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenRegistry 0";
+  VLOG(0) << "AssetDiscoveryManager::OnGetSolanaTokenRegistry 0 << discovered_contract_addresses.size() " << discovered_contract_addresses.size();
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
   for (const auto& token : sol_token_registry) {
     if (discovered_contract_addresses.contains(token->contract_address)) {
@@ -183,8 +185,9 @@ void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
           << discovered_tokens.size();
 
   CompleteDiscoverAssets(mojom::kSolanaMainnet, std::move(discovered_tokens),
-                         mojom::ProviderErrorUnion::NewSolanaProviderError(
-                             mojom::SolanaProviderError::kSuccess),
+                         absl::nullopt,
+                         // mojom::ProviderErrorUnion::NewSolanaProviderError(
+                         //     mojom::SolanaProviderError::kSuccess),
                          "",
                          false);  // TODO
 }
@@ -199,8 +202,9 @@ void AssetDiscoveryManager::DiscoverAssets(
   if (account_addresses.empty()) {
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderErrorUnion::NewProviderError(
-            mojom::ProviderError::kInvalidParams),
+        mojom::ProviderError::kInvalidParams,
+        // mojom::ProviderErrorUnion::NewProviderError(
+        //     mojom::ProviderError::kInvalidParams),
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
         triggered_by_accounts_added);
     return;
@@ -213,8 +217,8 @@ void AssetDiscoveryManager::DiscoverAssets(
       !base::Contains(GetAssetDiscoverySupportedChains(), chain_id)) {
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderErrorUnion::NewProviderError(
-            mojom::ProviderError::kMethodNotSupported),
+        // mojom::ProviderErrorUnion::NewProviderError(
+            mojom::ProviderError::kMethodNotSupported,
         l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR),
         triggered_by_accounts_added);
     return;
@@ -226,8 +230,8 @@ void AssetDiscoveryManager::DiscoverAssets(
   if (infura_url.host() != active_url.host()) {
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderErrorUnion::NewProviderError(
-            mojom::ProviderError::kMethodNotSupported),
+        // mojom::ProviderErrorUnion::NewProviderError(
+            mojom::ProviderError::kMethodNotSupported,
         l10n_util::GetStringUTF8(IDS_WALLET_METHOD_NOT_SUPPORTED_ERROR),
         triggered_by_accounts_added);
     return;
@@ -237,8 +241,8 @@ void AssetDiscoveryManager::DiscoverAssets(
     if (!EthAddress::IsValidAddress(account_address)) {
       CompleteDiscoverAssets(
           chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-          mojom::ProviderErrorUnion::NewProviderError(
-              mojom::ProviderError::kInvalidParams),
+          // mojom::ProviderErrorUnion::NewProviderError(
+              mojom::ProviderError::kInvalidParams,
           l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
           triggered_by_accounts_added);
       return;
@@ -269,8 +273,8 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
   if (!network_url.is_valid()) {
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderErrorUnion::NewProviderError(
-            mojom::ProviderError::kInvalidParams),
+        // mojom::ProviderErrorUnion::NewProviderError(
+            mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
         triggered_by_accounts_added);
     return;
@@ -280,8 +284,8 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
   if (!MakeAssetDiscoveryTopics(account_addresses, &topics)) {
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-        mojom::ProviderErrorUnion::NewProviderError(
-            mojom::ProviderError::kInvalidParams),
+        // mojom::ProviderErrorUnion::NewProviderError(
+            mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
         triggered_by_accounts_added);
     return;
@@ -314,8 +318,8 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
 
   if (contract_addresses_to_search.size() == 0) {
     CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-                           mojom::ProviderErrorUnion::NewProviderError(
-                               mojom::ProviderError::kSuccess),
+                           // mojom::ProviderErrorUnion::NewProviderError(
+                               mojom::ProviderError::kSuccess,
                            "", triggered_by_accounts_added);
     return;
   }
@@ -339,7 +343,8 @@ void AssetDiscoveryManager::OnGetTransferLogs(
     const std::string& error_message) {
   if (error != mojom::ProviderError::kSuccess) {
     CompleteDiscoverAssets(chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-                           mojom::ProviderErrorUnion::NewProviderError(error),
+                           // mojom::ProviderErrorUnion::NewProviderError(error),
+                           error,
                            error_message, triggered_by_accounts_added);
     return;
   }
@@ -384,8 +389,8 @@ void AssetDiscoveryManager::OnGetTransferLogs(
       if (!HexValueToUint256(*current, &current_int)) {
         CompleteDiscoverAssets(
             chain_id, std::vector<mojom::BlockchainTokenPtr>(),
-            mojom::ProviderErrorUnion::NewProviderError(
-                mojom::ProviderError::kInternalError),
+            // mojom::ProviderErrorUnion::NewProviderError(
+                mojom::ProviderError::kInternalError,
             l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR),
             triggered_by_accounts_added);
         return;
@@ -397,8 +402,8 @@ void AssetDiscoveryManager::OnGetTransferLogs(
     }
   }
   CompleteDiscoverAssets(chain_id, std::move(discovered_assets),
-                         mojom::ProviderErrorUnion::NewProviderError(
-                             mojom::ProviderError::kSuccess),
+                         // mojom::ProviderErrorUnion::NewProviderError(
+                             mojom::ProviderError::kSuccess,
                          "", triggered_by_accounts_added);
 }
 
@@ -407,7 +412,8 @@ void AssetDiscoveryManager::CompleteDiscoverAssets(
     std::vector<mojom::BlockchainTokenPtr> discovered_assets_for_chain,
     // TODO(nvonpentz): Since it's one discover assets call to many RPC requests
     // a single error does not make sense for Solana
-    mojom::ProviderErrorUnionPtr error,
+    // mojom::ProviderErrorUnionPtr error,
+    absl::optional<mojom::ProviderError> error,
     const std::string& error_message,
     bool triggered_by_accounts_added) {
   if (discover_assets_completed_callback_for_testing_) {

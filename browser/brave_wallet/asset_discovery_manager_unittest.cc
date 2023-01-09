@@ -173,9 +173,43 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
     url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
         [&, intended_url, content](const network::ResourceRequest& request) {
           if (request.url.spec() == intended_url) {
+            base::StringPiece request_string(
+                request.request_body->elements()
+                    ->at(0)
+                    .As<network::DataElementBytes>()
+                    .AsStringPiece());
+            VLOG(0) << "************request_string: " << request_string;
+
             url_loader_factory_.ClearResponses();
             url_loader_factory_.AddResponse(request.url.spec(), content);
           }
+        }));
+  }
+
+  void SetInterceptorForDiscoverSolanaAssets(GURL& intended_url, const std::map<std::string, std::string>& requests) {
+    url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
+        [&, intended_url, requests](const network::ResourceRequest& request) {
+          if (request.url.spec() == intended_url) {
+            base::StringPiece request_string(
+                request.request_body->elements()
+                    ->at(0)
+                    .As<network::DataElementBytes>()
+                    .AsStringPiece());
+
+            std::string response;
+
+            // loop through requests and find the one exists in the request_string
+            for (auto const& [key, val] : requests) {
+              if (request_string.find(key) != std::string::npos) {
+                response = val;
+                break;
+              }
+            }
+            ASSERT_FALSE(response.empty());
+
+            url_loader_factory_.ClearResponses();
+            url_loader_factory_.AddResponse(request.url.spec(), response);
+            } 
         }));
   }
 
@@ -231,16 +265,14 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
 
   void TestDiscoverSolanaAssets(
       const std::vector<std::string>& account_addresses,
-      const std::vector<std::string>& expected_contract_addresses,
-      mojom::SolanaProviderError expected_error) {
+      const std::vector<std::string>& expected_contract_addresses) {
     asset_discovery_manager_->SetDiscoverAssetsCompletedCallbackForTesting(
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderErrorUnionPtr error,
+                absl::optional<mojom::ProviderError> error,
                 const std::string& error_message) {
-              ASSERT_TRUE(error->is_solana_provider_error());
-              EXPECT_EQ(error->get_solana_provider_error(), expected_error);
+              ASSERT_FALSE(error);
               ASSERT_EQ(discovered_assets.size(),
                         expected_contract_addresses.size());
               for (size_t i = 0; i < discovered_assets.size(); i++) {
@@ -269,12 +301,12 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderErrorUnionPtr error,
+                absl::optional<mojom::ProviderError> error,
                 const std::string& error_message) {
               EXPECT_EQ(chain_id, chain_id);
-              ASSERT_TRUE(error->is_provider_error());
-              EXPECT_EQ(error->get_provider_error(), expected_error);
-              // EXPECT_EQ(expected_error, error);
+              ASSERT_TRUE(error);
+              // ASSERT_TRUE(error->is_provider_error());
+              EXPECT_EQ(*error, expected_error);
               EXPECT_EQ(expected_error_message, error_message);
               ASSERT_EQ(expected_token_contract_addresses.size(),
                         discovered_assets.size());
@@ -313,7 +345,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderErrorUnionPtr error,
+                // mojom::ProviderErrorUnionPtr error,
+                absl::optional<mojom::ProviderError> error,
                 const std::string& error_message) {
               expected_chain_ids_remaining.erase(
                   std::remove(expected_chain_ids_remaining.begin(),
@@ -346,7 +379,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                mojom::ProviderErrorUnionPtr error,
+                absl::optional<mojom::ProviderError> error,
+                // mojom::ProviderErrorUnionPtr error,
                 const std::string& error_message) {
               expected_chain_ids_remaining.erase(
                   std::remove(expected_chain_ids_remaining.begin(),
@@ -1279,7 +1313,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
 
   // Empy Account addresses yields invalid params error
-  // TestDiscoverSolanaAssets({}, {}, mojom::SolanaProviderError::kInvalidParams);
+  TestDiscoverSolanaAssets({}, {});
 
   // Empty response (no tokens found) yields success
   auto expected_network_url =
@@ -1297,13 +1331,13 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   })");
   TestDiscoverSolanaAssets(
       {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-      {}, mojom::SolanaProviderError::kSuccess);
+      {});
 
   // Invalid response (no tokens found) yields
   SetLimitExceededJsonErrorResponse();
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {}, mojom::SolanaProviderError::kSuccess);
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
 
-  // Valid
+  // Valid response containing both tokens should add both tokens
   SetInterceptor(expected_network_url, R"({
     "jsonrpc": "2.0",
     "result": {
@@ -1344,12 +1378,143 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   })");
   TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
                            {"88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8",
-                            "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b"},
-                           mojom::SolanaProviderError::kSuccess);
-}
+                            "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b"});
 
-// TEST_F(AssetDiscoveryManagerUnitTest, MergeDiscoveredSolanaAssets) {
-//   // TODO
-// }
+  // Making the same call again should not add any tokens (they've already been added)
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
+
+  // Should merge tokens from multiple accounts
+
+  // The first two items in the "value" list are matches for 
+  // mints BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2 and ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ
+  // 4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF
+  const std::string first_response = R"({
+    "jsonrpc": "2.0",
+    "result": {
+      "context": {
+        "apiVersion": "1.13.5",
+        "slot": 166895942
+      },
+      "value": [
+        {
+          "account": {
+            "data": [
+              "l/QUsV2gleWOBK7DT7McygX06DWutQjr6AinX510aVU2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQluoAsOSueAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "base64"
+            ],
+            "executable": false,
+            "lamports": 2039280,
+            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "rentEpoch": 0
+          },
+          "pubkey": "BhZnyGAe58uHHdFQgej8ShuDGy9JL1tbs29Bqx3FRgy1"
+        },
+        {
+          "account": {
+            "data": [
+              "iOBUDkpieWsUu53IBhROGzPicXkIYV2OIGUzsFvIlvU2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugDkC1QCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "base64"
+            ],
+            "executable": false,
+            "lamports": 2039280,
+            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "rentEpoch": 0
+          },
+          "pubkey": "3Ra8B4XsnumedGgKvfussaTLxrhyxFAqMkGmst8UqX3k"
+        }
+      ]
+    },
+    "id": 1
+  })";
+
+  // mint 7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs and 4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g
+  // for owner 8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB
+  const std::string second_response = R"({
+    "jsonrpc": "2.0",
+    "result": {
+      "context": {
+        "apiVersion": "1.13.5",
+        "slot": 166895942
+      },
+      "value": [
+        {
+          "account": {
+            "data": [
+              "O0NuqIea7HUvvwtwGehJ95pVsBSH6xpS3rvbymg9TMNuN8HO+P8En+NLC+JfUEsxJnxEYiI50JuYlZKuo/DnTAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "base64"
+            ],
+            "executable": false,
+            "lamports": 2039280,
+            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "rentEpoch": 361
+          },
+          "pubkey": "56iYTYcGgVj3kQ1eTApSp9BJRAvjNfZ7AFbdyeKfGPLK"
+        },
+        {
+          "account": {
+            "data": [
+              "ZuUYihMIoduQttMfP73KjD3yZ4yBEt/dPRksWjzEV6huN8HO+P8En+NLC+JfUEsxJnxEYiI50JuYlZKuo/DnTCeWHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "base64"
+            ],
+            "executable": false,
+            "lamports": 2039280,
+            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "rentEpoch": 361
+          },
+          "pubkey": "dUomT6JpMrZioLeLgtLfcUQpqHsA2jiH9vvz8HDsbyZ"
+        }
+      ]
+    },
+    "id": 1
+  })";
+
+  const std::map<std::string, std::string> requests = {
+      {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF", first_response},
+      {"8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB", second_response},
+  };
+  SetInterceptorForDiscoverSolanaAssets(expected_network_url, requests);
+  // mints BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2 and ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ
+  // mint 7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs and 4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g
+  token_list_json = R"({
+    "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2": {
+      "name": "Tesla Inc.",
+      "logo": "2inRoG4DuMRRzZxAt913CCdNZCu2eGsDD9kZTrsj2DAZ.png",
+      "erc20": false,
+      "symbol": "TSLA",
+      "decimals": 8,
+      "chainId": "0x65"
+    },
+    "ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ": {
+      "name": "Apple Inc.",
+      "logo": "8bpRdBGPt354VfABL5xugP3pmYZ2tQjzRcqjg2kmwfbF.png",
+      "erc20": false,
+      "symbol": "AAPL",
+      "decimals": 8,
+      "chainId": "0x65"
+    },
+    "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs": {
+      "name": "Microsoft Corporation",
+      "logo": "3vhcrQfEn8ashuBfE82F3MtEDFcBCEFfFw1ZgM3xj1s8.png",
+      "erc20": false,
+      "symbol": "MSFT",
+      "decimals": 8,
+      "chainId": "0x65"
+    },
+    "4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g": {
+      "name": "MicroStrategy Incorporated.",
+      "logo": "ASwYCbLedk85mRdPnkzrUXbbYbwe26m71af9rzrhC2Qz.png",
+      "erc20": false,
+      "symbol": "MSTR",
+      "decimals": 8,
+      "chainId": "0x65"
+    }
+  })";
+  ASSERT_TRUE(
+      ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::SOL));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+  VLOG(0) << "  BEGIN RELEVANT TEST -----------------------------";
+  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF", "8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB"}, 
+                           {"4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g", "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs", "ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ", "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2"});
+}
 
 }  // namespace brave_wallet

@@ -2780,7 +2780,7 @@ void JsonRpcService::OnGetSolanaBlockHeight(
 void JsonRpcService::GetSolanaTokenAccountsByOwner(
     const std::string& pubkey,
     GetSolanaTokenAccountsByOwnerCallback callback) {
-  VLOG(0) << "JsonRpcService::GetSolanaTokenAccountsByOwner";
+  VLOG(0) << "JsonRpcService::GetSolanaTokenAccountsByOwner << pubkey " << pubkey;
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetSolanaTokenAccountsByOwner,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
