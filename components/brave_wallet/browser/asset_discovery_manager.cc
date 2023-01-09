@@ -413,7 +413,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsAccountsAdded(
 }
 
 void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
-    const std::vector<std::string>& account_addresses) {
+    std::map<mojom::CoinType, std::vector<std::string>>& account_addresses) {
   // Simple client side rate limiting (only applies to refreshes)
   const base::Time assets_last_discovered_at =
       prefs_->GetTime(kBraveWalletLastDiscoveredAssetsAt);
@@ -431,7 +431,10 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
     return;
   }
 
-  // TODO(nvonpentz) Add support for Solana
+  // Discover Solana assets
+  DiscoverSolanaAssets(account_addresses[mojom::CoinType::SOL], false);
+  
+  // Discover Ethereum assets
   const std::vector<std::string>& supported_chain_ids =
       GetAssetDiscoverySupportedChains();
   remaining_chains_ = supported_chain_ids.size();
@@ -439,6 +442,8 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
   // Fetch block numbers for which asset discovery has been run through
   auto& next_asset_discovery_from_blocks =
       prefs_->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks);
+
+  std::vector<std::string>& eth_account_addresses = account_addresses[mojom::CoinType::ETH];
   for (const auto& chain_id : supported_chain_ids) {
     // Call DiscoverAssets for the supported chain ID
     // using the kBraveWalletNextAssetDiscoveryFromBlocks pref
@@ -452,7 +457,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
       from_block = *next_asset_discovery_from_block;
     }
 
-    DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, false,
+    DiscoverAssets(chain_id, mojom::CoinType::ETH, eth_account_addresses, false,
                    from_block, to_block);
   }
 }

@@ -366,6 +366,9 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
       const std::vector<std::string>& expected_token_contract_addresses,
       std::vector<std::string> expected_chain_ids_remaining =
           GetAssetDiscoverySupportedChainsForTest()) {
+    std::map<mojom::CoinType, std::vector<std::string>> addresses;
+    addresses[mojom::CoinType::SOL] = {};
+    addresses[mojom::CoinType::ETH] = std::move(account_addresses);
     const base::Time previous_assets_last_discovered_at =
         GetPrefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
     asset_discovery_manager_->SetDiscoverAssetsCompletedCallbackForTesting(
@@ -373,7 +376,6 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
                 absl::optional<mojom::ProviderError> error,
-                // mojom::ProviderErrorUnionPtr error,
                 const std::string& error_message) {
               expected_chain_ids_remaining.erase(
                   std::remove(expected_chain_ids_remaining.begin(),
@@ -381,7 +383,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                   expected_chain_ids_remaining.end());
             }));
     asset_discovery_manager_->DiscoverAssetsOnAllSupportedChainsRefresh(
-        account_addresses);
+        addresses);
     wallet_service_observer_->WaitForOnDiscoverAssetsCompleted(
         expected_token_contract_addresses);
     EXPECT_EQ(expected_chain_ids_remaining.size(), 0u);

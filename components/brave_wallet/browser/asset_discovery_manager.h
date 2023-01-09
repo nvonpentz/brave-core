@@ -69,7 +69,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   // against block range between
   // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest".
   void DiscoverAssetsOnAllSupportedChainsRefresh(
-      const std::vector<std::string>& account_addresses);
+      std::map<mojom::CoinType, std::vector<std::string>>& account_addresses);
 
   void SetSupportedChainsForTesting(
       const std::vector<std::string> supported_chains_for_testing) {
