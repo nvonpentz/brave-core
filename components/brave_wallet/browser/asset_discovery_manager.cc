@@ -5,6 +5,7 @@
 
 #include "brave/components/brave_wallet/browser/asset_discovery_manager.h"
 
+#include <map>
 #include <utility>
 
 #include "base/task/task_runner.h"
@@ -76,7 +77,8 @@ void AssetDiscoveryManager::DiscoverSolanaAssets(
   const auto barrier_callback = base::BarrierCallback<std::vector<std::string>>(
       account_addresses.size(),
       base::BindOnce(&AssetDiscoveryManager::MergeDiscoveredSolanaAssets,
-                     weak_ptr_factory_.GetWeakPtr()));
+                     weak_ptr_factory_.GetWeakPtr(),
+                     triggered_by_accounts_added));
   for (const auto& account_address : account_addresses) {
     json_rpc_service_->GetSolanaTokenAccountsByOwner(
         account_address,
@@ -120,6 +122,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
 }
 
 void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
+    bool triggered_by_accounts_added,
     const std::vector<std::vector<std::string>>&
         all_discovered_contract_addresses) {
   // Create unique flat_set of all discovered contract addresses
@@ -134,7 +137,8 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
 
   auto internal_callback = base::BindOnce(
       &AssetDiscoveryManager::OnGetSolanaTokenRegistry,
-      weak_ptr_factory_.GetWeakPtr(), std::move(discovered_contract_addresses));
+      weak_ptr_factory_.GetWeakPtr(), triggered_by_accounts_added,
+      std::move(discovered_contract_addresses));
 
   // Fetch registry tokens
   BlockchainRegistry::GetInstance()->GetAllTokens(mojom::kSolanaMainnet,
@@ -143,6 +147,7 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
 }
 
 void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
+    bool triggered_by_accounts_added,
     const base::flat_set<std::string>& discovered_contract_addresses,
     std::vector<mojom::BlockchainTokenPtr> sol_token_registry) {
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
@@ -156,8 +161,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
   }
 
   CompleteDiscoverAssets(mojom::kSolanaMainnet, std::move(discovered_tokens),
-                         absl::nullopt, "",
-                         false);  // TODO
+                         absl::nullopt, "", triggered_by_accounts_added);
 }
 
 void AssetDiscoveryManager::DiscoverAssets(
@@ -368,6 +372,7 @@ void AssetDiscoveryManager::CompleteDiscoverAssets(
     absl::optional<mojom::ProviderError> error,
     const std::string& error_message,
     bool triggered_by_accounts_added) {
+  VLOG(0) << "AssetDiscoveryManager::CompleteDiscoverAssets 0";
   if (discover_assets_completed_callback_for_testing_) {
     std::vector<mojom::BlockchainTokenPtr> discovered_assets_for_chain_clone;
     for (const auto& asset : discovered_assets_for_chain) {
@@ -407,7 +412,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsAccountsAdded(
                      kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
     }
   } else if (coin == mojom::CoinType::SOL) {
-    DiscoverSolanaAssets(account_addresses, false);
+    DiscoverSolanaAssets(account_addresses, true);
   }
 }
 
@@ -477,7 +482,7 @@ void AssetDiscoveryManager::AccountsAdded(
 // static
 absl::optional<std::string> AssetDiscoveryManager::DecodeContractAddress(
     const std::vector<uint8_t>& data) {
-  // TODO Make this robust
+  // TODO(nvonpentz) Make this robust
   std::vector<uint8_t> pub_key_bytes(data.begin(), data.begin() + 32);
   std::string pub_key = Base58Encode(pub_key_bytes);
   return pub_key;

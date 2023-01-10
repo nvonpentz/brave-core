@@ -6,6 +6,7 @@
 #ifndef BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_ASSET_DISCOVERY_MANAGER_H_
 #define BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_ASSET_DISCOVERY_MANAGER_H_
 
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -98,10 +99,12 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       mojom::SolanaProviderError error,
       const std::string& error_message);
 
-  void MergeDiscoveredSolanaAssets(const std::vector<std::vector<std::string>>&
+  void MergeDiscoveredSolanaAssets(bool triggered_by_accounts_added,
+                                   const std::vector<std::vector<std::string>>&
                                        all_discovered_contract_addresses);
 
   void OnGetSolanaTokenRegistry(
+      bool triggered_by_accounts_added,
       const base::flat_set<std::string>& discovered_contract_addresses,
       std::vector<mojom::BlockchainTokenPtr> sol_token_registry);
 

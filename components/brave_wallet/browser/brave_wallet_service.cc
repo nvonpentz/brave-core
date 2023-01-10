@@ -5,6 +5,7 @@
 
 #include "brave/components/brave_wallet/browser/brave_wallet_service.h"
 
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -308,18 +309,15 @@ std::vector<mojom::BlockchainTokenPtr> BraveWalletService::GetUserAssets(
 // static
 bool BraveWalletService::AddUserAsset(mojom::BlockchainTokenPtr token,
                                       PrefService* profile_prefs) {
-  VLOG(0) << "BraveWalletService::AddUserAsset 0";
   absl::optional<std::string> address = GetUserAssetAddress(
       token->contract_address, token->coin, token->chain_id);
   if (!address)
     return false;
-  VLOG(0) << "BraveWalletService::AddUserAsset 1";
 
   const std::string network_id =
       GetNetworkId(profile_prefs, token->coin, token->chain_id);
   if (network_id.empty())
     return false;
-  VLOG(0) << "BraveWalletService::AddUserAsset 2";
 
   // Verify input token ID for ERC721.
   if (token->is_erc721) {
@@ -328,7 +326,6 @@ bool BraveWalletService::AddUserAsset(mojom::BlockchainTokenPtr token,
       return false;
     }
   }
-  VLOG(0) << "BraveWalletService::AddUserAsset 3";
 
   DictionaryPrefUpdate update(profile_prefs, kBraveWalletUserAssets);
   auto* user_assets_pref = update.Get()->GetIfDict();
@@ -349,7 +346,6 @@ bool BraveWalletService::AddUserAsset(mojom::BlockchainTokenPtr token,
       FindAsset(user_assets_list, *address, token->token_id, token->is_erc721);
   if (it != user_assets_list->end())
     return false;
-  VLOG(0) << "BraveWalletService::AddUserAsset 4";
 
   base::Value::Dict value;
   value.Set("address", *address);

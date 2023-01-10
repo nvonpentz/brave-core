@@ -339,17 +339,21 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
   }
 
   void TestDiscoverAssetsOnAllSupportedChainsAccountsAdded(
+      mojom::CoinType coin,
       const std::vector<std::string>& account_addresses,
       const base::Time expected_assets_last_discovered_at_pref,
       const base::Value::Dict& expected_next_asset_discovery_from_blocks,
       const std::vector<std::string>& expected_token_contract_addresses = {}) {
-    std::vector<std::string> expected_chain_ids_remaining =
-        GetAssetDiscoverySupportedChainsForTest();
+    std::vector<std::string> expected_chain_ids_remaining;
+    if (coin == mojom::CoinType::ETH) {
+      expected_chain_ids_remaining = GetAssetDiscoverySupportedChainsForTest();
+    } else {
+      expected_chain_ids_remaining = {mojom::kSolanaMainnet};
+    }
     asset_discovery_manager_->SetDiscoverAssetsCompletedCallbackForTesting(
         base::BindLambdaForTesting(
             [&](const std::string& chain_id,
                 const std::vector<mojom::BlockchainTokenPtr> discovered_assets,
-                // mojom::ProviderErrorUnionPtr error,
                 absl::optional<mojom::ProviderError> error,
                 const std::string& error_message) {
               expected_chain_ids_remaining.erase(
@@ -358,7 +362,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                   expected_chain_ids_remaining.end());
             }));
     asset_discovery_manager_->DiscoverAssetsOnAllSupportedChainsAccountsAdded(
-        mojom::CoinType::ETH, account_addresses);
+        coin, account_addresses);
     base::RunLoop().RunUntilIdle();
     EXPECT_EQ(expected_chain_ids_remaining.size(), 0u);
     EXPECT_EQ(GetPrefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt),
@@ -751,6 +755,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssets) {
 
 TEST_F(AssetDiscoveryManagerUnitTest,
        DiscoverAssetsOnAllSupportedChainsAccountsAdded) {
+  // Ethereum
   // Send valid requests that yield no results and verify
   // 1. OnDiscoverAssetsCompleted is called exactly once for each supported
   // chain
@@ -776,8 +781,78 @@ TEST_F(AssetDiscoveryManagerUnitTest,
   SetDiscoverAssetsOnAllSupportedChainsInterceptor(
       responses, expected_from_blocks, expected_to_blocks);
   TestDiscoverAssetsOnAllSupportedChainsAccountsAdded(
-      {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"}, assets_last_discovered_at,
-      expected_next_asset_discovery_from_blocks);
+      mojom::CoinType::ETH, {"0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961"},
+      assets_last_discovered_at, expected_next_asset_discovery_from_blocks);
+
+  // Solana
+  auto* blockchain_registry = BlockchainRegistry::GetInstance();
+  TokenListMap token_list_map;
+  std::string token_list_json = R"({
+    "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8": {
+      "name": "Wrapped SOL",
+      "logo": "So11111111111111111111111111111111111111112.png",
+      "erc20": false,
+      "symbol": "SOL",
+      "decimals": 9,
+      "chainId": "0x65",
+      "coingeckoId": "solana"
+    },
+    "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b": {
+      "name": "USD Coin",
+      "logo": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v.png",
+      "erc20": false,
+      "symbol": "USDC",
+      "decimals": 6,
+      "chainId": "0x65",
+      "coingeckoId": "usd-coin"
+    }
+  })";
+  ASSERT_TRUE(
+      ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::SOL));
+  blockchain_registry->UpdateTokenList(std::move(token_list_map));
+  auto expected_network_url =
+      GetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL);
+  SetInterceptor(expected_network_url, R"({
+    "jsonrpc": "2.0",
+    "result": {
+      "context": {
+        "apiVersion": "1.13.5",
+        "slot": 166895942
+      },
+      "value": [
+        {
+          "account": {
+            "data": [
+              "z6cxAUoRHIupvmezOL4EAsTLlwKTgwxzCg/xcNWSEu42kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "base64"
+            ],
+            "executable": false,
+            "lamports": 2039280,
+            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "rentEpoch": 361
+          },
+          "pubkey": "5gjGaTE41sPVS1Dzwg43ipdj9NTtApZLcK55ihRuVb6Y"
+        },
+        {
+          "account": {
+            "data": [
+              "afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "base64"
+            ],
+            "executable": false,
+            "lamports": 2039280,
+            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "rentEpoch": 361
+          },
+          "pubkey": "81ZdQjbr7FhEPmcyGJtG8BAUyWxAjb2iSiWFEQn8i8Da"
+        }
+      ]
+    },
+    "id": 1
+  })");
+  TestDiscoverAssetsOnAllSupportedChainsAccountsAdded(
+      mojom::CoinType::SOL, {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+      assets_last_discovered_at, expected_next_asset_discovery_from_blocks);
 }
 
 TEST_F(AssetDiscoveryManagerUnitTest,
