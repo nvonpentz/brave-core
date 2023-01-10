@@ -288,7 +288,6 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
                                  weak_ptr_factory_.GetWeakPtr(),
                                  base::OwnedRef(std::move(tokens_to_search)),
                                  triggered_by_accounts_added, chain_id);
-
   json_rpc_service_->EthGetLogs(chain_id, from_block, to_block,
                                 std::move(contract_addresses_to_search),
                                 std::move(topics), std::move(callback));
@@ -407,8 +406,8 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsAccountsAdded(
       DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
                      kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
     }
-  } else {
-    // TODO(nvonpentz) Add support for Solana
+  } else if (coin == mojom::CoinType::SOL) {
+    DiscoverSolanaAssets(account_addresses, false);
   }
 }
 
@@ -433,17 +432,20 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
 
   // Discover Solana assets
   DiscoverSolanaAssets(account_addresses[mojom::CoinType::SOL], false);
-  
+
   // Discover Ethereum assets
   const std::vector<std::string>& supported_chain_ids =
       GetAssetDiscoverySupportedChains();
-  remaining_chains_ = supported_chain_ids.size();
+  remaining_chains_ = supported_chain_ids.size() +
+                      (account_addresses[mojom::CoinType::SOL])
+                          .size();  // Add one per address on Solana Mainnet
 
   // Fetch block numbers for which asset discovery has been run through
   auto& next_asset_discovery_from_blocks =
       prefs_->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks);
 
-  std::vector<std::string>& eth_account_addresses = account_addresses[mojom::CoinType::ETH];
+  std::vector<std::string>& eth_account_addresses =
+      account_addresses[mojom::CoinType::ETH];
   for (const auto& chain_id : supported_chain_ids) {
     // Call DiscoverAssets for the supported chain ID
     // using the kBraveWalletNextAssetDiscoveryFromBlocks pref

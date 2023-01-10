@@ -1396,8 +1396,7 @@ void BraveWalletService::DiscoverAssetsOnAllSupportedChains() {
   addresses[mojom::CoinType::SOL] = std::move(sol_account_addresses);
 
   // Go
-  asset_discovery_manager_.DiscoverAssetsOnAllSupportedChainsRefresh(
-      addresses);
+  asset_discovery_manager_.DiscoverAssetsOnAllSupportedChainsRefresh(addresses);
 }
 
 void BraveWalletService::CancelAllSuggestedTokenCallbacks() {
