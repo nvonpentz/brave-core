@@ -372,7 +372,6 @@ void AssetDiscoveryManager::CompleteDiscoverAssets(
     absl::optional<mojom::ProviderError> error,
     const std::string& error_message,
     bool triggered_by_accounts_added) {
-  VLOG(0) << "AssetDiscoveryManager::CompleteDiscoverAssets 0";
   if (discover_assets_completed_callback_for_testing_) {
     std::vector<mojom::BlockchainTokenPtr> discovered_assets_for_chain_clone;
     for (const auto& asset : discovered_assets_for_chain) {
