@@ -147,8 +147,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       const std::vector<std::string>& account_addresses);
 
   friend class AssetDiscoveryManagerUnitTest;
-  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest,
-                           DecodeMintAddress);
+  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest, DecodeMintAddress);
 
   static absl::optional<std::string> DecodeMintAddress(
       const std::vector<uint8_t>& data);

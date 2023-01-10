@@ -1525,8 +1525,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DecodeMintAddress) {
       "QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "AAA");
   ASSERT_TRUE(data);
-  mint_address =
-      asset_discovery_manager_->DecodeMintAddress(*data);
+  mint_address = asset_discovery_manager_->DecodeMintAddress(*data);
   ASSERT_TRUE(mint_address);
   EXPECT_EQ(*mint_address, "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8");
 }
