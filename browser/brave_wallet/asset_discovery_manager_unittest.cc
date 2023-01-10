@@ -1509,7 +1509,15 @@ TEST_F(AssetDiscoveryManagerUnitTest, KeyringServiceObserver) {
   EXPECT_EQ(user_assets.size(), 6u);
 }
 
-TEST_F(AssetDiscoveryManagerUnitTest, DecodeContractAddress) {
+TEST_F(AssetDiscoveryManagerUnitTest, DecodeMintAddress) {
+  // Invalid (data too short)
+  absl::optional<std::vector<uint8_t>> data_short = base::Base64Decode("YQ==");
+  ASSERT_TRUE(data_short);
+  absl::optional<std::string> mint_address =
+      asset_discovery_manager_->DecodeMintAddress(*data_short);
+  ASSERT_FALSE(mint_address);
+
+  // Valid
   absl::optional<std::vector<uint8_t>> data = base::Base64Decode(
       "afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+"
       "lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/"
@@ -1517,8 +1525,8 @@ TEST_F(AssetDiscoveryManagerUnitTest, DecodeContractAddress) {
       "QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "AAA");
   ASSERT_TRUE(data);
-  absl::optional<std::string> mint_address =
-      asset_discovery_manager_->DecodeContractAddress(*data);
+  mint_address =
+      asset_discovery_manager_->DecodeMintAddress(*data);
   ASSERT_TRUE(mint_address);
   EXPECT_EQ(*mint_address, "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8");
 }

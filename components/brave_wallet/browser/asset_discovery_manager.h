@@ -148,11 +148,10 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
 
   friend class AssetDiscoveryManagerUnitTest;
   FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest,
-                           DecodeContractAddress);
+                           DecodeMintAddress);
 
-  static absl::optional<std::string> DecodeContractAddress(
+  static absl::optional<std::string> DecodeMintAddress(
       const std::vector<uint8_t>& data);
-  // const std::string& data);
 
   // The number of supported chain_ids to search for assets for the current
   // DiscoverAssetsOnAllSupportedChainsRefresh request. Not used for

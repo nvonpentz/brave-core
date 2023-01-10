@@ -99,7 +99,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
   }
 
   // Add each token account to the all_discovered_contract_addresses list
-  std::vector<std::string> discovered_contract_addresses;
+  std::vector<std::string> discovered_mint_addresses;
   for (const auto& token_account : token_accounts) {
     // Get the contract address
     if (token_account.has_value()) {
@@ -108,17 +108,17 @@ void AssetDiscoveryManager::OnGetSolanaTokenAccountsByOwner(
           base::Base64Decode(token_account->data);
       if (data.has_value()) {
         // Decode the address
-        const absl::optional<std::string> contract_address =
-            DecodeContractAddress(data.value());
-        if (contract_address.has_value()) {
+        const absl::optional<std::string> mint_address =
+            DecodeMintAddress(data.value());
+        if (mint_address.has_value()) {
           // Add the contract address to the list
-          discovered_contract_addresses.push_back(contract_address.value());
+          discovered_mint_addresses.push_back(mint_address.value());
         }
       }
     }
   }
 
-  std::move(barrier_callback).Run(discovered_contract_addresses);
+  std::move(barrier_callback).Run(discovered_mint_addresses);
 }
 
 void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
@@ -126,19 +126,19 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
     const std::vector<std::vector<std::string>>&
         all_discovered_contract_addresses) {
   // Create unique flat_set of all discovered contract addresses
-  base::flat_set<std::string> discovered_contract_addresses;
+  base::flat_set<std::string> discovered_mint_addresses;
   for (const auto& discovered_contract_address_list :
        all_discovered_contract_addresses) {
     for (const auto& discovered_contract_address :
          discovered_contract_address_list) {
-      discovered_contract_addresses.insert(discovered_contract_address);
+      discovered_mint_addresses.insert(discovered_contract_address);
     }
   }
 
   auto internal_callback = base::BindOnce(
       &AssetDiscoveryManager::OnGetSolanaTokenRegistry,
       weak_ptr_factory_.GetWeakPtr(), triggered_by_accounts_added,
-      std::move(discovered_contract_addresses));
+      std::move(discovered_mint_addresses));
 
   // Fetch registry tokens
   BlockchainRegistry::GetInstance()->GetAllTokens(mojom::kSolanaMainnet,
@@ -148,11 +148,11 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
 
 void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
     bool triggered_by_accounts_added,
-    const base::flat_set<std::string>& discovered_contract_addresses,
+    const base::flat_set<std::string>& discovered_mint_addresses,
     std::vector<mojom::BlockchainTokenPtr> sol_token_registry) {
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
   for (const auto& token : sol_token_registry) {
-    if (discovered_contract_addresses.contains(token->contract_address)) {
+    if (discovered_mint_addresses.contains(token->contract_address)) {
       if (!BraveWalletService::AddUserAsset(token.Clone(), prefs_)) {
         continue;
       }
@@ -480,9 +480,12 @@ void AssetDiscoveryManager::AccountsAdded(
 }
 
 // static
-absl::optional<std::string> AssetDiscoveryManager::DecodeContractAddress(
+absl::optional<std::string> AssetDiscoveryManager::DecodeMintAddress(
     const std::vector<uint8_t>& data) {
-  // TODO(nvonpentz) Make this robust
+  if (data.size() < 32) {
+    return absl::nullopt;
+  }
+
   std::vector<uint8_t> pub_key_bytes(data.begin(), data.begin() + 32);
   std::string pub_key = Base58Encode(pub_key_bytes);
   return pub_key;
