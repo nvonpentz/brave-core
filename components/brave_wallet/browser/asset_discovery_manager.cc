@@ -8,12 +8,10 @@
 #include <map>
 #include <utility>
 
-#include "base/task/task_runner.h"
-#include "base/task/task_runner_util.h"
-#include "base/task/thread_pool.h"
-
 #include "base/base64.h"
 #include "base/strings/strcat.h"
+#include "base/threading/platform_thread.h"
+#include "base/time/time.h"
 #include "brave/components/brave_wallet/browser/blockchain_registry.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_service.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
@@ -28,9 +26,6 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#include "base/threading/platform_thread.h"
-#include "base/time/time.h"
-
 namespace brave_wallet {
 
 AssetDiscoveryManager::AssetDiscoveryManager(BraveWalletService* wallet_service,
@@ -41,8 +36,6 @@ AssetDiscoveryManager::AssetDiscoveryManager(BraveWalletService* wallet_service,
       json_rpc_service_(json_rpc_service),
       keyring_service_(keyring_service),
       prefs_(prefs),
-      sequenced_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
       weak_ptr_factory_(this) {
   keyring_service_->AddObserver(
       keyring_service_observer_receiver_.BindNewPipeAndPassRemote());
@@ -60,7 +53,7 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
   return *asset_discovery_supported_chains;
 }
 
-void AssetDiscoveryManager::DiscoverSolanaAssets(
+void AssetDiscoveryManager::DiscoverSolAssets(
     const std::vector<std::string>& account_addresses,
     bool triggered_by_accounts_added) {
   if (account_addresses.empty()) {
@@ -164,7 +157,7 @@ void AssetDiscoveryManager::OnGetSolanaTokenRegistry(
                          absl::nullopt, "", triggered_by_accounts_added);
 }
 
-void AssetDiscoveryManager::DiscoverAssets(
+void AssetDiscoveryManager::DiscoverEthAssets(
     const std::string& chain_id,
     mojom::CoinType coin,
     const std::vector<std::string>& account_addresses,
@@ -219,7 +212,7 @@ void AssetDiscoveryManager::DiscoverAssets(
   std::vector<mojom::BlockchainTokenPtr> user_assets =
       BraveWalletService::GetUserAssets(chain_id, mojom::CoinType::ETH, prefs_);
   auto internal_callback =
-      base::BindOnce(&AssetDiscoveryManager::OnGetAllTokensDiscoverAssets,
+      base::BindOnce(&AssetDiscoveryManager::OnGetEthTokenRegistry,
                      weak_ptr_factory_.GetWeakPtr(), chain_id,
                      account_addresses, std::move(user_assets),
                      triggered_by_accounts_added, from_block, to_block);
@@ -228,7 +221,7 @@ void AssetDiscoveryManager::DiscoverAssets(
       chain_id, mojom::CoinType::ETH, std::move(internal_callback));
 }
 
-void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
+void AssetDiscoveryManager::OnGetEthTokenRegistry(
     const std::string& chain_id,
     const std::vector<std::string>& account_addresses,
     std::vector<mojom::BlockchainTokenPtr> user_assets,
@@ -266,7 +259,7 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
   // all erc20s and assets the user has already added.
   base::Value::List contract_addresses_to_search;
   // Also create a map for addresses to blockchain tokens for easy lookup
-  // for blockchain tokens in OnGetTransferLogs
+  // for blockchain tokens in OnGetERC721TransferLogs
   base::flat_map<std::string, mojom::BlockchainTokenPtr> tokens_to_search;
   for (auto& registry_token : token_registry) {
     if (registry_token->is_erc20 && !registry_token->contract_address.empty() &&
@@ -288,16 +281,17 @@ void AssetDiscoveryManager::OnGetAllTokensDiscoverAssets(
     return;
   }
 
-  auto callback = base::BindOnce(&AssetDiscoveryManager::OnGetTransferLogs,
-                                 weak_ptr_factory_.GetWeakPtr(),
-                                 base::OwnedRef(std::move(tokens_to_search)),
-                                 triggered_by_accounts_added, chain_id);
+  auto callback =
+      base::BindOnce(&AssetDiscoveryManager::OnGetERC721TransferLogs,
+                     weak_ptr_factory_.GetWeakPtr(),
+                     base::OwnedRef(std::move(tokens_to_search)),
+                     triggered_by_accounts_added, chain_id);
   json_rpc_service_->EthGetLogs(chain_id, from_block, to_block,
                                 std::move(contract_addresses_to_search),
                                 std::move(topics), std::move(callback));
 }
 
-void AssetDiscoveryManager::OnGetTransferLogs(
+void AssetDiscoveryManager::OnGetERC721TransferLogs(
     base::flat_map<std::string, mojom::BlockchainTokenPtr>& tokens_to_search,
     bool triggered_by_accounts_added,
     const std::string& chain_id,
@@ -382,8 +376,8 @@ void AssetDiscoveryManager::CompleteDiscoverAssets(
         std::move(error), error_message);
   }
 
-  // Do not emit event or modify remaining_chains_ count if DiscoverAssets call
-  // was triggered by an AccountsAdded event
+  // Do not emit event or modify remaining_chains_ count if DiscoverEthAssets
+  // call was triggered by an AccountsAdded event
   if (triggered_by_accounts_added) {
     return;
   }
@@ -407,11 +401,11 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsAccountsAdded(
     const std::vector<std::string>& account_addresses) {
   if (coin == mojom::CoinType::ETH) {
     for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
-      DiscoverAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
-                     kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
+      DiscoverEthAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
+                        kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
     }
   } else if (coin == mojom::CoinType::SOL) {
-    DiscoverSolanaAssets(account_addresses, true);
+    DiscoverSolAssets(account_addresses, true);
   }
 }
 
@@ -435,7 +429,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
   }
 
   // Discover Solana assets
-  DiscoverSolanaAssets(account_addresses[mojom::CoinType::SOL], false);
+  DiscoverSolAssets(account_addresses[mojom::CoinType::SOL], false);
 
   // Discover Ethereum assets
   const std::vector<std::string>& supported_chain_ids =
@@ -451,7 +445,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
   std::vector<std::string>& eth_account_addresses =
       account_addresses[mojom::CoinType::ETH];
   for (const auto& chain_id : supported_chain_ids) {
-    // Call DiscoverAssets for the supported chain ID
+    // Call DiscoverEthAssets for the supported chain ID
     // using the kBraveWalletNextAssetDiscoveryFromBlocks pref
     // as the from_block of the eth_getLogs query.
     std::string from_block = kEthereumBlockTagEarliest;
@@ -463,8 +457,8 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
       from_block = *next_asset_discovery_from_block;
     }
 
-    DiscoverAssets(chain_id, mojom::CoinType::ETH, eth_account_addresses, false,
-                   from_block, to_block);
+    DiscoverEthAssets(chain_id, mojom::CoinType::ETH, eth_account_addresses,
+                      false, from_block, to_block);
   }
 }
 

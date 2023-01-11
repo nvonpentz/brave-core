@@ -179,9 +179,9 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         }));
   }
 
-  // SetInterceptorForDiscoverSolanaAssets takes a map of addresses to responses
+  // SetInterceptorForDiscoverSolAssets takes a map of addresses to responses
   // and adds the response if the address if found in the request string
-  void SetInterceptorForDiscoverSolanaAssets(
+  void SetInterceptorForDiscoverSolAssets(
       GURL& intended_url,
       const std::map<std::string, std::string>& requests) {
     url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
@@ -267,7 +267,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
         }));
   }
 
-  void TestDiscoverSolanaAssets(
+  void TestDiscoverSolAssets(
       const std::vector<std::string>& account_addresses,
       const std::vector<std::string>& expected_contract_addresses) {
     asset_discovery_manager_->SetDiscoverAssetsCompletedCallbackForTesting(
@@ -284,7 +284,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                           expected_contract_addresses[i]);
               }
             }));
-    asset_discovery_manager_->DiscoverSolanaAssets(account_addresses, false);
+    asset_discovery_manager_->DiscoverSolAssets(account_addresses, false);
     base::RunLoop().RunUntilIdle();
   }
 
@@ -297,7 +297,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
       const std::string& expected_error_message,
       const std::string& expected_next_asset_discovery_from_block) {
     // Set remaining chains to 1 in order since this value needs to end at
-    // 0 by the end of the DiscoverAssets call in order to trigger the
+    // 0 by the end of the DiscoverEthAssets call in order to trigger the
     // event and it will not be set by an outer
     // DiscoverAssetsOnAllSupportedChains* call in this unit test.
     asset_discovery_manager_->remaining_chains_ = 1;
@@ -309,7 +309,6 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                 const std::string& error_message) {
               EXPECT_EQ(chain_id, chain_id);
               ASSERT_TRUE(error);
-              // ASSERT_TRUE(error->is_provider_error());
               EXPECT_EQ(*error, expected_error);
               EXPECT_EQ(expected_error_message, error_message);
               ASSERT_EQ(expected_token_contract_addresses.size(),
@@ -319,7 +318,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
                           discovered_assets[i]->contract_address);
               }
             }));
-    asset_discovery_manager_->DiscoverAssets(
+    asset_discovery_manager_->DiscoverEthAssets(
         chain_id, mojom::CoinType::ETH, account_addresses, false,
         kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
     wallet_service_observer_->WaitForOnDiscoverAssetsCompleted(
@@ -433,7 +432,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
   data_decoder::test::InProcessDataDecoder in_process_data_decoder_;
 };
 
-TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssets) {
+TEST_F(AssetDiscoveryManagerUnitTest, DiscoverEthAssets) {
   auto* blockchain_registry = BlockchainRegistry::GetInstance();
   TokenListMap token_list_map;
   std::string response;
@@ -1530,7 +1529,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DecodeMintAddress) {
   EXPECT_EQ(*mint_address, "88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8");
 }
 
-TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
+TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolAssets) {
   auto* blockchain_registry = BlockchainRegistry::GetInstance();
   TokenListMap token_list_map;
   std::string token_list_json = R"({
@@ -1558,7 +1557,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
 
   // Empy Account addresses yields invalid params error
-  TestDiscoverSolanaAssets({}, {});
+  TestDiscoverSolAssets({}, {});
 
   // Empty response (no tokens found) yields success
   auto expected_network_url =
@@ -1574,13 +1573,11 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
     },
     "id": 1
   })");
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-                           {});
+  TestDiscoverSolAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
 
   // Invalid response (no tokens found) yields
   SetLimitExceededJsonErrorResponse();
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-                           {});
+  TestDiscoverSolAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
 
   // Valid response containing both tokens should add both tokens
   SetInterceptor(expected_network_url, R"({
@@ -1621,14 +1618,13 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
     },
     "id": 1
   })");
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-                           {"88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8",
-                            "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b"});
+  TestDiscoverSolAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
+                        {"88j24JNwWLmJCjn2tZQ5jJzyaFtnusS2qsKup9NeDnd8",
+                         "EybFzCH4nBYEr7FD4wLWBvNZbEGgjy4kh584bGQntr1b"});
 
   // Making the same call again should not add any tokens (they've already been
   // added)
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"},
-                           {});
+  TestDiscoverSolAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF"}, {});
 
   // Should merge tokens from multiple accounts
   // (4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF and
@@ -1721,7 +1717,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
       {"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF", first_response},
       {"8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB", second_response},
   };
-  SetInterceptorForDiscoverSolanaAssets(expected_network_url, requests);
+  SetInterceptorForDiscoverSolAssets(expected_network_url, requests);
 
   // Add BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2,
   // ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ,
@@ -1764,12 +1760,12 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverSolanaAssets) {
   ASSERT_TRUE(
       ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::SOL));
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
-  TestDiscoverSolanaAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF",
-                            "8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB"},
-                           {"4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g",
-                            "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
-                            "ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ",
-                            "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2"});
+  TestDiscoverSolAssets({"4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF",
+                         "8RFACUfst117ARQLezvK4cKVR8ZHvW2xUfdUoqWnTuEB"},
+                        {"4zLh7YPr8NfrNP4bzTXaYaE72QQc3A8mptbtqUspRz5g",
+                         "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+                         "ADJqxHJRfFBpyxVQ2YS8nBhfW6dumdDYGU21B4AmYLZJ",
+                         "BEARs6toGY6fRGsmz2Se8NDuR2NVPRmJuLPpeF8YxCq2"});
 }
 
 }  // namespace brave_wallet

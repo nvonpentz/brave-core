@@ -14,8 +14,6 @@
 #include "base/barrier_callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "base/synchronization/waitable_event.h"
-#include "base/task/sequenced_task_runner.h"
 #include "brave/components/api_request_helper/api_request_helper.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
@@ -68,7 +66,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   // Subject to client side rate limiting based on
   // kBraveWalletLastDiscoveredAssetsAt pref value. Only runs eth_getLogs
   // against block range between
-  // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest".
+  // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest" for ETH chains.
   void DiscoverAssetsOnAllSupportedChainsRefresh(
       std::map<mojom::CoinType, std::vector<std::string>>& account_addresses);
 
@@ -84,14 +82,14 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
 
  private:
   friend class AssetDiscoveryManagerUnitTest;
-  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest, DiscoverAssets);
+  FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest, DiscoverEthAssets);
   FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest,
                            DiscoverAssetsOnAllSupportedChainsRefresh);
 
   const std::vector<std::string>& GetAssetDiscoverySupportedChains();
 
-  void DiscoverSolanaAssets(const std::vector<std::string>& account_addresses,
-                            bool update_prefs);
+  void DiscoverSolAssets(const std::vector<std::string>& account_addresses,
+                         bool triggered_by_accounts_added);
 
   void OnGetSolanaTokenAccountsByOwner(
       base::OnceCallback<void(std::vector<std::string>)> barrier_callback,
@@ -108,23 +106,22 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       const base::flat_set<std::string>& discovered_contract_addresses,
       std::vector<mojom::BlockchainTokenPtr> sol_token_registry);
 
-  void DiscoverAssets(const std::string& chain_id,
-                      mojom::CoinType coin,
-                      const std::vector<std::string>& account_addresses,
-                      bool update_prefs,
-                      const std::string& from_block,
-                      const std::string& to_block);
+  void DiscoverEthAssets(const std::string& chain_id,
+                         mojom::CoinType coin,
+                         const std::vector<std::string>& account_addresses,
+                         bool triggered_by_accounts_added,
+                         const std::string& from_block,
+                         const std::string& to_block);
 
-  void OnGetAllTokensDiscoverAssets(
-      const std::string& chain_id,
-      const std::vector<std::string>& account_addresses,
-      std::vector<mojom::BlockchainTokenPtr> user_assets,
-      bool update_prefs,
-      const std::string& from_block,
-      const std::string& to_block,
-      std::vector<mojom::BlockchainTokenPtr> token_list);
+  void OnGetEthTokenRegistry(const std::string& chain_id,
+                             const std::vector<std::string>& account_addresses,
+                             std::vector<mojom::BlockchainTokenPtr> user_assets,
+                             bool triggered_by_accounts_added,
+                             const std::string& from_block,
+                             const std::string& to_block,
+                             std::vector<mojom::BlockchainTokenPtr> token_list);
 
-  void OnGetTransferLogs(
+  void OnGetERC721TransferLogs(
       base::flat_map<std::string, mojom::BlockchainTokenPtr>& tokens_to_search,
       bool triggered_by_accounts_added,
       const std::string& chain_id,
@@ -166,7 +163,6 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   raw_ptr<PrefService> prefs_;
   mojo::Receiver<brave_wallet::mojom::KeyringServiceObserver>
       keyring_service_observer_receiver_{this};
-  scoped_refptr<base::SequencedTaskRunner> sequenced_task_runner_;
   base::WeakPtrFactory<AssetDiscoveryManager> weak_ptr_factory_;
 };
 
