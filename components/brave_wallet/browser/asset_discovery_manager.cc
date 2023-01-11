@@ -376,7 +376,7 @@ void AssetDiscoveryManager::CompleteDiscoverAssets(
         std::move(error), error_message);
   }
 
-  // Do not emit event or modify remaining_chains_ count if DiscoverEthAssets
+  // Do not emit event or modify remaining_chains_ count if
   // call was triggered by an AccountsAdded event
   if (triggered_by_accounts_added) {
     return;
@@ -428,16 +428,14 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
     return;
   }
 
+  const std::vector<std::string>& supported_chain_ids =
+      GetAssetDiscoverySupportedChains();
+  remaining_chains_ = supported_chain_ids.size() + 1;  // + 1 for Solana mainnet
+
   // Discover Solana assets
   DiscoverSolAssets(account_addresses[mojom::CoinType::SOL], false);
 
   // Discover Ethereum assets
-  const std::vector<std::string>& supported_chain_ids =
-      GetAssetDiscoverySupportedChains();
-  remaining_chains_ = supported_chain_ids.size() +
-                      (account_addresses[mojom::CoinType::SOL])
-                          .size();  // Add one per address on Solana Mainnet
-
   // Fetch block numbers for which asset discovery has been run through
   auto& next_asset_discovery_from_blocks =
       prefs_->GetDict(kBraveWalletNextAssetDiscoveryFromBlocks);

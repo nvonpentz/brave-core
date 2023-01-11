@@ -129,6 +129,8 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       mojom::ProviderError error,
       const std::string& error_message);
 
+  // CompleteDiscoverAssets signals that the discover assets request has
+  // completed for a given chain_id
   void CompleteDiscoverAssets(
       const std::string& chain_id,
       std::vector<mojom::BlockchainTokenPtr> discovered_assets,
@@ -149,9 +151,15 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   static absl::optional<std::string> DecodeMintAddress(
       const std::vector<uint8_t>& data);
 
-  // The number of supported chain_ids to search for assets for the current
-  // DiscoverAssetsOnAllSupportedChainsRefresh request. Not used for
-  // DiscoverAssetsOnAllSupportedChainsAccountsAdded requests.
+  // remaining_chains_ is the number of chain IDs remaining for an in-flight
+  // DiscoverAssetsOnAllSupportedChainsRefresh call to be completed.
+  // When no call is in-flight, remaining_chains_ is 0.  When a call is
+  // in-flight, remaining_chains_ is > 0 and the AssetDiscoverManager will
+  // refuse to process additional  DiscoverAssetsOnAllSupportedChainsRefresh
+  // calls.
+  //
+  // DiscoverAssetsOnAllSupportedChainsAccountsAdded does not read from or write
+  // to remaining_chains_ and thus those calls will always processed.
   int remaining_chains_ = 0;
   std::vector<mojom::BlockchainTokenPtr> discovered_assets_;
   std::vector<std::string> supported_chains_for_testing_;
