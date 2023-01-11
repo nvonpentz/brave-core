@@ -44,7 +44,7 @@ AssetDiscoveryManager::AssetDiscoveryManager(BraveWalletService* wallet_service,
 AssetDiscoveryManager::~AssetDiscoveryManager() = default;
 
 const std::vector<std::string>&
-AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
+AssetDiscoveryManager::GetAssetDiscoverySupportedEthChains() {
   if (supported_chains_for_testing_.size() > 0) {
     return supported_chains_for_testing_;
   }
@@ -177,7 +177,7 @@ void AssetDiscoveryManager::DiscoverEthAssets(
 
   // Asset discovery only supported on select EVM chains
   if (coin != mojom::CoinType::ETH ||
-      !base::Contains(GetAssetDiscoverySupportedChains(), chain_id)) {
+      !base::Contains(GetAssetDiscoverySupportedEthChains(), chain_id)) {
     CompleteDiscoverAssets(
         chain_id, std::vector<mojom::BlockchainTokenPtr>(),
         mojom::ProviderError::kMethodNotSupported,
@@ -400,7 +400,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsAccountsAdded(
     mojom::CoinType coin,
     const std::vector<std::string>& account_addresses) {
   if (coin == mojom::CoinType::ETH) {
-    for (const auto& chain_id : GetAssetDiscoverySupportedChains()) {
+    for (const auto& chain_id : GetAssetDiscoverySupportedEthChains()) {
       DiscoverEthAssets(chain_id, mojom::CoinType::ETH, account_addresses, true,
                         kEthereumBlockTagEarliest, kEthereumBlockTagLatest);
     }
@@ -429,7 +429,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChainsRefresh(
   }
 
   const std::vector<std::string>& supported_chain_ids =
-      GetAssetDiscoverySupportedChains();
+      GetAssetDiscoverySupportedEthChains();
   remaining_chains_ = supported_chain_ids.size() + 1;  // + 1 for Solana mainnet
 
   // Discover Solana assets

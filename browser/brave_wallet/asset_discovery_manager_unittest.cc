@@ -67,7 +67,7 @@ void UpdateCustomNetworks(PrefService* prefs,
   }
 }
 
-const std::vector<std::string>& GetAssetDiscoverySupportedChainsForTest() {
+const std::vector<std::string>& GetAssetDiscoverySupportedEthChainsForTest() {
   static base::NoDestructor<std::vector<std::string>>
       asset_discovery_supported_chains({mojom::kMainnetChainId,
                                         mojom::kPolygonMainnetChainId,
@@ -163,7 +163,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
     asset_discovery_manager_ = std::make_unique<AssetDiscoveryManager>(
         wallet_service_.get(), json_rpc_service_, keyring_service_, GetPrefs());
     asset_discovery_manager_->SetSupportedChainsForTesting(
-        GetAssetDiscoverySupportedChainsForTest());
+        GetAssetDiscoverySupportedEthChainsForTest());
     wallet_service_observer_ =
         std::make_unique<TestBraveWalletServiceObserverForAssetDiscovery>();
     wallet_service_->AddObserver(wallet_service_observer_->GetReceiver());
@@ -345,7 +345,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
       const std::vector<std::string>& expected_token_contract_addresses = {}) {
     std::vector<std::string> expected_chain_ids_remaining;
     if (coin == mojom::CoinType::ETH) {
-      expected_chain_ids_remaining = GetAssetDiscoverySupportedChainsForTest();
+      expected_chain_ids_remaining =
+          GetAssetDiscoverySupportedEthChainsForTest();
     } else {
       expected_chain_ids_remaining = {mojom::kSolanaMainnet};
     }
@@ -379,7 +380,7 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
       const base::Value::Dict& expected_next_asset_discovery_from_blocks,
       const std::vector<std::string>& expected_token_contract_addresses,
       std::vector<std::string> expected_chain_ids_remaining =
-          GetAssetDiscoverySupportedChainsForTest()) {
+          GetAssetDiscoverySupportedEthChainsForTest()) {
     const base::Time previous_assets_last_discovered_at =
         GetPrefs()->GetTime(kBraveWalletLastDiscoveredAssetsAt);
     asset_discovery_manager_->SetDiscoverAssetsCompletedCallbackForTesting(
@@ -767,7 +768,7 @@ TEST_F(AssetDiscoveryManagerUnitTest,
   const std::string default_response =
       R"({ "jsonrpc":"2.0", "id":1, "result":[] })";
   for (const std::string& supported_chain_id :
-       GetAssetDiscoverySupportedChainsForTest()) {
+       GetAssetDiscoverySupportedEthChainsForTest()) {
     GURL network_url = GetNetwork(supported_chain_id, mojom::CoinType::ETH);
     responses[network_url.spec()] = default_response;
     expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;
@@ -862,7 +863,7 @@ TEST_F(AssetDiscoveryManagerUnitTest,
   // 2. kBraveWalletAssetsLastDiscoveredAt pref is updated
   // 3. kBraveWalletNextAssetDiscoveryFromBlocks pref is not updated
   const std::vector<std::string>& supported_chain_ids =
-      GetAssetDiscoverySupportedChainsForTest();
+      GetAssetDiscoverySupportedEthChainsForTest();
   std::map<std::string, std::string> responses;
   std::map<std::string, std::string> expected_from_blocks;
   std::map<std::string, std::string> expected_to_blocks;
@@ -1140,7 +1141,7 @@ TEST_F(AssetDiscoveryManagerUnitTest,
   const std::string default_response =
       R"({ "jsonrpc":"2.0", "id":1, "result":[] })";
   for (const std::string& supported_chain_id :
-       GetAssetDiscoverySupportedChainsForTest()) {
+       GetAssetDiscoverySupportedEthChainsForTest()) {
     GURL network_url = GetNetwork(supported_chain_id, mojom::CoinType::ETH);
     responses[network_url.spec()] = default_response;
     expected_from_blocks[network_url.spec()] = kEthereumBlockTagEarliest;

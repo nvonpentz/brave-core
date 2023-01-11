@@ -86,7 +86,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryManagerUnitTest,
                            DiscoverAssetsOnAllSupportedChainsRefresh);
 
-  const std::vector<std::string>& GetAssetDiscoverySupportedChains();
+  const std::vector<std::string>& GetAssetDiscoverySupportedEthChains();
 
   void DiscoverSolAssets(const std::vector<std::string>& account_addresses,
                          bool triggered_by_accounts_added);
