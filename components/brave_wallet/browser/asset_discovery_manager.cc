@@ -133,7 +133,7 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
       weak_ptr_factory_.GetWeakPtr(), triggered_by_accounts_added,
       std::move(discovered_mint_addresses));
 
-  // Fetch registry tokens
+  // Fetch SOL registry tokens
   BlockchainRegistry::GetInstance()->GetAllTokens(mojom::kSolanaMainnet,
                                                   mojom::CoinType::SOL,
                                                   std::move(internal_callback));
@@ -329,7 +329,7 @@ void AssetDiscoveryManager::OnGetERC721TransferLogs(
 
   if (!triggered_by_accounts_added) {
     // Update the last block discovered for this chain unless this
-    // was triggered by accounts added
+    // was triggered by accounts being added
     DictionaryPrefUpdate update(prefs_,
                                 kBraveWalletNextAssetDiscoveryFromBlocks);
     auto* next_asset_discovery_from_blocks = update.Get()->GetIfDict();
