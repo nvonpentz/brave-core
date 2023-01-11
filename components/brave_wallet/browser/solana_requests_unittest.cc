@@ -100,7 +100,6 @@ TEST(SolanaRequestsUnitTest, getBlockHeight) {
       R"({"id":1,"jsonrpc":"2.0","method":"getBlockHeight","params":[]})");
 }
 
-// getTokenAccountsByOwner tests
 TEST(SolanaRequestsUnitTest, getTokenAccountsByOwner) {
   ASSERT_EQ(
       getTokenAccountsByOwner("pubkey"),

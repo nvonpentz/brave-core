@@ -1400,7 +1400,7 @@ class JsonRpcServiceUnitTest : public testing::Test {
                             token_accounts,
                         mojom::SolanaProviderError error,
                         const std::string& error_message) {
-                      // EXPECT_EQ(token_accounts, expected_token_accounts);
+                      EXPECT_EQ(token_accounts, expected_token_accounts);
                       EXPECT_EQ(error, expected_error);
                       EXPECT_EQ(error_message, expected_error_message);
                       run_loop.Quit();
@@ -4415,8 +4415,34 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaTokenAccountsByOwner) {
     },
     "id": 1
   })");
+  // Create expected account infos
+  std::vector<absl::optional<SolanaAccountInfo>> expected_account_infos;
+  SolanaAccountInfo account_info;
+  account_info.data =
+      "z6cxAUoRHIupvmezOL4EAsTLlwKTgwxzCg/"
+      "xcNWSEu42kEWUG3BArj8SJRSnd1faFt2Tm0Ey/"
+      "qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "AAA";
+  account_info.executable = false;
+  account_info.lamports = 2039280;
+  account_info.owner = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+  account_info.rent_epoch = 361;
+
+  expected_account_infos.push_back(std::move(account_info));
+  account_info.data =
+      "afxiYbRCtH5HgLYFzytARQOXmFT6HhvNzk2Baxua+"
+      "lM2kEWUG3BArj8SJRSnd1faFt2Tm0Ey/"
+      "qtGnPdOOlQlugEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "AAA";
+  account_info.executable = false;
+  account_info.lamports = 2039280;
+  account_info.owner = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+  account_info.rent_epoch = 361;
+  expected_account_infos.push_back(std::move(account_info));
   TestGetSolanaTokenAccountsByOwner(
-      "4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF", {},
+      "4fzcQKyGFuk55uJaBZtvTHh42RBxbrZMuXzsGQvBJbwF", expected_account_infos,
       mojom::SolanaProviderError::kSuccess, "");
 
   // Response parsing error
