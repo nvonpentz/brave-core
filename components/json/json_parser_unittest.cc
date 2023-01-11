@@ -516,9 +516,9 @@ TEST(JsonParser, ConvertUint64InObjectArrayToString) {
 
   invalid_cases = {
       // Value at path isn't an array.
-      // R"({"a":{[{"key":1},{"key":2}}})",
+      R"({"a":{[{"key":1},{"key":2}}})",
       // Value at path isn't an object array.
-      // R"({"a":[{"key":1}, [], {"key":2}})",
+      R"({"a":[{"key":1}, [], {"key":2}})",
       // Value at key is not uint64 or null.
       R"({"a":[{"b": {"key":"1"}}]})",
       // UINT64_MAX + 1
