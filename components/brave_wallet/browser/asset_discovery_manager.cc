@@ -172,8 +172,6 @@ void AssetDiscoveryManager::DiscoverEthAssets(
         triggered_by_accounts_added);
     return;
   }
-  // TODO(nvonpentz): Probably should move most of this logic to an ETH specific
-  // function and create another for Solana
 
   // Asset discovery only supported on select EVM chains
   if (coin != mojom::CoinType::ETH ||
