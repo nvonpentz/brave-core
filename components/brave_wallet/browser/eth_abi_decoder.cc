@@ -8,7 +8,9 @@
 #include <limits>
 #include <map>
 #include <tuple>
+#include <utility>
 
+#include "base/logging.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -276,10 +278,12 @@ ABIDecode(const std::vector<std::string>& types,
     // of the tail section of the calldata.
     if ((type == "bytes" || type == "string" || base::EndsWith(type, "[]")) &&
         calldata_tail == 0) {
+      LOG(ERROR) << "Dynamic type encountered at offset " << offset;
       auto pointer = GetSizeFromData(data, offset);
       if (!pointer)
         return absl::nullopt;
 
+      LOG(ERROR) << "Calldata tail starts at offset 2";
       calldata_tail = *pointer;
     }
 

@@ -1200,6 +1200,24 @@ void JsonRpcService::OnGetERC20TokenBalances(
     return;
   }
 
+  auto result = eth::ParseEthCall(api_request_result.value_body());
+  if (!result) {
+    mojom::ProviderError error;
+    std::string error_message;
+    ParseErrorResult<mojom::ProviderError>(api_request_result.value_body(),
+                                           &error, &error_message);
+    // std::move(callback).Run("", error, error_message);
+    return;
+  }
+
+  // const auto& args = eth::DecodeEthCallResponse(*result, {"uint256"});
+  // if (args == absl::nullopt) {
+  //   std::move(callback).Run(
+  //       "", mojom::ProviderError::kInternalError,
+  //       l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
+  //   return;
+  // }
+
   // TODO Parse the eth_call response and returns the balances
   // as a vector of pairs of (success, balance).
 }

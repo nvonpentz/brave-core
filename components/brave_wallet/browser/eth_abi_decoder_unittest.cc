@@ -351,4 +351,24 @@ TEST(EthABIDecoderTest, UniswapEncodedPathDecodeInvalid) {
       "deadbeef"));                                 // Bogus data
 }
 
+TEST(EthABIDecoderTest, Tuple) {
+  std::vector<std::string> tx_params;
+  std::vector<std::string> tx_args;
+  std::vector<uint8_t> data;
+  ASSERT_TRUE(PrefixedHexStringToBytes(
+      "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000006e83695ab1f893c00",
+      &data));
+  auto decoded = ABIDecode({"(bool, bytes)[]"}, data);
+  ASSERT_TRUE(decoded);
+  std::tie(tx_params, tx_args) = *decoded;
+
+  // vlog(0) all of tx_params and tx_args
+  for (size_t i = 0; i < tx_params.size(); i++) {
+    VLOG(0) << "tx_params[" << i << "] = " << tx_params[i];
+    VLOG(0) << "tx_args[" << i << "] = " << tx_args[i];
+  }
+
+  ASSERT_TRUE(false);
+}
+
 }  // namespace brave_wallet
