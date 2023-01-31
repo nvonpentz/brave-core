@@ -296,19 +296,21 @@ ABIDecode(const std::vector<std::string>& types,
   return std::make_tuple(params, args);
 }
 
-absl::optional<std::vector<std::tuple<std::vector<std::string>, // params
-                          std::vector<std::string>>>>           // args
+absl::optional<std::vector<std::tuple<std::vector<std::string>,    // params
+                                      std::vector<std::string>>>>  // args
 ABIDecodeBalanceScannerResult(const std::vector<uint8_t>& data) {
   // Decode first 32 bytes to get the offset of the length of the results
   // array.
   auto offset = GetSizeFromData(data, 0);
-  if (!offset)
+  if (!offset) {
     return absl::nullopt;
+  }
 
   // Decode the length of the results array.
   auto array_len = GetSizeFromData(data, *offset);
-  if (!array_len)
+  if (!array_len) {
     return absl::nullopt;
+  }
 
   // Increment the offset 32 bytes to get the offset of the first result.
   *offset += 32;
@@ -320,25 +322,23 @@ ABIDecodeBalanceScannerResult(const std::vector<uint8_t>& data) {
     // Get the offset corresponding to the offset of the start of the element
     // Should be 64 for if i = 0, 96 for if i = 1, etc.
     auto element_offset = GetSizeFromData(data, *offset + (i * 32));
-    if (!element_offset)
+    if (!element_offset) {
       return absl::nullopt;
+    }
 
     // Add the overall offset to get the offset of
     // the start of the element
-    *element_offset += *offset; 
+    *element_offset += *offset;
 
     // Take subset of data
     std::vector<uint8_t> element_data(data.begin() + *element_offset,
                                       data.end());
-    // convert to hex and log element data
-    std::string element_data_hex = HexEncodeLower(element_data);
-
     // Decode the element.
     auto result = ABIDecode({"bool", "bytes"}, element_data);
-    if (!result)
+    if (!result) {
       return absl::nullopt;
+    }
 
-    // VLOG(0) << "i has a result " << i;
     results.push_back(*result);
   }
 

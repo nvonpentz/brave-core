@@ -187,7 +187,9 @@ absl::optional<std::string> ParseEthCall(const base::Value& json_value) {
   return ParseSingleStringResult(json_value);
 }
 
-absl::optional<std::vector<std::string>> DecodeEthCallResponse( // returns "args" a list of decoded values corresponding to the types list
+absl::optional<std::vector<std::string>>
+DecodeEthCallResponse(  // returns "args" a list of decoded values corresponding
+                        // to the types list
     const std::string& data,
     const std::vector<std::string>& abi_types) {
   std::vector<uint8_t> response_bytes;
@@ -205,26 +207,43 @@ absl::optional<std::vector<std::string>> DecodeEthCallResponse( // returns "args
   return args;
 }
 
-absl::optional<std::vector<std::vector<std::string>>> DecodeGetERC20TokenBalancesEthCallResponse( // returns "args" a list of (bool, bytes)
-    const std::string& data) {
+absl::optional<std::vector<absl::optional<std::string>>>
+DecodeGetERC20TokenBalancesEthCallResponse(const std::string& data) {
   std::vector<uint8_t> response_bytes;
-  if (!PrefixedHexStringToBytes(data, &response_bytes))
+  if (!PrefixedHexStringToBytes(data, &response_bytes)) {
     return absl::nullopt;
-
-  absl::optional<std::vector<std::tuple<std::vector<std::string>, std::vector<std::string>>>>
-    decoded = ABIDecodeBalanceScannerResult(response_bytes);
-
-  if (decoded == absl::nullopt)
-    return absl::nullopt;
-
-  std::vector<std::vector<std::string>> args;
-  for (const auto& tuple : *decoded) {
-    const auto& success = std::get<0>(tuple);
-    const auto& balance = std::get<1>(tuple);
-    args.push_back({success[0], balance[0]});
   }
 
-  return args;
+  absl::optional<std::vector<
+      std::tuple<std::vector<std::string>, std::vector<std::string>>>>
+      decoded = ABIDecodeBalanceScannerResult(response_bytes);
+
+  if (decoded == absl::nullopt) {
+    VLOG(0) << "DecodeGetERC20TokenBalancesEthCallResponse: "
+               "ABIDecodeBalanceScannerResult failed";
+    return absl::nullopt;
+  }
+
+  // loop through the decoded values and create a vector of optional strings
+  // if the first value is true, then the second value is the balance
+  // otherwise, the second value is empty and an optional should be returned
+  std::vector<absl::optional<std::string>> balances;
+  for (const auto& tuple : *decoded) {
+    // get the second of the tuple, this is the reuslts
+    const auto& results = std::get<1>(tuple);
+
+    // the first value of results is the success bool
+    const auto& success = results[0];
+    if (success == "true") {
+      // the second value of results is the balance
+      const auto& balance = results[1];
+      balances.push_back(balance);
+    } else {
+      balances.push_back(absl::nullopt);
+    }
+  }
+
+  return balances;
 }
 
 absl::optional<std::string> ParseEthEstimateGas(const base::Value& json_value) {
