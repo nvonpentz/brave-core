@@ -8,7 +8,9 @@
 #include <limits>
 #include <map>
 #include <tuple>
+#include <utility>
 
+#include "base/logging.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -292,6 +294,55 @@ ABIDecode(const std::vector<std::string>& types,
   // Extra calldata bytes are ignored.
 
   return std::make_tuple(params, args);
+}
+
+absl::optional<std::vector<std::tuple<std::vector<std::string>,    // params
+                                      std::vector<std::string>>>>  // args
+ABIDecodeBalanceScannerResult(const std::vector<uint8_t>& data) {
+  // Decode first 32 bytes to get the offset of the length of the results
+  // array.
+  auto offset = GetSizeFromData(data, 0);
+  if (!offset) {
+    return absl::nullopt;
+  }
+
+  // Decode the length of the results array.
+  auto array_len = GetSizeFromData(data, *offset);
+  if (!array_len) {
+    return absl::nullopt;
+  }
+
+  // Increment the offset 32 bytes to get the offset of the first result.
+  *offset += 32;
+
+  // Decode each result in the array.
+  std::vector<std::tuple<std::vector<std::string>, std::vector<std::string>>>
+      results;
+  for (size_t i = 0; i < *array_len; i++) {
+    // Get the offset corresponding to the offset of the start of the element
+    // Should be 64 for if i = 0, 96 for if i = 1, etc.
+    auto element_offset = GetSizeFromData(data, *offset + (i * 32));
+    if (!element_offset) {
+      return absl::nullopt;
+    }
+
+    // Add the overall offset to get the offset of
+    // the start of the element
+    *element_offset += *offset;
+
+    // Take subset of data
+    std::vector<uint8_t> element_data(data.begin() + *element_offset,
+                                      data.end());
+    // Decode the element.
+    auto result = ABIDecode({"bool", "bytes"}, element_data);
+    if (!result) {
+      return absl::nullopt;
+    }
+
+    results.push_back(*result);
+  }
+
+  return results;
 }
 
 }  // namespace brave_wallet

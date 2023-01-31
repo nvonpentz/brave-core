@@ -21,6 +21,10 @@ absl::optional<std::tuple<std::vector<std::string>,   // tx_params
 ABIDecode(const std::vector<std::string>& types,
           const std::vector<uint8_t>& data);
 
+absl::optional<std::vector<std::tuple<std::vector<std::string>,    // types
+                                      std::vector<std::string>>>>  // values
+ABIDecodeBalanceScannerResult(const std::vector<uint8_t>& data);
+
 }  // namespace brave_wallet
 
 #endif  // BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_ETH_ABI_DECODER_H_
