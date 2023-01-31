@@ -1017,6 +1017,12 @@ interface JsonRpcService {
                        string address,
                        string chain_id) => (string balance, ProviderError error, string error_message);
 
+  GetERC20TokenBalances(array<string> contracts,
+                        string address,
+                        string chain_id) => (array<string?> balances,
+                                             ProviderError error,
+                                             string error_message);
+
   // Obtains the contract's ERC20 allowance for an owner and a spender
   GetERC20TokenAllowance(string contract,
                          string owner_address, string spender_address) => (string allowance, ProviderError error, string error_message);

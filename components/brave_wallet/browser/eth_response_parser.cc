@@ -187,7 +187,9 @@ absl::optional<std::string> ParseEthCall(const base::Value& json_value) {
   return ParseSingleStringResult(json_value);
 }
 
-absl::optional<std::vector<std::string>> DecodeEthCallResponse(
+absl::optional<std::vector<std::string>>
+DecodeEthCallResponse(  // returns "args" a list of decoded values corresponding
+                        // to the types list
     const std::string& data,
     const std::vector<std::string>& abi_types) {
   std::vector<uint8_t> response_bytes;
@@ -203,6 +205,38 @@ absl::optional<std::vector<std::string>> DecodeEthCallResponse(
     return absl::nullopt;
 
   return args;
+}
+
+absl::optional<std::vector<absl::optional<std::string>>>
+DecodeGetERC20TokenBalancesEthCallResponse(const std::string& data) {
+  std::vector<uint8_t> response_bytes;
+  if (!PrefixedHexStringToBytes(data, &response_bytes)) {
+    return absl::nullopt;
+  }
+
+  absl::optional<std::vector<
+      std::tuple<std::vector<std::string>, std::vector<std::string>>>>
+      decoded = ABIDecodeBalanceScannerResult(response_bytes);
+
+  if (decoded == absl::nullopt) {
+    return absl::nullopt;
+  }
+
+  // Loop through the decoded values, and add the balance
+  // if successful, otherwise null optional
+  std::vector<absl::optional<std::string>> balances;
+  for (const auto& tuple : *decoded) {
+    const auto& values = std::get<1>(tuple);
+    const auto& success = values[0];
+    if (success == "true") {
+      const auto& balance = values[1];
+      balances.push_back(balance);
+    } else {
+      balances.push_back(absl::nullopt);
+    }
+  }
+
+  return balances;
 }
 
 absl::optional<std::string> ParseEthEstimateGas(const base::Value& json_value) {
