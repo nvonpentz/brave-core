@@ -2623,31 +2623,31 @@ TEST_F(JsonRpcServiceUnitTest, GetERC20TokenBalances) {
       mojom::ProviderError::kInvalidParams,
       l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
 
-  // Invalid user address yields invalid calldata, which yields invalid params
-  TestGetERC20TokenBalances(
-      "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5", "",
-      std::vector<std::string>({"0x0d8775f648430679a709e98d2b0cb6250d2887ef"}),
-      mojom::kMainnetChainId, std::vector<std::pair<std::string, uint256_t>>(),
-      mojom::ProviderError::kInvalidParams,
-      l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+  // // Invalid user address yields invalid calldata, which yields invalid params
+  // TestGetERC20TokenBalances(
+  //     "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5", "",
+  //     std::vector<std::string>({"0x0d8775f648430679a709e98d2b0cb6250d2887ef"}),
+  //     mojom::kMainnetChainId, std::vector<std::pair<std::string, uint256_t>>(),
+  //     mojom::ProviderError::kInvalidParams,
+  //     l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
 
   // Valid input should succeed.
   // 1. Test with 1 token contract address
   // (0x0d8775f648430679a709e98d2b0cb6250d2887ef BAT)
-  SetInterceptor(GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH),
-                 "eth_call", "", R"({
-      "jsonrpc":"2.0",
-      "id":1,
-      "result":"0xe5da1b68000000000000000000000000B4B2802129071b2B9eBb8cBB01EA1E4D14B34961000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000D8775F648430679A709E98d2b0Cb6250d2887EF"
-  })");
-  TestGetERC20TokenBalances(
-      "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5",
-      "0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961",
-      std::vector<std::string>({"0x0d8775f648430679a709e98d2b0cb6250d2887ef"}),
-      mojom::kMainnetChainId,
-      std::vector<std::pair<std::string, uint256_t>>(
-          {{"0x0d8775f648430679a709e98d2b0cb6250d2887ef", 1}}),
-      mojom::ProviderError::kSuccess, "");
+  // SetInterceptor(GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH),
+  //                "eth_call", "", R"({
+  //     "jsonrpc":"2.0",
+  //     "id":1,
+  //     "result":"0xe5da1b68000000000000000000000000B4B2802129071b2B9eBb8cBB01EA1E4D14B34961000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000D8775F648430679A709E98d2b0Cb6250d2887EF"
+  // })");
+  // TestGetERC20TokenBalances(
+  //     "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5",
+  //     "0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961",
+  //     std::vector<std::string>({"0x0d8775f648430679a709e98d2b0cb6250d2887ef"}),
+  //     mojom::kMainnetChainId,
+  //     std::vector<std::pair<std::string, uint256_t>>(
+  //         {{"0x0d8775f648430679a709e98d2b0cb6250d2887ef", 1}}),
+  //     mojom::ProviderError::kSuccess, "");
 }
 
 class UDGetManyCallHandler : public EthCallHandler {

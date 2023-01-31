@@ -1153,12 +1153,19 @@ void JsonRpcService::GetERC20TokenBalances(
     const std::vector<std::string>& token_contract_addresses,
     const std::string& chain_id,
     GetERC20TokenBalancesCallback callback) {
-  if (token_contract_addresses.empty()) {
+  VLOG(0) << "0 JsonRpcService::GetERC20TokenBalances "
+          << balance_scanner_contract_address << " " << user_address << " "
+          << token_contract_addresses.size() << " " << chain_id;
+  if (token_contract_addresses.empty() || user_address.empty() ||
+      balance_scanner_contract_address.empty()) {
+    VLOG(0) << "1 JsonRpcService::GetERC20TokenBalances";
     std::move(callback).Run(
         {}, mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
     return;
   }
+
+  // TODO Fetch balance scanner contract from config (client should not need to supply this).
 
   absl::optional<std::string> calldata =
       asset_discovery::TokensBalance(user_address, token_contract_addresses);
@@ -1181,18 +1188,17 @@ void JsonRpcService::GetERC20TokenBalances(
   // Makes the eth_call request to the balance scanner contract.
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC20TokenBalances,
-                     weak_ptr_factory_.GetWeakPtr(), std::move(callback));
+                     weak_ptr_factory_.GetWeakPtr(), token_contract_addresses,
+                     std::move(callback));
   RequestInternal(eth::eth_call("", balance_scanner_contract_address, "", "",
                                 "", calldata.value(), kEthereumBlockTagLatest),
                   true, network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetERC20TokenBalances(
+    const std::vector<std::string>& token_contract_addresses,
     GetERC20TokenBalancesCallback callback,
     APIRequestResult api_request_result) {
-  VLOG(0) << "JsonRpcService::OnGetERC20TokenBalances 0, "
-             "api_request_result.value_body() = "
-          << api_request_result.value_body();
   if (!api_request_result.Is2XXResponseCode()) {
     std::move(callback).Run(
         {}, mojom::ProviderError::kInternalError,
@@ -1209,14 +1215,14 @@ void JsonRpcService::OnGetERC20TokenBalances(
     // std::move(callback).Run("", error, error_message);
     return;
   }
-
-  // const auto& args = eth::DecodeEthCallResponse(*result, {"uint256"});
-  // if (args == absl::nullopt) {
-  //   std::move(callback).Run(
-  //       "", mojom::ProviderError::kInternalError,
-  //       l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
-  //   return;
-  // }
+  absl::optional<std::vector<std::vector<std::string>>> args =
+    eth::DecodeGetERC20TokenBalancesEthCallResponse(*result);
+  if (args == absl::nullopt) {
+    // std::move(callback).Run(
+    //     "", mojom::ProviderError::kInternalError,
+    //     l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
+    return;
+  }
 
   // TODO Parse the eth_call response and returns the balances
   // as a vector of pairs of (success, balance).

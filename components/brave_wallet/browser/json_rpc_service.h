@@ -468,7 +468,8 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                               APIRequestResult api_request_result);
   void OnGetERC20TokenAllowance(GetERC20TokenAllowanceCallback callback,
                                 APIRequestResult api_request_result);
-  void OnGetERC20TokenBalances(GetERC20TokenBalancesCallback callback,
+  void OnGetERC20TokenBalances(const std::vector<std::string>& token_contract_addresses,
+                               GetERC20TokenBalancesCallback callback,
                                APIRequestResult api_request_result);
   void OnUnstoppableDomainsResolveDns(const std::string& domain,
                                       const std::string& chain_id,
