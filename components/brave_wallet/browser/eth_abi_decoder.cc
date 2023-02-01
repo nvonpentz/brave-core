@@ -8,9 +8,7 @@
 #include <limits>
 #include <map>
 #include <tuple>
-#include <utility>
 
-#include "base/logging.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -330,7 +328,7 @@ ABIDecodeBalanceScannerResult(const std::vector<uint8_t>& data) {
     // the start of the element
     *element_offset += *offset;
 
-    // Take subset of data
+    // Take subset of data corresponding to the element
     std::vector<uint8_t> element_data(data.begin() + *element_offset,
                                       data.end());
     // Decode the element.
