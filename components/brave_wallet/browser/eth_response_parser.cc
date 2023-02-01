@@ -5,6 +5,7 @@
 
 #include "brave/components/brave_wallet/browser/eth_response_parser.h"
 
+#include <tuple>
 #include <utility>
 
 #include "base/strings/string_number_conversions.h"
