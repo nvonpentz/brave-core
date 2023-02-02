@@ -15,6 +15,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "brave/components/api_request_helper/api_request_helper.h"
+#include "brave/components/brave_wallet/browser/blockchain_list_parser.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "brave/components/brave_wallet/common/solana_address.h"
@@ -116,6 +117,9 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
                          const std::string& from_block,
                          const std::string& to_block);
 
+  void DiscoverEthAssetsV2(const std::vector<std::string>& account_addresses,
+                           bool triggered_by_accounts_added);
+
   void OnGetEthTokenRegistry(const std::string& chain_id,
                              const std::vector<std::string>& account_addresses,
                              std::vector<mojom::BlockchainTokenPtr> user_assets,
@@ -123,6 +127,15 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
                              const std::string& from_block,
                              const std::string& to_block,
                              std::vector<mojom::BlockchainTokenPtr> token_list);
+
+  void OnGetEthTokenRegistryV2(const std::vector<std::string>& account_addresses,
+                               std::vector<mojom::BlockchainTokenPtr> user_assets,
+                               bool triggered_by_accounts_added,
+                               TokenListMap token_list_map);
+
+  void OnGetERC20TokenBalancesV2(
+    base::OnceCallback<void(std::vector<std::string>)> barrier_callback,
+    bool triggered_by_accounts_added);
 
   void OnGetTokenTransferLogs(
       base::flat_map<std::string, mojom::BlockchainTokenPtr>& tokens_to_search,

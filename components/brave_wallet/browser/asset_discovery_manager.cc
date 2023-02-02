@@ -48,6 +48,8 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedEthChains() {
   if (supported_chains_for_testing_.size() > 0) {
     return supported_chains_for_testing_;
   }
+  // TODO should probably just use the keys of the mapping from
+  // chainIDs to Balance Scanner contract addresses
   static base::NoDestructor<std::vector<std::string>>
       asset_discovery_supported_chains({mojom::kMainnetChainId});
   return *asset_discovery_supported_chains;
@@ -373,6 +375,137 @@ void AssetDiscoveryManager::OnGetTokenTransferLogs(
                          mojom::ProviderError::kSuccess, "",
                          triggered_by_accounts_added);
 }
+
+void AssetDiscoveryManager::DiscoverEthAssetsV2(const std::vector<std::string>& account_addresses,
+                         bool triggered_by_accounts_added) {
+  if (account_addresses.empty()) {
+    CompleteDiscoverAssets(
+        "FIXME", std::vector<mojom::BlockchainTokenPtr>(),
+        mojom::ProviderError::kInvalidParams,
+        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
+        triggered_by_accounts_added);
+    return;
+  }
+
+  std::vector<mojom::BlockchainTokenPtr> user_assets =
+      BraveWalletService::GetUserAssets(prefs_);
+  auto internal_callback =
+      base::BindOnce(&AssetDiscoveryManager::OnGetEthTokenRegistryV2,
+                     weak_ptr_factory_.GetWeakPtr(),
+                     account_addresses, std::move(user_assets),
+                     triggered_by_accounts_added);
+
+  BlockchainRegistry::GetInstance()->GetTokenListMap(
+      GetAssetDiscoverySupportedEthChains(),
+      mojom::CoinType::ETH,
+      std::move(internal_callback));
+}
+
+void AssetDiscoveryManager::OnGetEthTokenRegistryV2(
+    const std::vector<std::string>& account_addresses,
+    std::vector<mojom::BlockchainTokenPtr> user_assets,
+    bool triggered_by_accounts_added,
+    base::flat_map<std::string, std::vector<mojom::BlockchainTokenPtr>> token_list_map) {
+  // Create a map of chain_ids -> list of tokens to search, which is
+  // all tokens in the registry that are not already in the user's
+  // wallet
+  //
+  // But first, create a flat_set of all contract addresses in the user's
+  // wallet so we can quickly check if a token is already in the wallet
+  // when we iterate through the registry
+  base::flat_set<std::string> user_asset_addresses;
+  for (const auto& token : user_assets) {
+    user_asset_addresses.insert(base::ToLowerASCII(token->contract_address));
+  }
+
+  // Now create the map of chain_ids -> list of tokens to search
+  base::flat_map<std::string, std::vector<mojom::BlockchainTokenPtr>>
+      tokens_to_search;
+  for (const auto& [chain_id, token_list] : token_list_map) {
+    for (const auto& token : token_list) {
+      // Skip tokens that are already in the user's wallet
+      if (user_asset_addresses.contains(
+              base::ToLowerASCII(token->contract_address))) {
+        continue;
+      }
+      // Add token to list of tokens to search
+      tokens_to_search[chain_id].push_back(token.Clone());
+    }
+  }
+
+  // Use a barrier callback to wait for all GetERC20TokenBalance calls to complete
+  // (one for each account address).
+
+  // const auto barrier_callback =
+  //     base::BarrierCallback<std::vector<std::string>>(account_addresses.size(),
+  //                          base::BindOnce(
+  //                              &AssetDiscoveryManager::OnGetERC20TokenBalancesV2,
+  //                              weak_ptr_factory_.GetWeakPtr(),
+  //                              triggered_by_accounts_added));
+  // for each account
+  //  for each chain id
+  //    call GetERC20TokenBalance
+  // for (const auto& account_address : account_addresses) {
+  //   for (const auto& [chain_id, token_list] : tokens_to_search) {
+  //     auto internal_callback =
+  //         base::BindOnce(&AssetDiscoveryManager::OnGetERC20TokenBalancesV2,
+  //                        weak_ptr_factory_.GetWeakPtr(), barrier_callback);
+
+  //     json_rpc_service_->GetERC20TokenBalances(
+  //        token_list, account_address, chain_id, std::move(internal_callback));
+  //   }
+  // }
+}
+
+void AssetDiscoveryManager::OnGetERC20TokenBalancesV2(
+    base::OnceCallback<void(std::vector<std::string>)> barrier_callback,
+    bool triggered_by_accounts_added) {
+}
+
+// void AssetDiscoveryManager::MergeDiscoveredEthAssets(
+//     const std::vector<std::string>& account_addresses, // should be a vector of vectors of strings or blockchain tokens (not sure)
+//     std::vector<mojom::BlockchainTokenPtr> user_assets,
+//     base::flat_map<std::string, std::vector<mojom::BlockchainTokenPtr>>
+//         tokens_to_search,
+//     base::flat_map<std::string, std::vector<mojom::BlockchainTokenBalancePtr>>
+//         token_balances) {
+//   // // Merge the discovered assets with the user's assets
+//   // std::vector<mojom::BlockchainTokenPtr> discovered_assets;
+//   // for (const auto& [chain_id, token_list] : tokens_to_search) {
+//   //   for (const auto& token : token_list) {
+//   //     // Skip tokens that are already in the user's wallet
+//   //     if (base::Contains(user_assets, token)) {
+//   //       continue;
+//   //     }
+//   //     // Skip tokens that have a balance of 0
+//   //     if (!token_balances.contains(token->contract_address)) {
+//   //       continue;
+//   //     }
+//   //     const auto& balances = token_balances.at(token->contract_address);
+//   //     bool has_balance = false;
+//   //     for (const auto& balance : balances) {
+//   //       if (balance->balance != "0") {
+//   //         has_balance = true;
+//   //         break;
+//   //       }
+//   //     }
+//   //     if (!has_balance) {
+//   //       continue;
+//   //     }
+//   //     // Add token to list of discovered assets
+//   //     discovered_assets.push_back(token.Clone());
+//   //   }
+//   // }
+
+//   // // Add the discovered assets to the user's assets
+//   // for (const auto& token : discovered_assets) {
+//   //   BraveWalletService::AddUserAsset(token.Clone(), prefs_);
+//   // }
+
+//   // CompleteDiscoverAssets("FIXME", std::move(discovered_assets),
+//   //                        mojom::ProviderError::kSuccess, "",
+//   //                        triggered_by_accounts_added);
+// }
 
 void AssetDiscoveryManager::CompleteDiscoverAssets(
     const std::string& chain_id,
