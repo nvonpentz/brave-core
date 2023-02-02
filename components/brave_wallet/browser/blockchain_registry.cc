@@ -116,14 +116,13 @@ void BlockchainRegistry::GetAllTokens(const std::string& chain_id,
   std::move(callback).Run(std::move(tokens_copy));
 }
 
-void BlockchainRegistry::GetTokenListMap(
+void BlockchainRegistry::GetEthTokenListMap(
     const std::vector<std::string>& chain_ids,
-    mojom::CoinType coin,
-    GetTokenListMapCallback callback) {
+    GetEthTokenListMapCallback callback) {
   // Create a copy of token_list_map with only the chain_ids we want
   TokenListMap token_list_map_copy;
   for (const auto& chain_id : chain_ids) {
-    const auto key = GetTokenListKey(coin, chain_id);
+    const auto key = GetTokenListKey(mojom::CoinType::ETH, chain_id);
     // Skip if the key is not in the map.
     if (!token_list_map_.contains(key)) {
       continue;
@@ -139,7 +138,7 @@ void BlockchainRegistry::GetTokenListMap(
             -> brave_wallet::mojom::BlockchainTokenPtr {
           return current_token.Clone();
         });
-    token_list_map_copy[key] = std::move(tokens_copy);
+    token_list_map_copy[chain_id] = std::move(tokens_copy);
   }
   std::move(callback).Run(std::move(token_list_map_copy));
 }

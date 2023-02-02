@@ -527,7 +527,7 @@ TEST(BlockchainRegistryUnitTest, GetPrepopulatedNetworksKnownOnesArePreferred) {
   EXPECT_EQ(found_networks[0]->chain_name, "Ethereum Mainnet");
 }
 
-TEST(BlockchainRegistryUnitTest, GetTokenListMap) {
+TEST(BlockchainRegistryUnitTest, GetEthTokenListMap) {
   base::test::TaskEnvironment task_environment;
   auto* registry = BlockchainRegistry::GetInstance();
   TokenListMap token_list_map;
@@ -539,13 +539,11 @@ TEST(BlockchainRegistryUnitTest, GetTokenListMap) {
   // For example, make sure nothing is std::move'd
   for (size_t i = 0; i < 2; i++) {
     base::RunLoop run_loop;
-    registry->GetTokenListMap(
-        {mojom::kMainnetChainId}, mojom::CoinType::ETH,
+    registry->GetEthTokenListMap(
+        {mojom::kMainnetChainId},
         base::BindLambdaForTesting([&](TokenListMap token_list) {
           EXPECT_EQ(token_list.size(), 1UL);
-          const auto key =
-              GetTokenListKey(mojom::CoinType::ETH, mojom::kMainnetChainId);
-          EXPECT_EQ(token_list[key].size(), 2UL);
+          EXPECT_EQ(token_list[mojom::kMainnetChainId].size(), 2UL);
           run_loop.Quit();
         }));
     run_loop.Run();
