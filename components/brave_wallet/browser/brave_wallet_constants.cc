@@ -558,12 +558,16 @@ const base::flat_map<std::string, std::string>&
 GetEthBalanceScannerContractAddresses() {
   static base::NoDestructor<base::flat_map<std::string, std::string>>
       contract_addresses(
+          // Mainnet, Polygon, and Avalanche conctract addresses pulled from
+          // https://github.com/MyCryptoHQ/eth-scan
           {{brave_wallet::mojom::kMainnetChainId,
             "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5"},
-           // {brave_wallet::mojom::kPolygonMainnetChainId,
-           // "TODO"},
-           // {brave_wallet::mojom::kAvalancheMainnetChainId,
-           // "TODO"},
+           {brave_wallet::mojom::kPolygonMainnetChainId,
+            "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5"},
+           {brave_wallet::mojom::kAvalancheMainnetChainId,
+            "0x08A8fDBddc160A7d5b957256b903dCAb1aE512C5"},
+           // BSC, Optimism, and Arbitrum contract addresses pulled from
+           // https://github.com/onyb/x/blob/75800edce88688dcfe59dd6b4a664087862369bb/core/evm/scanner/balances/EVMScanner.ts
            {brave_wallet::mojom::kBinanceSmartChainMainnetChainId,
             "0x53242a975aa7c607e17138b0e0231162e3e68593"},
            {brave_wallet::mojom::kOptimismMainnetChainId,
