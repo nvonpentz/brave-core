@@ -403,7 +403,7 @@ void AssetDiscoveryManager::DiscoverEthAssetsV2(const std::vector<std::string>& 
 
 void AssetDiscoveryManager::OnGetEthTokenRegistryV2(
     const std::vector<std::string>& account_addresses,
-    std::vector<mojom::BlockchainTokenPtr> user_assets,
+    const std::vector<mojom::BlockchainTokenPtr>& user_assets,
     bool triggered_by_accounts_added,
     base::flat_map<std::string, std::vector<mojom::BlockchainTokenPtr>> token_list_map) {
   // Create a map of chain_ids -> list of tokens to search, which is
@@ -436,76 +436,53 @@ void AssetDiscoveryManager::OnGetEthTokenRegistryV2(
   // Use a barrier callback to wait for all GetERC20TokenBalance calls to complete
   // (one for each account address).
 
-  // const auto barrier_callback =
-  //     base::BarrierCallback<std::vector<std::string>>(account_addresses.size(),
-  //                          base::BindOnce(
-  //                              &AssetDiscoveryManager::OnGetERC20TokenBalancesV2,
-  //                              weak_ptr_factory_.GetWeakPtr(),
-  //                              triggered_by_accounts_added));
+  const auto barrier_callback =
+      base::BarrierCallback<std::vector<mojom::BlockchainTokenPtr>>(account_addresses.size(),
+                           base::BindOnce(
+                               &AssetDiscoveryManager::MergeDiscoveredEthAssetsV2,
+                               weak_ptr_factory_.GetWeakPtr(),
+                               triggered_by_accounts_added));
+  
   // for each account
   //  for each chain id
   //    call GetERC20TokenBalance
-  // for (const auto& account_address : account_addresses) {
-  //   for (const auto& [chain_id, token_list] : tokens_to_search) {
-  //     auto internal_callback =
-  //         base::BindOnce(&AssetDiscoveryManager::OnGetERC20TokenBalancesV2,
-  //                        weak_ptr_factory_.GetWeakPtr(), barrier_callback);
-
-  //     json_rpc_service_->GetERC20TokenBalances(
-  //        token_list, account_address, chain_id, std::move(internal_callback));
-  //   }
-  // }
+  for (const auto& account_address : account_addresses) {
+    // VLOG(1) << "DiscoverEthAssetsV2: account_address=" << account_address;
+    for (const auto& [chain_id, token_list] : tokens_to_search) {
+      // VLOG(0) << "chain_id: " << chain_id << " token_list.size(): " << token_list.size();
+      auto internal_callback =
+          base::BindOnce(&AssetDiscoveryManager::OnGetERC20TokenBalancesV2,
+                         weak_ptr_factory_.GetWeakPtr(), barrier_callback,
+                         triggered_by_accounts_added, token_list);
+      // TODO make token list just a vector of contract addresses (std::string)
+      // json_rpc_service_->GetERC20TokenBalances(
+      //    token_list, account_address, chain_id, std::move(internal_callback));
+      json_rpc_service_->GetERC20TokenBalances(
+          {}, account_address, chain_id, std::move(internal_callback));
+    }
+  }
 }
 
 void AssetDiscoveryManager::OnGetERC20TokenBalancesV2(
-    base::OnceCallback<void(std::vector<std::string>)> barrier_callback,
-    bool triggered_by_accounts_added) {
+    base::OnceCallback<void(std::vector<mojom::BlockchainTokenPtr>)> barrier_callback,
+    bool triggered_by_accounts_added,
+    // const std::vector<mojom::BlockchainTokenPtr>& searched_tokens,
+    const std::vector<mojom::BlockchainTokenPtr>& searched_tokens,
+    const std::vector<absl::optional<std::string>>& balances,
+    mojom::ProviderError error,
+    const std::string& error_message) {
+  // Check error first
+
+  // TODO Iterate through balances and add any tokens with a non-zero balance
+  // then call barrier_callback.Run()
 }
 
-// void AssetDiscoveryManager::MergeDiscoveredEthAssets(
-//     const std::vector<std::string>& account_addresses, // should be a vector of vectors of strings or blockchain tokens (not sure)
-//     std::vector<mojom::BlockchainTokenPtr> user_assets,
-//     base::flat_map<std::string, std::vector<mojom::BlockchainTokenPtr>>
-//         tokens_to_search,
-//     base::flat_map<std::string, std::vector<mojom::BlockchainTokenBalancePtr>>
-//         token_balances) {
-//   // // Merge the discovered assets with the user's assets
-//   // std::vector<mojom::BlockchainTokenPtr> discovered_assets;
-//   // for (const auto& [chain_id, token_list] : tokens_to_search) {
-//   //   for (const auto& token : token_list) {
-//   //     // Skip tokens that are already in the user's wallet
-//   //     if (base::Contains(user_assets, token)) {
-//   //       continue;
-//   //     }
-//   //     // Skip tokens that have a balance of 0
-//   //     if (!token_balances.contains(token->contract_address)) {
-//   //       continue;
-//   //     }
-//   //     const auto& balances = token_balances.at(token->contract_address);
-//   //     bool has_balance = false;
-//   //     for (const auto& balance : balances) {
-//   //       if (balance->balance != "0") {
-//   //         has_balance = true;
-//   //         break;
-//   //       }
-//   //     }
-//   //     if (!has_balance) {
-//   //       continue;
-//   //     }
-//   //     // Add token to list of discovered assets
-//   //     discovered_assets.push_back(token.Clone());
-//   //   }
-//   // }
-
-//   // // Add the discovered assets to the user's assets
-//   // for (const auto& token : discovered_assets) {
-//   //   BraveWalletService::AddUserAsset(token.Clone(), prefs_);
-//   // }
-
-//   // CompleteDiscoverAssets("FIXME", std::move(discovered_assets),
-//   //                        mojom::ProviderError::kSuccess, "",
-//   //                        triggered_by_accounts_added);
-// }
+void AssetDiscoveryManager::MergeDiscoveredEthAssetsV2(
+    bool triggered_by_accounts_added,
+    const std::vector<std::vector<mojom::BlockchainTokenPtr>>& discovered_contract_addresses) {
+  // 1. De dupe the BlockchainTokenPtrs
+  // 2. Add the BlockchainTokenPtrs to the user's wallet
+}
 
 void AssetDiscoveryManager::CompleteDiscoverAssets(
     const std::string& chain_id,
