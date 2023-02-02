@@ -128,23 +128,31 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
                              const std::string& to_block,
                              std::vector<mojom::BlockchainTokenPtr> token_list);
 
-  void OnGetEthTokenRegistryV2(const std::vector<std::string>& account_addresses,
-                               const std::vector<mojom::BlockchainTokenPtr>& user_assets,
-                               bool triggered_by_accounts_added,
-                               TokenListMap token_list_map);
+  void OnGetEthTokenRegistryV2(
+      const std::vector<std::string>& account_addresses,
+      const std::vector<mojom::BlockchainTokenPtr>& user_assets,
+      bool triggered_by_accounts_added,
+      TokenListMap token_list_map);
 
   void OnGetERC20TokenBalancesV2(
-      base::OnceCallback<void(std::vector<mojom::BlockchainTokenPtr>)> barrier_callback,
+      base::OnceCallback<void(std::map<std::string, std::vector<std::string>>)>
+          barrier_callback,
+      const std::string& chain_id,
       bool triggered_by_accounts_added,
+      const std::vector<std::string>& contract_addresses,
       // const std::vector<mojom::BlockchainTokenPtr>& searched_tokens,
-      const std::vector<mojom::BlockchainTokenPtr>& searched_tokens,
+      // const std::vector<mojom::BlockchainTokenPtr>& searched_tokens,
       const std::vector<absl::optional<std::string>>& balances,
       mojom::ProviderError error,
       const std::string& error_message);
 
   void MergeDiscoveredEthAssetsV2(
-    bool triggered_by_accounts_added,
-    const std::vector<std::vector<mojom::BlockchainTokenPtr>>& discovered_contract_addresses);
+      base::flat_map<std::string,
+                     base::flat_map<std::string, mojom::BlockchainTokenPtr>>
+          chain_id_to_contract_address_to_token,
+      bool triggered_by_accounts_added,
+      const std::vector<std::map<std::string, std::vector<std::string>>>
+          discovered_assets);
 
   void OnGetTokenTransferLogs(
       base::flat_map<std::string, mojom::BlockchainTokenPtr>& tokens_to_search,
