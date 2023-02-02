@@ -1172,7 +1172,7 @@ void JsonRpcService::GetERC20TokenBalances(
   }
 
   absl::optional<std::string> calldata =
-      asset_discovery::TokensBalance(user_address, token_contract_addresses);
+      balance_scanner::TokensBalance(user_address, token_contract_addresses);
   if (!calldata) {
     std::move(callback).Run(
         {}, mojom::ProviderError::kInvalidParams,

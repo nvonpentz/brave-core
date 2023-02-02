@@ -522,7 +522,7 @@ TEST(EthCallDataBuilderTest, DnsEncode) {
 
 }  // namespace ens
 
-namespace asset_discovery {
+namespace balance_scanner {
 
 TEST(EthCallDataBuilderTest, TokensBalance) {
   // Invalid owner address is invalid
@@ -559,6 +559,6 @@ TEST(EthCallDataBuilderTest, TokensBalance) {
       "00A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 }
 
-}  // namespace asset_discovery
+}  // namespace balance_scanner
 
 }  // namespace brave_wallet

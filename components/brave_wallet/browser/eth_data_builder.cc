@@ -450,7 +450,7 @@ absl::optional<std::vector<uint8_t>> DnsEncode(const std::string& dotted_name) {
 
 }  // namespace ens
 
-namespace asset_discovery {
+namespace balance_scanner {
 
 absl::optional<std::string> TokensBalance(
     const std::string& owner_address,
@@ -498,6 +498,6 @@ absl::optional<std::string> TokensBalance(
   return data;
 }
 
-}  // namespace asset_discovery
+}  // namespace balance_scanner
 
 }  // namespace brave_wallet
