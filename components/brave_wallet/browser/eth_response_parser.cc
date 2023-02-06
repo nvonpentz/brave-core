@@ -215,10 +215,9 @@ DecodeGetERC20TokenBalancesEthCallResponse(const std::string& data) {
     return absl::nullopt;
   }
 
-  absl::optional<std::vector<
-      std::tuple<std::vector<std::string>, std::vector<std::string>>>>
-      decoded = ABIDecodeBalanceScannerResult(response_bytes);
-
+  // absl::optional<std::vector<std::pair<bool, std::vector<uint8_t>>>>
+  // ExtractBoolBytesTupleArray(Span data);
+  auto decoded = eth_abi::ExtractBoolBytesTupleArray(response_bytes);
   if (decoded == absl::nullopt) {
     return absl::nullopt;
   }
@@ -227,11 +226,9 @@ DecodeGetERC20TokenBalancesEthCallResponse(const std::string& data) {
   // if successful, otherwise null optional
   std::vector<absl::optional<std::string>> balances;
   for (const auto& tuple : *decoded) {
-    const auto& values = std::get<1>(tuple);
-    const auto& success = values[0];
-    if (success == "true") {
-      const auto& balance = values[1];
-      balances.push_back(balance);
+    if (tuple.first) {
+      // Convert bytes to hex
+      balances.push_back(ToHex(tuple.second));
     } else {
       balances.push_back(absl::nullopt);
     }

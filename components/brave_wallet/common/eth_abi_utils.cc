@@ -48,6 +48,11 @@ uint256_t BytesToUint256(Span32 data) {
   return result;
 }
 
+bool BytesToBool(Span32 data) {
+  auto value = BytesToUint256(data);
+  return value != 0;
+}
+
 absl::optional<size_t> BytesToSize(Span32 data) {
   auto result = BytesToUint256(data);
   if (result > std::numeric_limits<size_t>::max())
@@ -200,6 +205,67 @@ absl::optional<std::vector<std::string>> ExtractStringArray(Span string_array) {
       return absl::nullopt;
     result.emplace_back(std::move(*string));
   }
+  return result;
+}
+
+absl::optional<std::pair<bool, std::vector<uint8_t>>> ExtractBoolAndBytes(
+    Span data) {
+  auto bool_row = ExtractRow(data, 0);
+  if (!bool_row) {
+    return absl::nullopt;
+  }
+
+  auto bytes = ExtractBytesFromTuple(data, 1);
+  if (!bytes) {
+    return absl::nullopt;
+  }
+
+  return std::make_pair(BytesToBool(*bool_row), std::move(*bytes));
+}
+absl::optional<std::vector<std::pair<bool, std::vector<uint8_t>>>>
+ExtractBoolBytesTupleArray(Span data) {
+  // Get the length of the array.
+  auto array_size_offset_row = ExtractRow(data, 0);
+  if (!array_size_offset_row) {
+    return absl::nullopt;
+  }
+  absl::optional<size_t> offset = BytesToSize(*array_size_offset_row);
+  if (!offset || *offset > data.size()) {
+    return absl::nullopt;
+  }
+  auto array_size_row = ExtractRow(data, (*offset) / kRowLength);
+  if (!array_size_row) {
+    return absl::nullopt;
+  }
+  auto array_size = BytesToSize(*array_size_row);
+  if (!array_size || *array_size > PaddedRowCount(data.size())) {
+    return absl::nullopt;
+  }
+
+  // Increment the offset to the next row since size has been read.
+  *offset += kRowLength;
+
+  // Loop through each tuple in the array and decode.
+  std::vector<std::pair<bool, std::vector<uint8_t>>> result;
+  result.reserve(*array_size);
+  for (auto i = 0u; i < *array_size; ++i) {
+    auto tuple_offset_row =
+        ExtractRow(data, (*offset + (kRowLength * i)) / kRowLength);
+    if (!tuple_offset_row) {
+      return absl::nullopt;
+    }
+    auto tuple_offset = BytesToSize(*tuple_offset_row);
+    if (!tuple_offset || *tuple_offset > data.size()) {
+      return absl::nullopt;
+    }
+
+    auto tuple = ExtractBoolAndBytes(data.subspan(*tuple_offset + *offset));
+    if (!tuple) {
+      return absl::nullopt;
+    }
+    result.emplace_back(std::move(*tuple));
+  }
+
   return result;
 }
 
