@@ -424,6 +424,7 @@ bool BraveWalletService::AddUserAsset(mojom::BlockchainTokenPtr token) {
 
 void BraveWalletService::AddUserAsset(mojom::BlockchainTokenPtr token,
                                       AddUserAssetCallback callback) {
+  // TODO check NFT standard
   std::move(callback).Run(AddUserAsset(std::move(token)));
 }
 

@@ -2260,6 +2260,71 @@ void JsonRpcService::OnGetSupportsInterface(
                           "");
 }
 
+void JsonRpcService::GetNftStandard(
+    const std::string& contract_address,
+    const std::string& chain_id,
+    std::vector<std::string> remaining_interfaces,
+    GetNftStandardCallback callback) {
+  auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::ETH);
+  if (!EthAddress::IsValidAddress(contract_address) ||
+      !network_url.is_valid()) {
+    std::move(callback).Run(
+        absl::nullopt, mojom::ProviderError::kInvalidParams,
+        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+    return;
+  }
+
+  if (remaining_interfaces.empty()) {
+    std::move(callback).Run(
+        absl::nullopt, mojom::ProviderError::kInvalidParams,
+        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
+    return;
+  }
+
+  // Check the first interface in the list.
+  auto interface_id = remaining_interfaces.back();
+
+  // GetSupportsInterface to check if the contract supports the interface
+  auto internal_callback =
+      base::BindOnce(&JsonRpcService::OnGetNftStandard,
+                     weak_ptr_factory_.GetWeakPtr(), contract_address, chain_id,
+                     std::move(remaining_interfaces), std::move(callback));
+  GetSupportsInterface(contract_address, interface_id, chain_id,
+                       std::move(internal_callback));
+}
+
+void JsonRpcService::OnGetNftStandard(
+    const std::string& contract_address,
+    const std::string& chain_id,
+    std::vector<std::string> remaining_interfaces,
+    GetNftStandardCallback callback,
+    bool is_supported,
+    mojom::ProviderError error,
+    const std::string& error_message) {
+  if (error != mojom::ProviderError::kSuccess) {
+    std::move(callback).Run(absl::nullopt, error, error_message);
+    return;
+  }
+
+  // Get the interface that was checked, and remove it from the list.
+  auto interface_id_checked = remaining_interfaces.back();
+  remaining_interfaces.pop_back();
+
+  if (is_supported) {
+    std::move(callback).Run(interface_id_checked,
+                            mojom::ProviderError::kSuccess, "");
+    return;
+  }
+
+  // If the contract does not implement the interface, try the next one
+  if (remaining_interfaces.empty()) {
+    std::move(callback).Run(absl::nullopt, mojom::ProviderError::kSuccess, "");
+    return;
+  }
+  GetNftStandard(contract_address, chain_id, std::move(remaining_interfaces),
+                 std::move(callback));
+}
+
 void JsonRpcService::GetPendingSwitchChainRequests(
     GetPendingSwitchChainRequestsCallback callback) {
   std::vector<mojom::SwitchChainRequestPtr> requests;
