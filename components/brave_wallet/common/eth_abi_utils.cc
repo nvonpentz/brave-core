@@ -222,6 +222,7 @@ absl::optional<std::pair<bool, std::vector<uint8_t>>> ExtractBoolAndBytes(
 
   return std::make_pair(BytesToBool(*bool_row), std::move(*bytes));
 }
+
 absl::optional<std::vector<std::pair<bool, std::vector<uint8_t>>>>
 ExtractBoolBytesTupleArray(Span data) {
   // Get the length of the array.

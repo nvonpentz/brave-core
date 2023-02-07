@@ -1163,8 +1163,7 @@ void JsonRpcService::GetERC20TokenBalances(
   const auto& balance_scanner_contract_address =
       balance_scanner_contract_addresses.at(chain_id);
 
-  if (token_contract_addresses.empty() || user_address.empty() ||
-      balance_scanner_contract_address.empty()) {
+  if (token_contract_addresses.empty() || user_address.empty()) {
     std::move(callback).Run(
         {}, mojom::ProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
@@ -1192,9 +1191,9 @@ void JsonRpcService::GetERC20TokenBalances(
   auto internal_callback = base::BindOnce(
       &JsonRpcService::OnGetERC20TokenBalances, weak_ptr_factory_.GetWeakPtr(),
       token_contract_addresses, std::move(callback));
-  RequestInternal(eth::eth_call("", balance_scanner_contract_address, "", "",
-                                "", calldata.value(), kEthereumBlockTagLatest),
-                  true, network_url, std::move(internal_callback));
+  RequestInternal(
+      eth::eth_call(balance_scanner_contract_address, calldata.value()), true,
+      network_url, std::move(internal_callback));
 }
 
 void JsonRpcService::OnGetERC20TokenBalances(

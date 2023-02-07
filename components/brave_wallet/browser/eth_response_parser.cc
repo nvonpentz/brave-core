@@ -188,9 +188,7 @@ absl::optional<std::string> ParseEthCall(const base::Value& json_value) {
   return ParseSingleStringResult(json_value);
 }
 
-absl::optional<std::vector<std::string>>
-DecodeEthCallResponse(  // returns "args" a list of decoded values corresponding
-                        // to the types list
+absl::optional<std::vector<std::string>> DecodeEthCallResponse(
     const std::string& data,
     const std::vector<std::string>& abi_types) {
   std::vector<uint8_t> response_bytes;
@@ -215,8 +213,6 @@ DecodeGetERC20TokenBalancesEthCallResponse(const std::string& data) {
     return absl::nullopt;
   }
 
-  // absl::optional<std::vector<std::pair<bool, std::vector<uint8_t>>>>
-  // ExtractBoolBytesTupleArray(Span data);
   auto decoded = eth_abi::ExtractBoolBytesTupleArray(response_bytes);
   if (decoded == absl::nullopt) {
     return absl::nullopt;
