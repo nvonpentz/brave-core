@@ -1224,7 +1224,26 @@ void JsonRpcService::OnGetERC20TokenBalances(
     return;
   }
 
-  std::move(callback).Run(results.value(), mojom::ProviderError::kSuccess, "");
+  // The number of contract addresses supplied to the BalanceScanner
+  // should match the number of balances it returns
+  if (token_contract_addresses.size() != results->size()) {
+    std::move(callback).Run(
+        {}, mojom::ProviderError::kInternalError,
+        l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
+    return;
+  }
+
+  // Match up the balances with the contract addresses
+  std::vector<mojom::ERC20BalanceResultPtr> erc20_balance_results;
+  for (size_t i = 0; i < token_contract_addresses.size(); i++) {
+    auto erc20_balance_result = mojom::ERC20BalanceResult::New();
+    erc20_balance_result->contract_address = token_contract_addresses[i];
+    erc20_balance_result->balance = results->at(i);
+    erc20_balance_results.push_back(std::move(erc20_balance_result));
+  }
+
+  std::move(callback).Run(std::move(erc20_balance_results),
+                          mojom::ProviderError::kSuccess, "");
 }
 
 void JsonRpcService::EnsRegistryGetResolver(const std::string& domain,

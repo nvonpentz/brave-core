@@ -978,6 +978,11 @@ struct SolanaSendTransactionOptions {
   OptionalSkipPreflight? skip_preflight;
 };
 
+struct ERC20BalanceResult {
+  string contract_address;
+  string? balance;
+};
+
 // Deals with the ETH JSON RPC API, as well as things like the user's current
 // network.
 interface JsonRpcService {
@@ -1017,9 +1022,11 @@ interface JsonRpcService {
                        string address,
                        string chain_id) => (string balance, ProviderError error, string error_message);
 
+  // Fetches the balances of multiple ERC20 tokens for an address using a
+  // BalanceScanner contract
   GetERC20TokenBalances(array<string> contracts,
                         string address,
-                        string chain_id) => (array<string?> balances,
+                        string chain_id) => (array<ERC20BalanceResult> balances,
                                              ProviderError error,
                                              string error_message);
 
