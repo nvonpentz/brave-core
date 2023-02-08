@@ -213,7 +213,7 @@ DecodeGetERC20TokenBalancesEthCallResponse(const std::string& data) {
     return absl::nullopt;
   }
 
-  auto decoded = eth_abi::ExtractBoolBytesTupleArray(response_bytes);
+  auto decoded = eth_abi::ExtractBoolBytesArrayFromTuple(response_bytes, 0);
   if (decoded == absl::nullopt) {
     return absl::nullopt;
   }
