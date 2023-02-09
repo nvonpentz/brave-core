@@ -667,7 +667,6 @@ TEST(EthResponseParserUnitTest, ParseStringResult) {
       "id":1,
       "result":"0x00000000000000000000000000000007"
   })";
-  ;
   EXPECT_FALSE(eth::ParseStringResult(ParseJson(json), &value));
   EXPECT_TRUE(value.empty());
 }
