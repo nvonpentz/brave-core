@@ -791,10 +791,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, KeyringServiceObserver) {
       ParseTokenList(token_list_json, &token_list_map, mojom::CoinType::ETH));
   blockchain_registry->UpdateTokenList(std::move(token_list_map));
 
-  // RestoreWallet
-  // Mock an eth_getLogs response that includes
-  //  * DAI transfers to next account,
-  //  0xf81229FE54D8a20fBc1e1e2a3451D1c7489437Db (valid)
+  // RestoreWallet (restores 0xf81229FE54D8a20fBc1e1e2a3451D1c7489437Db)
   asset_discovery_manager_->SetSupportedChainsForTesting(
       {mojom::kMainnetChainId});
   std::vector<mojom::BlockchainTokenPtr> user_assets_before =
@@ -804,8 +801,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, KeyringServiceObserver) {
                  eth_balance_detected_response);
   keyring_service_->RestoreWallet(
       kMnemonic1, kPasswordBrave, false,
-      base::DoNothing());  // Creates account
-                           // 0xf81229FE54D8a20fBc1e1e2a3451D1c7489437Db
+      base::DoNothing());
   base::RunLoop().RunUntilIdle();
   std::vector<mojom::AccountInfoPtr> account_infos =
       keyring_service_->GetAccountInfosForKeyring(mojom::kDefaultKeyringId);

@@ -54,19 +54,13 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   void SelectedAccountChanged(mojom::CoinType coin) override {}
 
   using APIRequestResult = api_request_helper::APIRequestResult;
-  using EthGetLogsCallback =
-      base::OnceCallback<void(const std::vector<Log>& logs,
-                              base::Value rawlogs,
-                              mojom::ProviderError error,
-                              const std::string& error_message)>;
   using DiscoverAssetsCompletedCallbackForTesting =
       base::RepeatingCallback<void(
           std::vector<mojom::BlockchainTokenPtr> discovered_assets_for_chain)>;
 
   // Called by frontend via BraveWalletService.
   // Subject to client side rate limiting based on
-  // kBraveWalletLastDiscoveredAssetsAt pref value. Only runs eth_getLogs
-  // against block range between
+  // kBraveWalletLastDiscoveredAssetsAt pref value.
   // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest" for ETH chains.
   void DiscoverAssetsOnAllSupportedChainsRefresh(
       std::map<mojom::CoinType, std::vector<std::string>>& account_addresses);
@@ -134,15 +128,6 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       const std::vector<std::map<std::string, std::vector<std::string>>>
           discovered_assets);
 
-  void OnGetTokenTransferLogs(
-      base::flat_map<std::string, mojom::BlockchainTokenPtr>& tokens_to_search,
-      bool triggered_by_accounts_added,
-      const std::string& chain_id,
-      const std::vector<Log>& logs,
-      base::Value rawlogs,
-      mojom::ProviderError error,
-      const std::string& error_message);
-
   // CompleteDiscoverAssets signals that the discover assets request has
   // completed for a given chain_id
   void CompleteDiscoverAssets(
@@ -159,8 +144,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       bool triggered_by_accounts_added);
 
   // Triggered by when KeyringService emits AccountsAdded event.
-  // Rate limits will be ignored, and eth_getLogs query
-  // will run against all blocks, "earliest" to "latest".
+  // Rate limits will be ignored.
   void DiscoverAssetsOnAllSupportedChainsAccountsAdded(
       mojom::CoinType coin,
       const std::vector<std::string>& account_addresses);
