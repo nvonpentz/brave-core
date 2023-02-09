@@ -799,9 +799,8 @@ TEST_F(AssetDiscoveryManagerUnitTest, KeyringServiceObserver) {
                                         mojom::CoinType::ETH, GetPrefs());
   SetInterceptor(GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH),
                  eth_balance_detected_response);
-  keyring_service_->RestoreWallet(
-      kMnemonic1, kPasswordBrave, false,
-      base::DoNothing());
+  keyring_service_->RestoreWallet(kMnemonic1, kPasswordBrave, false,
+                                  base::DoNothing());
   base::RunLoop().RunUntilIdle();
   std::vector<mojom::AccountInfoPtr> account_infos =
       keyring_service_->GetAccountInfosForKeyring(mojom::kDefaultKeyringId);

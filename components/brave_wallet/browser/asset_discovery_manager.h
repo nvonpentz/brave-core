@@ -116,7 +116,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
       const std::string& chain_id,
       bool triggered_by_accounts_added,
       const std::vector<std::string>& contract_addresses,
-      const std::vector<absl::optional<std::string>>& balances,
+      std::vector<mojom::ERC20BalanceResultPtr> balance_results,
       mojom::ProviderError error,
       const std::string& error_message);
 

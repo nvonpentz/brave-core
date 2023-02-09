@@ -269,12 +269,11 @@ void AssetDiscoveryManager::OnGetERC20TokenBalances(
     bool triggered_by_accounts_added,
     const std::vector<std::string>&
         contract_addresses,  // Contract addresses queried for
-    const std::vector<absl::optional<std::string>>&
-        balances,  // Response of balances.  These should be of the same size
+    std::vector<mojom::ERC20BalanceResultPtr> balance_results,
     mojom::ProviderError error,
     const std::string& error_message) {
-  // If the request failed, return an empty
-  if (error != mojom::ProviderError::kSuccess || balances.empty()) {
+  // If the request failed, return an empty map
+  if (error != mojom::ProviderError::kSuccess || balance_results.empty()) {
     std::move(barrier_callback).Run({});
     return;
   }
@@ -284,11 +283,12 @@ void AssetDiscoveryManager::OnGetERC20TokenBalances(
   std::map<std::string, std::vector<std::string>>
       chain_id_to_contract_addresses_with_balance;
 
-  // Populate the map using the balances
-  for (size_t i = 0; i < balances.size(); i++) {
-    if (balances[i] && balances[i].value() !=
-                           "0x0000000000000000000000000000000000000000000000000"
-                           "000000000000000") {
+  // Populate the map using the balance_results
+  for (size_t i = 0; i < balance_results.size(); i++) {
+    if (balance_results[i]->balance.has_value() &&
+        balance_results[i]->balance !=
+            "0x000000000000000000000000000000000000000000000000000000000000000"
+            "0") {
       chain_id_to_contract_addresses_with_balance[chain_id].push_back(
           contract_addresses[i]);
     }
