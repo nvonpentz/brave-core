@@ -241,14 +241,14 @@ ExtractBoolBytesArrayFromTuple(Span data, size_t tuple_pos) {
 }
 
 absl::optional<std::vector<std::pair<bool, std::vector<uint8_t>>>>
-ExtractBoolBytesArray(Span string_array) {
+ExtractBoolBytesArray(Span tuple_array) {
   // Array is stored as size row and tuple of that size.
-  auto [tuple_size, tuple_header] = ExtractArrayInfo(string_array);
+  auto [tuple_size, tuple_header] = ExtractArrayInfo(tuple_array);
   if (!tuple_size) {
     return absl::nullopt;
   }
   // Row count in array is reasonable upper limit.
-  if (*tuple_size > PaddedRowCount(string_array.size())) {
+  if (*tuple_size > PaddedRowCount(tuple_array.size())) {
     return absl::nullopt;
   }
   if (*tuple_size == 0) {
@@ -258,7 +258,7 @@ ExtractBoolBytesArray(Span string_array) {
   std::vector<std::pair<bool, std::vector<uint8_t>>> result;
   result.reserve(*tuple_size);
   for (auto i = 0u; i < *tuple_size; ++i) {
-    // Each tuple head row contains offset to encoded string.
+    // Each tuple head row contains offset to encoded tuple.
     auto tuple_element_head = ExtractHeadFromTuple(tuple_header, i);
     if (!tuple_element_head) {
       return absl::nullopt;
