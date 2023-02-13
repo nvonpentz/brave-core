@@ -119,7 +119,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
                      base::flat_map<std::string, mojom::BlockchainTokenPtr>>
           chain_id_to_contract_address_to_token,
       bool triggered_by_accounts_added,
-      const std::vector<std::map<std::string, std::vector<std::string>>>
+      const std::vector<std::map<std::string, std::vector<std::string>>>&
           discovered_assets);
 
   // CompleteDiscoverAssets signals that the discover assets request has

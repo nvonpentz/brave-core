@@ -198,7 +198,7 @@ void AssetDiscoveryManager::DiscoverEthAssets(
 
   // Create set of all user assets per chain to use to ensure we don't
   // include assets the user has already added in the call to the BalanceScanner
-  base::flat_map<std::string, base::flat_set<std::string>>
+  base::flat_map<std::string, base::flat_set<base::StringPiece>>
       user_assets_per_chain;
   for (const auto& user_asset : user_assets) {
     user_assets_per_chain[user_asset->chain_id].insert(
@@ -231,7 +231,7 @@ void AssetDiscoveryManager::DiscoverEthAssets(
     }
   }
 
-  // Use a barrier callback to wait for all GetERC20TokenBalance calls to
+  // Use a barrier callback to wait for all GetERC20TokenBalances calls to
   // complete (one for each account address).
   const auto barrier_callback =
       base::BarrierCallback<std::map<std::string, std::vector<std::string>>>(
@@ -241,7 +241,7 @@ void AssetDiscoveryManager::DiscoverEthAssets(
                          std::move(chain_id_to_contract_address_to_token),
                          triggered_by_accounts_added));
 
-  // For each account address, call GetERC20TokenBalance for each chain ID
+  // For each account address, call GetERC20TokenBalances for each chain ID
   for (const auto& account_address : account_addresses) {
     for (const auto& [chain_id, contract_addresses] :
          chain_id_to_contract_addresses) {
@@ -296,13 +296,13 @@ void AssetDiscoveryManager::MergeDiscoveredEthAssets(
                    base::flat_map<std::string, mojom::BlockchainTokenPtr>>
         chain_id_to_contract_address_to_token,
     bool triggered_by_accounts_added,
-    std::vector<std::map<std::string, std::vector<std::string>>>
+    const std::vector<std::map<std::string, std::vector<std::string>>>&
         discovered_asset_results) {
   // Create a vector of BlockchainTokenPtrs to return
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
 
   // Keep track of which contract addresses have been seen per chain
-  base::flat_map<std::string, base::flat_set<std::string>>
+  base::flat_map<std::string, base::flat_set<base::StringPiece>>
       seen_contract_addresses;
   for (const auto& discovered_asset_result : discovered_asset_results) {
     for (const auto& [chain_id, contract_addresses] : discovered_asset_result) {
