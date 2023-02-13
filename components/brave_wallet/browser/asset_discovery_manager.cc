@@ -297,15 +297,16 @@ void AssetDiscoveryManager::MergeDiscoveredEthAssets(
         chain_id_to_contract_address_to_token,
     bool triggered_by_accounts_added,
     const std::vector<std::map<std::string, std::vector<std::string>>>&
-        discovered_asset_results) {
+        discovered_assets_results) {
   // Create a vector of BlockchainTokenPtrs to return
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
 
   // Keep track of which contract addresses have been seen per chain
   base::flat_map<std::string, base::flat_set<base::StringPiece>>
       seen_contract_addresses;
-  for (const auto& discovered_asset_result : discovered_asset_results) {
-    for (const auto& [chain_id, contract_addresses] : discovered_asset_result) {
+  for (const auto& discovered_assets_result : discovered_assets_results) {
+    for (const auto& [chain_id, contract_addresses] :
+         discovered_assets_result) {
       for (const auto& contract_address : contract_addresses) {
         // Skip if seen
         if (seen_contract_addresses[chain_id].contains(contract_address)) {
