@@ -314,11 +314,10 @@ void AssetDiscoveryManager::MergeDiscoveredEthAssets(
 
         // Add to seen and discovered_tokens if not
         seen_contract_addresses[chain_id].insert(contract_address);
-        auto token =
-            chain_id_to_contract_address_to_token[chain_id][contract_address]
-                .Clone();
+        auto token = std::move(
+            chain_id_to_contract_address_to_token[chain_id][contract_address]);
         if (token && BraveWalletService::AddUserAsset(token.Clone(), prefs_)) {
-          discovered_tokens.push_back(token.Clone());
+          discovered_tokens.push_back(std::move(token));
         }
       }
     }
