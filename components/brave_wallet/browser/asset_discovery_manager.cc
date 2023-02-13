@@ -196,11 +196,13 @@ void AssetDiscoveryManager::DiscoverEthAssets(
       BlockchainRegistry::GetInstance()->GetEthTokenListMap(
           GetAssetDiscoverySupportedEthChains());
 
-  // Create set of all user assets in place used to ensure we don't
+  // Create set of all user assets per chain to use to ensure we don't
   // include assets the user has already added in the call to the BalanceScanner
-  base::flat_set<std::string> user_asset_set;
+  base::flat_map<std::string, base::flat_set<std::string>>
+      user_assets_per_chain;
   for (const auto& user_asset : user_assets) {
-    user_asset_set.insert(user_asset->contract_address);
+    user_assets_per_chain[user_asset->chain_id].insert(
+        user_asset->contract_address);
   }
 
   // Create a map of chain_id to a map contract address to BlockchainToken
@@ -219,7 +221,7 @@ void AssetDiscoveryManager::DiscoverEthAssets(
   // BlockchainTokenPtrs
   for (auto& [chain_id, token_list] : token_list_map) {
     for (auto& token : token_list) {
-      if (!user_asset_set.contains(token->contract_address)) {
+      if (!user_assets_per_chain[chain_id].contains(token->contract_address)) {
         chain_id_to_contract_addresses[chain_id].push_back(
             token->contract_address);
         chain_id_to_contract_address_to_token[chain_id]
@@ -295,25 +297,26 @@ void AssetDiscoveryManager::MergeDiscoveredEthAssets(
         chain_id_to_contract_address_to_token,
     bool triggered_by_accounts_added,
     std::vector<std::map<std::string, std::vector<std::string>>>
-        discovered_assets) {
+        discovered_asset_results) {
   // Create a vector of BlockchainTokenPtrs to return
   std::vector<mojom::BlockchainTokenPtr> discovered_tokens;
-  base::flat_set<std::string> seen_contract_addresses;
-  for (const auto& discovered_asset : discovered_assets) {
-    for (const auto& [chain_id, contract_addresses] : discovered_asset) {
+
+  // Keep track of which contract addresses have been seen per chain
+  base::flat_map<std::string, base::flat_set<std::string>>
+      seen_contract_addresses;
+  for (const auto& discovered_asset_result : discovered_asset_results) {
+    for (const auto& [chain_id, contract_addresses] : discovered_asset_result) {
       for (const auto& contract_address : contract_addresses) {
         // Skip if seen
-        if (seen_contract_addresses.find(contract_address) !=
-            seen_contract_addresses.end()) {
+        if (seen_contract_addresses[chain_id].contains(contract_address)) {
           continue;
         }
 
-        // Add to seen
-        seen_contract_addresses.insert(contract_address);
+        // Add to seen and discovered_tokens if not
+        seen_contract_addresses[chain_id].insert(contract_address);
         auto token =
             chain_id_to_contract_address_to_token[chain_id][contract_address]
                 .Clone();
-
         if (token && BraveWalletService::AddUserAsset(token.Clone(), prefs_)) {
           discovered_tokens.push_back(token.Clone());
         }
