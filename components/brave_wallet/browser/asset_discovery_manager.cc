@@ -50,15 +50,16 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedEthChains() {
     return supported_chains_for_testing_;
   }
 
-  // Use the list of BalanceScanner contract addresses to determine which chains
-  // are supported.
-  base::flat_map<std::string, std::string> balance_scanner_addresses =
-      GetEthBalanceScannerContractAddresses();
-  static base::NoDestructor<std::vector<std::string>>
-      asset_discovery_supported_chains;
-  for (const auto& entry : balance_scanner_addresses) {
-    asset_discovery_supported_chains->push_back(entry.first);
-  }
+  // Use the hardcoded list of BalanceScanner contract addresses to determine
+  // which chains are supported.
+  static const base::NoDestructor<std::vector<std::string>>
+      asset_discovery_supported_chains([] {
+        std::vector<std::string> supported_chains;
+        for (const auto& entry : GetEthBalanceScannerContractAddresses()) {
+          supported_chains.push_back(entry.first);
+        }
+        return supported_chains;
+      }());
   return *asset_discovery_supported_chains;
 }
 
@@ -147,6 +148,7 @@ void AssetDiscoveryManager::MergeDiscoveredSolanaAssets(
           discovered_contract_address.ToBase58());
     }
   }
+
   // Convert vector to flat_set
   base::flat_set<std::string> discovered_mint_addresses_set(
       std::move(discovered_mint_addresses));
