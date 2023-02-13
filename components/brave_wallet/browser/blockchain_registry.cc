@@ -116,9 +116,8 @@ void BlockchainRegistry::GetAllTokens(const std::string& chain_id,
   std::move(callback).Run(std::move(tokens_copy));
 }
 
-void BlockchainRegistry::GetEthTokenListMap(
-    const std::vector<std::string>& chain_ids,
-    GetEthTokenListMapCallback callback) {
+TokenListMap BlockchainRegistry::GetEthTokenListMap(
+    const std::vector<std::string>& chain_ids) {
   // Create a copy of token_list_map with only the chain_ids we want
   TokenListMap token_list_map_copy;
   for (const auto& chain_id : chain_ids) {
@@ -140,7 +139,8 @@ void BlockchainRegistry::GetEthTokenListMap(
         });
     token_list_map_copy[chain_id] = std::move(tokens_copy);
   }
-  std::move(callback).Run(std::move(token_list_map_copy));
+
+  return token_list_map_copy;
 }
 
 void BlockchainRegistry::GetBuyTokens(mojom::OnRampProvider provider,

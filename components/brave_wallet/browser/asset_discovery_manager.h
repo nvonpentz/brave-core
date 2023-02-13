@@ -104,12 +104,6 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   void DiscoverEthAssets(const std::vector<std::string>& account_addresses,
                          bool triggered_by_accounts_added);
 
-  void OnGetEthTokenRegistry(
-      const std::vector<std::string>& account_addresses,
-      const std::vector<mojom::BlockchainTokenPtr>& user_assets,
-      bool triggered_by_accounts_added,
-      TokenListMap token_list_map);
-
   void OnGetERC20TokenBalances(
       base::OnceCallback<void(std::map<std::string, std::vector<std::string>>)>
           barrier_callback,

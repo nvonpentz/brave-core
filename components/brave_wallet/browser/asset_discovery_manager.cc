@@ -192,21 +192,10 @@ void AssetDiscoveryManager::DiscoverEthAssets(
 
   std::vector<mojom::BlockchainTokenPtr> user_assets =
       BraveWalletService::GetUserAssets(prefs_);
-  auto internal_callback =
-      base::BindOnce(&AssetDiscoveryManager::OnGetEthTokenRegistry,
-                     weak_ptr_factory_.GetWeakPtr(), account_addresses,
-                     std::move(user_assets), triggered_by_accounts_added);
+  TokenListMap token_list_map =
+      BlockchainRegistry::GetInstance()->GetEthTokenListMap(
+          GetAssetDiscoverySupportedEthChains());
 
-  BlockchainRegistry::GetInstance()->GetEthTokenListMap(
-      GetAssetDiscoverySupportedEthChains(), std::move(internal_callback));
-}
-
-void AssetDiscoveryManager::OnGetEthTokenRegistry(
-    const std::vector<std::string>& account_addresses,
-    const std::vector<mojom::BlockchainTokenPtr>& user_assets,
-    bool triggered_by_accounts_added,
-    base::flat_map<std::string, std::vector<mojom::BlockchainTokenPtr>>
-        token_list_map) {
   // Create set of all user assets in place used to ensure we don't
   // include assets the user has already added in the call to the BalanceScanner
   base::flat_set<std::string> user_asset_set;

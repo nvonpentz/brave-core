@@ -538,15 +538,9 @@ TEST(BlockchainRegistryUnitTest, GetEthTokenListMap) {
   // Loop twice to make sure getting the same list twice works
   // For example, make sure nothing is std::move'd
   for (size_t i = 0; i < 2; i++) {
-    base::RunLoop run_loop;
-    registry->GetEthTokenListMap(
-        {mojom::kMainnetChainId},
-        base::BindLambdaForTesting([&](TokenListMap token_list) {
-          EXPECT_EQ(token_list.size(), 1UL);
-          EXPECT_EQ(token_list[mojom::kMainnetChainId].size(), 2UL);
-          run_loop.Quit();
-        }));
-    run_loop.Run();
+    token_list_map = registry->GetEthTokenListMap({mojom::kMainnetChainId});
+    EXPECT_EQ(token_list_map.size(), 1UL);
+    EXPECT_EQ(token_list_map[mojom::kMainnetChainId].size(), 2UL);
   }
 }
 
