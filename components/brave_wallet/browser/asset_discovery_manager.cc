@@ -217,13 +217,14 @@ void AssetDiscoveryManager::DiscoverEthAssets(
 
   // Populate the chain_id_to_contract_addresses using the token_list_map of
   // BlockchainTokenPtrs
-  for (const auto& [chain_id, token_list] : token_list_map) {
-    for (const auto& token : token_list) {
-      chain_id_to_contract_address_to_token[chain_id][token->contract_address] =
-          token.Clone();
+  for (auto& [chain_id, token_list] : token_list_map) {
+    for (auto& token : token_list) {
       if (!user_asset_set.contains(token->contract_address)) {
         chain_id_to_contract_addresses[chain_id].push_back(
             token->contract_address);
+        chain_id_to_contract_address_to_token[chain_id]
+                                             [token->contract_address] =
+                                                 std::move(token);
       }
     }
   }
