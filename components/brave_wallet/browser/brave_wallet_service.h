@@ -106,6 +106,12 @@ class BraveWalletService : public KeyedService,
   void GetAllUserAssets(GetUserAssetsCallback callback) override;
   void AddUserAsset(mojom::BlockchainTokenPtr token,
                     AddUserAssetCallback callback) override;
+  void OnGetNftStandard(mojom::BlockchainTokenPtr token,
+                        AddUserAssetCallback callback,
+                        const absl::optional<std::string>& standard,
+                        mojom::ProviderError error,
+                        const std::string& error_message);
+
   void RemoveUserAsset(mojom::BlockchainTokenPtr token,
                        RemoveUserAssetCallback callback) override;
   void SetUserAssetVisible(mojom::BlockchainTokenPtr token,
