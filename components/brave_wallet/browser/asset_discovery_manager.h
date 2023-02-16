@@ -61,7 +61,6 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   // Called by frontend via BraveWalletService.
   // Subject to client side rate limiting based on
   // kBraveWalletLastDiscoveredAssetsAt pref value.
-  // kBraveWalletNextAssetDiscoveryFromBlocks pref and "latest" for ETH chains.
   void DiscoverAssetsOnAllSupportedChainsRefresh(
       std::map<mojom::CoinType, std::vector<std::string>>& account_addresses);
 
