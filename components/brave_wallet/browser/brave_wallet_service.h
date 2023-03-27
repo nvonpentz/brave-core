@@ -229,6 +229,8 @@ class BraveWalletService : public KeyedService,
   // BraveWalletServiceDelegate::Observer:
   void OnActiveOriginChanged(const mojom::OriginInfoPtr& origin_info) override;
 
+  void OnDiscoverAssetsStarted();
+
   void OnDiscoverAssetsCompleted(
       std::vector<mojom::BlockchainTokenPtr> discovered_assets);
 
