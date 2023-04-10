@@ -163,13 +163,14 @@ void AssetDiscoveryTask::DiscoverAssets(
   const auto& eth_chain_ids =
       eth_it != chain_ids.end() ? eth_it->second : std::vector<std::string>();
 
-  // Concurrently discovert ETH ERC20s on our registry, Solana tokens on our
+  // Concurrently discover ETH ERC20s on our registry, Solana tokens on our
   // Registry and NFTs on both platforms, then merge the results
   const auto barrier_callback =
       base::BarrierCallback<std::vector<mojom::BlockchainTokenPtr>>(
           3,
           base::BindOnce(&AssetDiscoveryTask::MergeDiscoveredAssets,
                          weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+  // Currently SPL tokens are only discovered on Solana Mainnet.
   DiscoverSPLTokensFromRegistry(sol_account_addresses,
                                 std::move(barrier_callback));
   DiscoverERC20sFromRegistry(eth_chain_ids, eth_account_addresses,
@@ -366,8 +367,9 @@ void AssetDiscoveryTask::DiscoverSPLTokensFromRegistry(
           base::BindOnce(&AssetDiscoveryTask::MergeDiscoveredSPLTokens,
                          weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
   for (const auto& account_address : solana_addresses) {
+    // Solana Mainnet is the only network supported currently
     json_rpc_service_->GetSolanaTokenAccountsByOwner(
-        account_address,
+        account_address, mojom::kSolanaMainnet,
         base::BindOnce(&AssetDiscoveryTask::OnGetSolanaTokenAccountsByOwner,
                        weak_ptr_factory_.GetWeakPtr(),
                        std::move(barrier_callback)));
@@ -428,7 +430,9 @@ void AssetDiscoveryTask::MergeDiscoveredSPLTokens(
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback),
                      std::move(discovered_mint_addresses_set));
 
-  // Fetch SOL registry tokens
+  // Fetch SOL registry tokens (mainnet only).
+  // TODO(nvonpentz) This needs to be changed when we support multiple chains
+  // for Solana.
   BlockchainRegistry::GetInstance()->GetAllTokens(mojom::kSolanaMainnet,
                                                   mojom::CoinType::SOL,
                                                   std::move(internal_callback));
