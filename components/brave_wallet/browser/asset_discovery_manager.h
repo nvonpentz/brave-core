@@ -44,7 +44,6 @@ class AssetDiscoveryTask {
   AssetDiscoveryTask& operator=(AssetDiscoveryTask&) = delete;
   ~AssetDiscoveryTask();
 
- public:
   void DiscoverAssets(
       const std::map<mojom::CoinType, std::vector<std::string>>& chain_ids,
       const std::map<mojom::CoinType, std::vector<std::string>>&
