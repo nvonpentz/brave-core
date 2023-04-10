@@ -1012,7 +1012,6 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChains(
   ScheduleTask(account_addresses);
 }
 
-// const std::vector<std::string>&
 const std::map<mojom::CoinType, std::vector<std::string>>&
 AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
   static const base::NoDestructor<
