@@ -35,7 +35,7 @@ class AssetDiscoveryTask {
   using APIRequestHelper = api_request_helper::APIRequestHelper;
   using APIRequestResult = api_request_helper::APIRequestResult;
 
-  AssetDiscoveryTask(std::unique_ptr<APIRequestHelper> api_request_helper,
+  AssetDiscoveryTask(APIRequestHelper* api_request_helper,
                      BraveWalletService* wallet_service,
                      JsonRpcService* json_rpc_service,
                      PrefService* prefs);
@@ -131,7 +131,7 @@ class AssetDiscoveryTask {
       const std::string& account_address,
       const std::vector<std::string>& chain_ids);
 
-  std::unique_ptr<APIRequestHelper> api_request_helper_;
+  raw_ptr<APIRequestHelper> api_request_helper_;
   raw_ptr<BraveWalletService> wallet_service_;
   raw_ptr<JsonRpcService> json_rpc_service_;
   raw_ptr<PrefService> prefs_;
@@ -140,6 +140,8 @@ class AssetDiscoveryTask {
 
 class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
  public:
+  using APIRequestHelper = api_request_helper::APIRequestHelper;
+  using APIRequestResult = api_request_helper::APIRequestResult;
   AssetDiscoveryManager(
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
       BraveWalletService* wallet_service,
@@ -190,7 +192,7 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
   // If queue_size_ is greater than zero new tasks will not be scheduled
   // unless triggered by accounts being added
   int queue_size_ = 0;
-  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  std::unique_ptr<APIRequestHelper> api_request_helper_;
   raw_ptr<BraveWalletService> wallet_service_;
   raw_ptr<JsonRpcService> json_rpc_service_;
   raw_ptr<KeyringService> keyring_service_;

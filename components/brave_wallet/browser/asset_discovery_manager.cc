@@ -129,12 +129,11 @@ GetAssetDiscoveryManagerNetworkTrafficAnnotationTag() {
 
 namespace brave_wallet {
 
-AssetDiscoveryTask::AssetDiscoveryTask(
-    std::unique_ptr<APIRequestHelper> api_request_helper,
-    BraveWalletService* wallet_service,
-    JsonRpcService* json_rpc_service,
-    PrefService* prefs)
-    : api_request_helper_(std::move(api_request_helper)),
+AssetDiscoveryTask::AssetDiscoveryTask(APIRequestHelper* api_request_helper,
+                                       BraveWalletService* wallet_service,
+                                       JsonRpcService* json_rpc_service,
+                                       PrefService* prefs)
+    : api_request_helper_(api_request_helper),
       wallet_service_(wallet_service),
       json_rpc_service_(json_rpc_service),
       prefs_(prefs),
@@ -975,7 +974,9 @@ AssetDiscoveryManager::AssetDiscoveryManager(
     JsonRpcService* json_rpc_service,
     KeyringService* keyring_service,
     PrefService* prefs)
-    : url_loader_factory_(url_loader_factory),
+    : api_request_helper_(new APIRequestHelper(
+          GetAssetDiscoveryManagerNetworkTrafficAnnotationTag(),
+          url_loader_factory)),
       wallet_service_(wallet_service),
       json_rpc_service_(json_rpc_service),
       keyring_service_(keyring_service),
@@ -1053,10 +1054,7 @@ void AssetDiscoveryManager::StartTask(
         account_addresses) {
   queue_size_++;
   auto task = std::make_unique<AssetDiscoveryTask>(
-      std::make_unique<api_request_helper::APIRequestHelper>(
-          GetAssetDiscoveryManagerNetworkTrafficAnnotationTag(),
-          url_loader_factory_),
-      wallet_service_, json_rpc_service_, prefs_);
+      api_request_helper_.get(), wallet_service_, json_rpc_service_, prefs_);
 
   auto callback = base::BindOnce(&AssetDiscoveryManager::FinishTask,
                                  weak_ptr_factory_.GetWeakPtr());
