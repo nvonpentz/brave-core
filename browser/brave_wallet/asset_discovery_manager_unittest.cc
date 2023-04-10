@@ -1681,7 +1681,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
           account_addresses,
       bool triggered_by_accounts_added,
       bool expect_events_fired,
-      const std::vector<std::string>& expected_token_contract_addresses) {
+      const std::vector<std::string>& expected_token_contract_addresses,
+      size_t expected_ending_queue_size = 0u) {
     asset_discovery_manager_->DiscoverAssetsOnAllSupportedChains(
         account_addresses, triggered_by_accounts_added);
     if (expect_events_fired) {
@@ -1694,6 +1695,8 @@ class AssetDiscoveryManagerUnitTest : public testing::Test {
       EXPECT_FALSE(wallet_service_observer_->OnDiscoverAssetsStartedFired());
       EXPECT_FALSE(wallet_service_observer_->OnDiscoverAssetsCompletedFired());
     }
+    EXPECT_EQ(asset_discovery_manager_->GetQueueSizeForTesting(),
+              expected_ending_queue_size);
     wallet_service_observer_->Reset();
   }
 };
@@ -1763,14 +1766,19 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssetsOnAllSupportedChains) {
   EXPECT_GT(current_assets_last_discovered_at,
             previous_assets_last_discovered_at);
 
-  // If there is already a task in-flight process, OnDiscoverAssetsStarted and
+  // If there is already a task in-flight, OnDiscoverAssetsStarted and
   // OnDiscoverAssetsCompleted both fire both fire if accounts_added set
-  asset_discovery_manager_->SetQueueSizeForTesting(1);
-  TestDiscoverAssetsOnAllSupportedChains({}, true, true, {});
+  task_environment_.FastForwardBy(
+      base::Minutes(kAssetDiscoveryMinutesPerRequest));
+  std::queue<std::unique_ptr<AssetDiscoveryTask>> tasks;
+  tasks.push(
+      std::make_unique<AssetDiscoveryTask>(nullptr, nullptr, nullptr, nullptr));
+  asset_discovery_manager_->SetQueueForTesting(std::move(tasks));
+  TestDiscoverAssetsOnAllSupportedChains({}, true, true, {}, 1);
 
-  // If there is already a task in-flight process, nothing is run if
+  // If there is already a task in-flight, nothing is run if
   // if accounts_added not set
-  TestDiscoverAssetsOnAllSupportedChains({}, false, false, {});
+  TestDiscoverAssetsOnAllSupportedChains({}, false, false, {}, 1);
 }
 
 // KeyringServiceObserver test

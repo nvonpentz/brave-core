@@ -141,6 +141,17 @@ AssetDiscoveryTask::AssetDiscoveryTask(APIRequestHelper* api_request_helper,
 
 AssetDiscoveryTask::~AssetDiscoveryTask() = default;
 
+void AssetDiscoveryTask::WorkOnTask(
+    const std::map<mojom::CoinType, std::vector<std::string>>& chain_ids,
+    const std::map<mojom::CoinType, std::vector<std::string>>&
+        account_addresses,
+    base::OnceClosure callback) {
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&AssetDiscoveryTask::DiscoverAssets,
+                                weak_ptr_factory_.GetWeakPtr(), chain_ids,
+                                account_addresses, std::move(callback)));
+}
+
 void AssetDiscoveryTask::DiscoverAssets(
     const std::map<mojom::CoinType, std::vector<std::string>>& chain_ids,
     const std::map<mojom::CoinType, std::vector<std::string>>&
@@ -998,8 +1009,8 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChains(
     return;
   }
 
-  // Check if there's already an in-flight asset discovery request
-  if (queue_size_ > 0) {
+  // Check if there's already an in-flight asset discovery task
+  if (queue_.size() > 0) {
     return;
   }
 
@@ -1043,28 +1054,18 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
 void AssetDiscoveryManager::ScheduleTask(
     const std::map<mojom::CoinType, std::vector<std::string>>&
         account_addresses) {
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&AssetDiscoveryManager::StartTask,
-                     weak_ptr_factory_.GetWeakPtr(), account_addresses));
-}
-
-void AssetDiscoveryManager::StartTask(
-    const std::map<mojom::CoinType, std::vector<std::string>>&
-        account_addresses) {
-  queue_size_++;
   auto task = std::make_unique<AssetDiscoveryTask>(
       api_request_helper_.get(), wallet_service_, json_rpc_service_, prefs_);
-
   auto callback = base::BindOnce(&AssetDiscoveryManager::FinishTask,
                                  weak_ptr_factory_.GetWeakPtr());
-
-  task->DiscoverAssets(GetAssetDiscoverySupportedChains(), account_addresses,
+  auto* task_ptr = task.get();
+  queue_.push(std::move(task));
+  task_ptr->WorkOnTask(GetAssetDiscoverySupportedChains(), account_addresses,
                        std::move(callback));
 }
 
 void AssetDiscoveryManager::FinishTask() {
-  queue_size_--;
+  queue_.pop();
 }
 
 void AssetDiscoveryManager::AccountsAdded(

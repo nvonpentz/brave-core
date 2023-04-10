@@ -8,6 +8,7 @@
 
 #include <map>
 #include <memory>
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -44,7 +45,7 @@ class AssetDiscoveryTask {
   AssetDiscoveryTask& operator=(AssetDiscoveryTask&) = delete;
   ~AssetDiscoveryTask();
 
-  void DiscoverAssets(
+  void WorkOnTask(
       const std::map<mojom::CoinType, std::vector<std::string>>& chain_ids,
       const std::map<mojom::CoinType, std::vector<std::string>>&
           account_addresses,
@@ -56,6 +57,12 @@ class AssetDiscoveryTask {
   FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryTaskUnitTest,
                            GetSimpleHashNftsByWalletUrl);
   FRIEND_TEST_ALL_PREFIXES(AssetDiscoveryTaskUnitTest, ParseNFTsFromSimpleHash);
+
+  void DiscoverAssets(
+      const std::map<mojom::CoinType, std::vector<std::string>>& chain_ids,
+      const std::map<mojom::CoinType, std::vector<std::string>>&
+          account_addresses,
+      base::OnceClosure callback);
 
   void MergeDiscoveredAssets(
       base::OnceClosure callback,
@@ -173,7 +180,12 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
           account_addresses,
       bool triggered_by_accounts_added);
 
-  void SetQueueSizeForTesting(int queue_size) { queue_size_ = queue_size; }
+  void SetQueueForTesting(
+      std::queue<std::unique_ptr<AssetDiscoveryTask>> queue) {
+    queue_ = std::move(queue);
+  }
+
+  size_t GetQueueSizeForTesting() { return queue_.size(); }
 
  private:
   friend class AssetDiscoveryManagerUnitTest;
@@ -185,13 +197,9 @@ class AssetDiscoveryManager : public mojom::KeyringServiceObserver {
 
   void ScheduleTask(const std::map<mojom::CoinType, std::vector<std::string>>&
                         account_addresses);
-  void StartTask(const std::map<mojom::CoinType, std::vector<std::string>>&
-                     account_addresses);
   void FinishTask();
 
-  // If queue_size_ is greater than zero new tasks will not be scheduled
-  // unless triggered by accounts being added
-  int queue_size_ = 0;
+  std::queue<std::unique_ptr<AssetDiscoveryTask>> queue_;
   std::unique_ptr<APIRequestHelper> api_request_helper_;
   raw_ptr<BraveWalletService> wallet_service_;
   raw_ptr<JsonRpcService> json_rpc_service_;
