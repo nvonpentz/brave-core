@@ -985,7 +985,7 @@ AssetDiscoveryManager::AssetDiscoveryManager(
     JsonRpcService* json_rpc_service,
     KeyringService* keyring_service,
     PrefService* prefs)
-    : api_request_helper_(new APIRequestHelper(
+    : api_request_helper_(std::make_unique<APIRequestHelper>(
           GetAssetDiscoveryManagerNetworkTrafficAnnotationTag(),
           url_loader_factory)),
       wallet_service_(wallet_service),
