@@ -1771,7 +1771,7 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssetsOnAllSupportedChains) {
             previous_assets_last_discovered_at);
 
   // If there is already a task in-flight, OnDiscoverAssetsStarted and
-  // OnDiscoverAssetsCompleted both fire both fire if accounts_added set
+  // OnDiscoverAssetsCompleted both fire if accounts_added is set.
   task_environment_.FastForwardBy(
       base::Minutes(kAssetDiscoveryMinutesPerRequest));
   std::queue<std::unique_ptr<AssetDiscoveryTask>> tasks;
@@ -1780,8 +1780,8 @@ TEST_F(AssetDiscoveryManagerUnitTest, DiscoverAssetsOnAllSupportedChains) {
   asset_discovery_manager_->SetQueueForTesting(std::move(tasks));
   TestDiscoverAssetsOnAllSupportedChains({}, true, true, {}, 1);
 
-  // If there is already a task in-flight, nothing is run if
-  // if accounts_added not set
+  // If there is already a task in-flight, nothing is run
+  // if accounts_added not set.
   TestDiscoverAssetsOnAllSupportedChains({}, false, false, {}, 1);
 }
 
