@@ -181,11 +181,10 @@ void AssetDiscoveryTask::DiscoverAssets(
           base::BindOnce(&AssetDiscoveryTask::MergeDiscoveredAssets,
                          weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
   // Currently SPL tokens are only discovered on Solana Mainnet.
-  DiscoverSPLTokensFromRegistry(sol_account_addresses,
-                                std::move(barrier_callback));
+  DiscoverSPLTokensFromRegistry(sol_account_addresses, barrier_callback);
   DiscoverERC20sFromRegistry(eth_chain_ids, eth_account_addresses,
-                             std::move(barrier_callback));
-  DiscoverNFTs(chain_ids, account_addresses, std::move(barrier_callback));
+                             barrier_callback);
+  DiscoverNFTs(chain_ids, account_addresses, barrier_callback);
 }
 
 void AssetDiscoveryTask::MergeDiscoveredAssets(
@@ -381,8 +380,7 @@ void AssetDiscoveryTask::DiscoverSPLTokensFromRegistry(
     json_rpc_service_->GetSolanaTokenAccountsByOwner(
         account_address, mojom::kSolanaMainnet,
         base::BindOnce(&AssetDiscoveryTask::OnGetSolanaTokenAccountsByOwner,
-                       weak_ptr_factory_.GetWeakPtr(),
-                       std::move(barrier_callback)));
+                       weak_ptr_factory_.GetWeakPtr(), barrier_callback));
   }
 }
 
@@ -898,12 +896,12 @@ void AssetDiscoveryTask::DiscoverNFTs(
                          weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
   for (const auto& account_address : eth_account_addresses) {
     FetchNFTsFromSimpleHash(account_address, chain_ids.at(mojom::CoinType::ETH),
-                            mojom::CoinType::ETH, std::move(barrier_callback));
+                            mojom::CoinType::ETH, barrier_callback);
   }
 
   for (const auto& account_address : sol_account_addresses) {
     FetchNFTsFromSimpleHash(account_address, chain_ids.at(mojom::CoinType::SOL),
-                            mojom::CoinType::SOL, std::move(barrier_callback));
+                            mojom::CoinType::SOL, barrier_callback);
   }
 }
 
