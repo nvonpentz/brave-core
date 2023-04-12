@@ -70,7 +70,7 @@ class AssetDiscoveryTask {
           discovered_assets);
 
   using DiscoverAssetsCompletedCallback =
-      base::OnceCallback<void(std::vector<mojom::BlockchainTokenPtr> nfts)>;
+      base::OnceCallback<void(std::vector<mojom::BlockchainTokenPtr> tokens)>;
 
   void DiscoverERC20sFromRegistry(
       const std::vector<std::string>& chain_ids,
