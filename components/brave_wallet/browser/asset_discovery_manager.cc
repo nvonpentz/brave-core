@@ -1010,7 +1010,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChains(
   }
 
   // Check if there's already an in-flight asset discovery task
-  if (queue_.size() > 0) {
+  if (!queue_.empty()) {
     return;
   }
 
