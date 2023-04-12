@@ -141,7 +141,7 @@ AssetDiscoveryTask::AssetDiscoveryTask(APIRequestHelper* api_request_helper,
 
 AssetDiscoveryTask::~AssetDiscoveryTask() = default;
 
-void AssetDiscoveryTask::WorkOnTask(
+void AssetDiscoveryTask::ScheduleTask(
     const std::map<mojom::CoinType, std::vector<std::string>>& chain_ids,
     const std::map<mojom::CoinType, std::vector<std::string>>&
         account_addresses,
@@ -1004,8 +1004,8 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChains(
         account_addresses,
     bool triggered_by_accounts_added) {
   if (triggered_by_accounts_added) {
-    // Always schedule asset discovery when an account is added
-    ScheduleTask(account_addresses);
+    // Always add asset discovery when an account is added
+    AddTask(account_addresses);
     return;
   }
 
@@ -1025,7 +1025,7 @@ void AssetDiscoveryManager::DiscoverAssetsOnAllSupportedChains(
   }
   prefs_->SetTime(kBraveWalletLastDiscoveredAssetsAt, base::Time::Now());
 
-  ScheduleTask(account_addresses);
+  AddTask(account_addresses);
 }
 
 const std::map<mojom::CoinType, std::vector<std::string>>&
@@ -1051,7 +1051,7 @@ AssetDiscoveryManager::GetAssetDiscoverySupportedChains() {
   return *asset_discovery_supported_chains;
 }
 
-void AssetDiscoveryManager::ScheduleTask(
+void AssetDiscoveryManager::AddTask(
     const std::map<mojom::CoinType, std::vector<std::string>>&
         account_addresses) {
   auto task = std::make_unique<AssetDiscoveryTask>(
@@ -1060,8 +1060,8 @@ void AssetDiscoveryManager::ScheduleTask(
                                  weak_ptr_factory_.GetWeakPtr());
   auto* task_ptr = task.get();
   queue_.push(std::move(task));
-  task_ptr->WorkOnTask(GetAssetDiscoverySupportedChains(), account_addresses,
-                       std::move(callback));
+  task_ptr->ScheduleTask(GetAssetDiscoverySupportedChains(), account_addresses,
+                         std::move(callback));
 }
 
 void AssetDiscoveryManager::FinishTask() {
