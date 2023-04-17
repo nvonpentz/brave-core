@@ -22,7 +22,6 @@
 #include "brave/components/brave_wallet/browser/tx_service.h"
 #include "brave/components/brave_wallet/common/features.h"
 #include "brave/components/brave_wallet/common/test_utils.h"
-#include "brave/components/brave_wallet/common/value_conversion_utils.h"
 #include "chrome/browser/prefs/browser_prefs.h"
 #include "chrome/test/base/scoped_testing_local_state.h"
 #include "chrome/test/base/testing_browser_process.h"
