@@ -6,20 +6,13 @@
 #include "brave/components/brave_wallet/browser/asset_discovery_manager.h"
 
 #include <map>
-#include <utility>
 
-#include "brave/components/brave_wallet/browser/blockchain_registry.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_service.h"
-// #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
 #include "brave/components/brave_wallet/browser/json_rpc_service.h"
 #include "brave/components/brave_wallet/browser/keyring_service.h"
 #include "brave/components/brave_wallet/browser/pref_names.h"
-#include "brave/components/brave_wallet/common/hex_utils.h"
-#include "brave/components/brave_wallet/common/string_utils.h"
-#include "brave/components/constants/brave_services_key.h"
 #include "components/prefs/pref_service.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
-#include "ui/base/l10n/l10n_util.h"
 
 namespace {
 
@@ -144,7 +137,7 @@ void AssetDiscoveryManager::AccountsAdded(
     mojom::CoinType coin,
     const std::vector<std::string>& addresses) {
   if (!(coin == mojom::CoinType::ETH || coin == mojom::CoinType::SOL) ||
-      addresses.size() == 0u) {
+      addresses.empty()) {
     return;
   }
 

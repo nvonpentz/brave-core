@@ -44,7 +44,7 @@ namespace brave_wallet {
 namespace {
 
 // JSON RPC responses for eth_call to the BalanceScanner contract
-const char kJsonRpcResponseTemplate[] = R"({
+constexpr char kJsonRpcResponseTemplate[] = R"({
       "jsonrpc":"2.0",
       "id":1,
       "result":"$1"
@@ -55,7 +55,7 @@ std::string formatJsonRpcResponse(const std::string& value) {
                                          nullptr);
 }
 
-const char kEthBalanceDetectedResult[] =
+constexpr char kEthBalanceDetectedResult[] =
     "0x"
     "0000000000000000000000000000000000000000000000000000000000000020"
     "0000000000000000000000000000000000000000000000000000000000000001"
@@ -65,7 +65,7 @@ const char kEthBalanceDetectedResult[] =
     "0000000000000000000000000000000000000000000000000000000000000020"
     "000000000000000000000000000000000000000000000006e83695ab1f893c00";
 
-const char kEthBalanceNotDetectedResult[] =
+constexpr char kEthBalanceNotDetectedResult[] =
     "0x"
     "0000000000000000000000000000000000000000000000000000000000000020"
     "0000000000000000000000000000000000000000000000000000000000000001"
@@ -75,10 +75,7 @@ const char kEthBalanceNotDetectedResult[] =
     "0000000000000000000000000000000000000000000000000000000000000020"
     "0000000000000000000000000000000000000000000000000000000000000000";
 
-// const std::string eth_balance_not_detected_response =
-//     formatJsonRpcResponse(kEthBalanceNotDetectedResult);
-
-const char kEthErrorFetchingBalanceResult[] =
+constexpr char kEthErrorFetchingBalanceResult[] =
     "0x"
     "0000000000000000000000000000000000000000000000000000000000000020"
     "0000000000000000000000000000000000000000000000000000000000000001"
@@ -86,9 +83,6 @@ const char kEthErrorFetchingBalanceResult[] =
     "0000000000000000000000000000000000000000000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000040"
     "0000000000000000000000000000000000000000000000000000000000000000";
-
-// const std::string eth_error_fetching_balance_response =
-//     formatJsonRpcResponse(kEthErrorFetchingBalanceResult);
 
 }  // namespace
 

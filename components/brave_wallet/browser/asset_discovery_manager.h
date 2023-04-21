@@ -13,13 +13,11 @@
 #include <utility>
 #include <vector>
 
-#include "base/barrier_callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "brave/components/api_request_helper/api_request_helper.h"
 #include "brave/components/brave_wallet/browser/asset_discovery_task.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
-#include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 
 class PrefService;
