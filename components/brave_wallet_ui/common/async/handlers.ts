@@ -279,6 +279,14 @@ handler.on(
     await store.dispatch(refreshPortfolioFilterOptions())
     await store.dispatch(refreshTokenPriceHistory(state.selectedPortfolioTimeline))
     await braveWalletService.discoverAssetsOnAllSupportedChains()
+    console.log('calling GetSimpleHashSpamNFTs')
+    const result = await braveWalletService.getSimpleHashSpamNFTs(
+      '0xB4B2802129071b2B9eBb8cBB01EA1E4D14B34961',
+      ['0x1'],
+      BraveWallet.CoinType.ETH,
+      null
+    )
+    console.log('result is ', result)
   }
 })
 
