@@ -96,7 +96,7 @@ namespace blockchain_lists {
     DappList fantom;
   };
 
-  dictionary Token {
+  dictionary OnRampToken {
     // Hexadecimal string, e.g. "0x1"
     DOMString chain_id;
 
@@ -138,14 +138,14 @@ namespace blockchain_lists {
 
     // e.g. true
     boolean visible;
+
+    // e.g. ["stripe", "coinbase"]
+    DOMString[] providers;
   };
 
-  dictionary TokenListMap {
-    Token[] ramp;
-    Token[] sardine;
-    Token[] transak;
-    Token[] stripe;
-  };
+  dictionary OnRampTokenLists {
+    OnRampToken[] tokens;
+  }
 
   dictionary OnRampCurrency {
     // e.g. "ARS"
