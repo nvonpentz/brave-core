@@ -29,10 +29,12 @@ using OffRampTokensListMap =
 bool ParseTokenList(const std::string& json,
                     TokenListMap* token_list,
                     mojom::CoinType coin);
+std::pair<absl::optional<OnRampTokensListMap>, absl::optional<OffRampTokensListMap>> 
+ParseRampTokensListMaps(const std::string& json);
 absl::optional<OnRampTokensListMap> ParseOnRampTokensListMap(
     const std::string& json);
-absl::optional<OffRampTokensListMap> ParseOffRampTokensListMap(
-    const std::string& json);
+// absl::optional<OffRampTokensListMap> ParseOffRampTokensListMap(
+//     const std::string& json);
 absl::optional<std::vector<mojom::OnRampCurrency>> ParseOnRampCurrencyLists(
     const std::string& json);
 std::string GetTokenListKey(mojom::CoinType coin, const std::string& chain_id);
