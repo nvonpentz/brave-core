@@ -47,13 +47,17 @@ static const auto kAllowedSchemes = base::MakeFixedFlatSet<base::StringPiece>(
 
 namespace ai_chat {
 
-AIChatTabHelper::AIChatTabHelper(content::WebContents* web_contents,
-                                 AIChatMetrics* ai_chat_metrics)
+AIChatTabHelper::AIChatTabHelper(
+    content::WebContents* web_contents,
+    AIChatMetrics* ai_chat_metrics,
+    base::RepeatingCallback<mojo::PendingRemote<skus::mojom::SkusService>()>
+        skus_service_getter)
     : content::WebContentsObserver(web_contents),
       content::WebContentsUserData<AIChatTabHelper>(*web_contents),
       pref_service_(
           user_prefs::UserPrefs::Get(web_contents->GetBrowserContext())),
-      ai_chat_metrics_(ai_chat_metrics) {
+      ai_chat_metrics_(ai_chat_metrics),
+      skus_service_getter_(skus_service_getter) {
   DCHECK(pref_service_);
   pref_change_registrar_.Init(pref_service_);
   pref_change_registrar_.Add(
@@ -253,6 +257,21 @@ void AIChatTabHelper::OnTabContentRetrieved(int64_t for_navigation_id,
   MaybeGenerateQuestions();
 }
 
+void AIChatTabHelper::EnsureMojoConnected() {
+  if (!skus_service_) {
+    auto pending = skus_service_getter_.Run();
+    skus_service_.Bind(std::move(pending));
+  }
+  DCHECK(skus_service_);
+  skus_service_.set_disconnect_handler(base::BindOnce(
+      &AIChatTabHelper::OnMojoConnectionError, base::Unretained(this)));
+}
+
+void AIChatTabHelper::OnMojoConnectionError() {
+  skus_service_.reset();
+  EnsureMojoConnected();
+}
+
 void AIChatTabHelper::CleanUp() {
   chat_history_.clear();
   article_text_.clear();
@@ -304,6 +323,17 @@ void AIChatTabHelper::ClearConversationHistory() {
 
 mojom::APIError AIChatTabHelper::GetCurrentAPIError() {
   return current_error_;
+}
+void AIChatTabHelper::UserHasValidPremiumCredentials(UserHasValidPremiumCredentialsCallback callback) {
+// void AIChatTabHelper::UserHasValidPremiumCredentials() {
+  EnsureMojoConnected();
+  skus_service_->CredentialSummary(
+      "domain", base::BindOnce(&AIChatTabHelper::OnCredentialSummary,
+                             base::Unretained(this), "domain"));
+}
+
+void AIChatTabHelper::OnCredentialSummary(const std::string& domain,
+                                          const std::string& summary_string) {
 }
 
 void AIChatTabHelper::GenerateQuestions() {

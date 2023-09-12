@@ -14,6 +14,8 @@
 #include "base/observer_list.h"
 #include "brave/components/ai_chat/browser/ai_chat_api.h"
 #include "brave/components/ai_chat/common/mojom/ai_chat.mojom.h"
+#include "brave/components/skus/browser/skus_utils.h"
+#include "brave/components/skus/common/skus_sdk.mojom.h"
 #include "components/favicon/core/favicon_driver_observer.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "content/public/browser/navigation_handle.h"
@@ -89,8 +91,11 @@ class AIChatTabHelper : public content::WebContentsObserver,
  private:
   friend class content::WebContentsUserData<AIChatTabHelper>;
 
-  AIChatTabHelper(content::WebContents* web_contents,
-                  AIChatMetrics* ai_chat_metrics);
+  AIChatTabHelper(
+      content::WebContents* web_contents,
+      AIChatMetrics* ai_chat_metrics,
+      base::RepeatingCallback<mojo::PendingRemote<skus::mojom::SkusService>()>
+          skus_service_getter);
 
   bool HasUserOptedIn();
   void OnUserOptedIn();
@@ -125,6 +130,12 @@ class AIChatTabHelper : public content::WebContentsObserver,
                         const GURL& icon_url,
                         bool icon_url_changed,
                         const gfx::Image& image) override;
+  void EnsureMojoConnected();
+  void OnMojoConnectionError();
+  void UserHasValidPremiumCredentials(UserHasValidPremiumCredentialsCallback callback) override;
+  void OnCredentialSummary(const std::string& domain,
+                           const std::string& summary_string);
+
   std::string BuildClaudePrompt(const std::string& question_part,
                                 bool is_suggested_question);
   std::string BuildLlama2Prompt(std::string user_message);
@@ -166,6 +177,9 @@ class AIChatTabHelper : public content::WebContentsObserver,
   mojom::APIError current_error_ = mojom::APIError::None;
 
   raw_ptr<AIChatMetrics> ai_chat_metrics_;
+  base::RepeatingCallback<mojo::PendingRemote<skus::mojom::SkusService>()>
+      skus_service_getter_;
+  mojo::Remote<skus::mojom::SkusService> skus_service_;
 
   base::WeakPtrFactory<AIChatTabHelper> weak_ptr_factory_{this};
   WEB_CONTENTS_USER_DATA_KEY_DECL();
