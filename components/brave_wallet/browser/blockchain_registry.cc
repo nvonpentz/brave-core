@@ -77,6 +77,11 @@ void BlockchainRegistry::UpdateOnRampCurrenciesLists(
   on_ramp_currencies_list_ = std::move(on_ramp_currencies_list);
 }
 
+void BlockchainRegistry::UpdateOfacAddressesList(
+    std::vector<std::string> ofac_addresses_list) {
+  ofac_addresses_list_ = std::move(ofac_addresses_list);
+}
+
 void BlockchainRegistry::GetTokenByAddress(const std::string& chain_id,
                                            mojom::CoinType coin,
                                            const std::string& address,
@@ -296,6 +301,10 @@ void BlockchainRegistry::GetCoingeckoId(const std::string& chain_id,
                                         const std::string& contract_address,
                                         GetCoingeckoIdCallback callback) {
   std::move(callback).Run(GetCoingeckoId(chain_id, contract_address));
+}
+
+std::vector<std::string> BlockchainRegistry::GetOfacAddressesList() {
+  return {};
 }
 
 }  // namespace brave_wallet
