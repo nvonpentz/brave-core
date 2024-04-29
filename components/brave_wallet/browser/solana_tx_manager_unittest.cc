@@ -85,6 +85,10 @@ class SolanaTxManagerUnitTest : public testing::Test {
     last_valid_block_height1_ = 3090;
     last_valid_block_height2_ = 3290;
     last_valid_block_height3_ = 3490;
+    gas_estimation1_ = mojom::SolanaGasEstimation::New();
+    gas_estimation1_->base_fee = 5000;
+    gas_estimation1_->compute_units = 69017 + 300;
+    gas_estimation1_->fee_per_compute_unit = 101;
 
     SetInterceptor(latest_blockhash1_, last_valid_block_height1_, tx_hash1_, "",
                    false, last_valid_block_height1_);
@@ -601,6 +605,7 @@ class SolanaTxManagerUnitTest : public testing::Test {
   uint64_t last_valid_block_height2_ = 0;
   uint64_t last_valid_block_height3_ = 0;
   size_t send_transaction_calls_ = 0;
+  mojom::SolanaGasEstimationPtr gas_estimation1_;
 };
 
 TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
@@ -678,12 +683,7 @@ TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
   tx->message()->AddPriorityFee(
       69017 + 300,
       101);  // Added priority automatically in AddUnapprovedTransaction
-  mojom::SolanaGasEstimationPtr expected_estimate =
-      mojom::SolanaGasEstimation::New();
-  expected_estimate->base_fee = 5000;
-  expected_estimate->compute_units = 69017 + 300;
-  expected_estimate->fee_per_compute_unit = 101;
-  tx->set_gas_estimation(std::move(expected_estimate));
+  tx->set_gas_estimation(gas_estimation1_.Clone());
   EXPECT_EQ(*tx_meta1->tx(), *tx);
   EXPECT_EQ(tx_meta1->signature_status(), SolanaSignatureStatus());
   EXPECT_EQ(tx_meta1->from(), from_account);
