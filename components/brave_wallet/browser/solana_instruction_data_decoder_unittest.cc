@@ -413,6 +413,11 @@ TEST_F(SolanaInstructionDecoderTest, GetComputeBudgetInstructionType) {
   instruction_type = GetComputeBudgetInstructionType(
       (*system_instruction).data(), (*system_instruction).GetProgramId());
   ASSERT_FALSE(instruction_type);
+
+  // Returns nullopt for empty data
+  instruction_type =
+      GetComputeBudgetInstructionType({}, mojom::kSolanaComputeBudgetProgramId);
+  ASSERT_FALSE(instruction_type);
 }
 
 }  // namespace brave_wallet::solana_ins_data_decoder
