@@ -713,7 +713,7 @@ TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
   task_environment_.RunUntilIdle();
   tx->message()->set_recent_blockhash(latest_blockhash1_);
   tx->message()->set_last_valid_block_height(last_valid_block_height1_ +
-                                             kValidBlockHeightThreshold);
+                                             kSolanaValidBlockHeightThreshold);
   tx_meta1 = solana_tx_manager()->GetTxForTesting(meta_id1);
   ASSERT_TRUE(tx_meta1);
   EXPECT_EQ(tx_meta1->chain_id(), mojom::kSolanaMainnet);
@@ -1263,14 +1263,14 @@ TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash) {
   EXPECT_EQ(tx1->status(), mojom::TransactionStatus::Submitted);
   EXPECT_EQ(tx1->tx()->message()->recent_blockhash(), latest_blockhash1_);
   EXPECT_EQ(tx1->tx()->message()->last_valid_block_height(),
-            last_valid_block_height1_ + kValidBlockHeightThreshold);
+            last_valid_block_height1_ + kSolanaValidBlockHeightThreshold);
 
   auto tx2 = solana_tx_manager()->GetTxForTesting(meta_id2);
   ASSERT_TRUE(tx2);
   EXPECT_EQ(tx2->status(), mojom::TransactionStatus::Submitted);
   EXPECT_EQ(tx2->tx()->message()->recent_blockhash(), latest_blockhash2_);
   EXPECT_EQ(tx2->tx()->message()->last_valid_block_height(),
-            last_valid_block_height2_ + kValidBlockHeightThreshold);
+            last_valid_block_height2_ + kSolanaValidBlockHeightThreshold);
 
   // Set Interceptor for return null signature statuses and block height only
   // valid for blockhash2.
@@ -1331,9 +1331,9 @@ TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash_DappBlockhash) {
   auto tx_meta2 = solana_tx_manager()->GetTxForTesting(meta_id2);
   ASSERT_TRUE(tx_meta2);
   ASSERT_EQ(tx_meta2->tx()->message()->last_valid_block_height(),
-            last_valid_block_height1_ + kValidBlockHeightThreshold);
+            last_valid_block_height1_ + kSolanaValidBlockHeightThreshold);
   tx_meta2->tx()->message()->set_last_valid_block_height(
-      last_valid_block_height2_ + kValidBlockHeightThreshold);
+      last_valid_block_height2_ + kSolanaValidBlockHeightThreshold);
   ASSERT_TRUE(
       solana_tx_manager()->GetSolanaTxStateManager()->AddOrUpdateTx(*tx_meta2));
 
@@ -1344,7 +1344,7 @@ TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash_DappBlockhash) {
   ASSERT_TRUE(tx_meta);
   ASSERT_EQ(tx_meta->tx()->message()->recent_blockhash(), latest_blockhash1_);
   ASSERT_EQ(tx_meta->tx()->message()->last_valid_block_height(),
-            last_valid_block_height1_ + kValidBlockHeightThreshold);
+            last_valid_block_height1_ + kSolanaValidBlockHeightThreshold);
   EXPECT_EQ(tx_meta->status(), mojom::TransactionStatus::Submitted);
 
   tx_meta2 = solana_tx_manager()->GetTxForTesting(meta_id2);
@@ -1463,7 +1463,7 @@ TEST_F(SolanaTxManagerUnitTest, RetryTransaction) {
   auto nonce_account = SolAccount(3);
   durable_nonce_tx_data->recent_blockhash = nonce_account->address;
   durable_nonce_tx_data->last_valid_block_height =
-      last_valid_block_height1_ + kValidBlockHeightThreshold;
+      last_valid_block_height1_ + kSolanaValidBlockHeightThreshold;
   std::string meta_id2;
   AddUnapprovedTransaction(mojom::kSolanaMainnet,
                            std::move(durable_nonce_tx_data), sol_account(),

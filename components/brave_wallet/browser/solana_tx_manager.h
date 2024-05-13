@@ -20,9 +20,6 @@ class PrefService;
 
 namespace brave_wallet {
 
-// https://docs.rs/solana-program/1.18.10/src/solana_program/clock.rs.html#129-131
-extern const int kValidBlockHeightThreshold;
-
 class TxService;
 class JsonRpcService;
 class KeyringService;

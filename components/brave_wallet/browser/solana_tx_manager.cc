@@ -33,7 +33,6 @@
 
 namespace brave_wallet {
 
-constexpr int kValidBlockHeightThreshold = 150;
 // The number of compute units required to modify the compute
 // units and add a priority fee.
 constexpr int kAddPriorityFeeComputeUnits = 300;
@@ -301,7 +300,7 @@ void SolanaTxManager::OnGetBlockHeightForBlockhash(
   }
 
   OnGetLatestBlockhash(std::move(meta), std::move(callback), blockhash,
-                       block_height + kValidBlockHeightThreshold,
+                       block_height + kSolanaValidBlockHeightThreshold,
                        mojom::SolanaProviderError::kSuccess, "");
 }
 
@@ -654,7 +653,7 @@ void SolanaTxManager::OnGetBlockHeightForBlockhashHardware(
   }
 
   OnGetLatestBlockhashHardware(std::move(meta), std::move(callback), blockhash,
-                               block_height + kValidBlockHeightThreshold,
+                               block_height + kSolanaValidBlockHeightThreshold,
                                mojom::SolanaProviderError::kSuccess, "");
 }
 
