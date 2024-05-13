@@ -668,7 +668,8 @@ TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   AddUnapprovedTransaction(mojom::kSolanaMainnet, solana_tx_data.Clone(),
                            from_account, &meta_id1);
 
@@ -785,7 +786,8 @@ TEST_F(SolanaTxManagerUnitTest, WalletOrigin) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
 
   std::string meta_id;
   AddUnapprovedTransaction(mojom::kSolanaMainnet,
@@ -813,7 +815,8 @@ TEST_F(SolanaTxManagerUnitTest, SomeSiteOrigin) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   std::string meta_id;
   AddUnapprovedTransaction(
       mojom::kSolanaMainnet, std::move(system_transfer_data), from,
@@ -1164,7 +1167,8 @@ TEST_F(SolanaTxManagerUnitTest, GetEstimatedTxFee) {
         "context":{"slot":123065869},
         "value": 18446744073709551615
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   std::string system_transfer_meta_id;
   AddUnapprovedTransaction(mojom::kSolanaMainnet,
                            std::move(system_transfer_data), from,
@@ -1220,7 +1224,8 @@ TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   std::string meta_id1;
   AddUnapprovedTransaction(mojom::kSolanaMainnet, system_transfer_data.Clone(),
                            from, &meta_id1);
@@ -1233,7 +1238,8 @@ TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height2_, "[null, null]");
+    })",
+                 false, last_valid_block_height2_, "[null, null]");
   // Fast forward to have block tracker run with the new interceptor.
   task_environment_.FastForwardBy(
       base::Seconds(kSolanaBlockTrackerTimeInSeconds));
@@ -1304,7 +1310,8 @@ TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash_DappBlockhash) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   std::string meta_id1;
   AddUnapprovedTransaction(mojom::kSolanaMainnet, system_transfer_data.Clone(),
                            sol_account(), &meta_id1);
@@ -1400,7 +1407,8 @@ TEST_F(SolanaTxManagerUnitTest, DropTxAfterSafeDropThreshold) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", true, last_valid_block_height1_, "[null]");
+    })",
+                 true, last_valid_block_height1_, "[null]");
   std::string meta_id1;
   AddUnapprovedTransaction(mojom::kSolanaMainnet, system_transfer_data.Clone(),
                            from, &meta_id1);
@@ -1444,7 +1452,8 @@ TEST_F(SolanaTxManagerUnitTest, RetryTransaction) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   AddUnapprovedTransaction(mojom::kSolanaMainnet, std::move(tx_data),
                            sol_account(), &meta_id1);
 
@@ -1551,7 +1560,8 @@ TEST_F(SolanaTxManagerUnitTest, GetTransactionMessageToSign) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   std::string system_transfer_meta_id;
   AddUnapprovedTransaction(mojom::kSolanaMainnet,
                            std::move(system_transfer_data), from,
@@ -1599,7 +1609,8 @@ TEST_F(SolanaTxManagerUnitTest, ProcessSolanaHardwareSignature) {
         "context":{"slot":123065869},
         "value": 18446744073709551615
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   std::string system_transfer_meta_id;
   AddUnapprovedTransaction(mojom::kSolanaMainnet,
                            std::move(system_transfer_data), from,
@@ -1638,7 +1649,8 @@ TEST_F(SolanaTxManagerUnitTest, RebroadcastTransaction) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   AddUnapprovedTransaction(mojom::kSolanaMainnet, data.Clone(), sol_account(),
                            &meta_id1);
   ASSERT_FALSE(meta_id1.empty());
@@ -1678,7 +1690,8 @@ TEST_F(SolanaTxManagerUnitTest, RebroadcastTransaction) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", true, last_valid_block_height2_,
+    })",
+                 true, last_valid_block_height2_,
                  R"([{"slot": 100, "confirmations": 100, "err": null,
                       "confirmationStatus": "processed"}])");
   task_environment_.FastForwardBy(
@@ -1692,7 +1705,8 @@ TEST_F(SolanaTxManagerUnitTest, RebroadcastTransaction) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", true, last_valid_block_height2_, "[null, null]");
+    })",
+                 true, last_valid_block_height2_, "[null, null]");
   data->send_options = mojom::SolanaSendTransactionOptions::New(
       mojom::OptionalMaxRetries::New(1u), std::nullopt, nullptr);
   std::string meta_id2;
@@ -1779,7 +1793,8 @@ TEST_F(SolanaTxManagerUnitTest, GetSolanaGasEstimation) {
         "context":{"slot":123065869},
         "value": 5000
       }
-    })", false, last_valid_block_height1_);
+    })",
+                 false, last_valid_block_height1_);
   mojom::SolanaGasEstimationPtr expected_estimate =
       mojom::SolanaGasEstimation::New();
   expected_estimate->base_fee = 5000;

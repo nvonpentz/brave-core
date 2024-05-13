@@ -77,7 +77,8 @@ DeserializeMessageHeader(const std::vector<uint8_t>& bytes) {
 
   // Message header
   SolanaMessageHeader message_header;
-  message_header.num_required_signatures = bytes[bytes_index++]; message_header.num_readonly_signed_accounts = bytes[bytes_index++];
+  message_header.num_required_signatures = bytes[bytes_index++];
+  message_header.num_readonly_signed_accounts = bytes[bytes_index++];
   message_header.num_readonly_unsigned_accounts = bytes[bytes_index++];
 
   return std::make_tuple(bytes_index, version, message_header);

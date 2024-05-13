@@ -124,22 +124,30 @@ namespace compute_budget_program {
 
 TEST(SolanaInstructionBuilderUnitTest, SetComputeUnitLimit) {
   auto instruction = SetComputeUnitLimit(1);
-  EXPECT_EQ(instruction, SolanaInstruction(mojom::kSolanaComputeBudgetProgramId,
-                                           {}, {2, 1, 0, 0, 0}));
+  std::vector<uint8_t> expected_data1 = {2, 1, 0, 0, 0};
+  EXPECT_EQ(instruction,
+            SolanaInstruction(mojom::kSolanaComputeBudgetProgramId, {},
+                              base::span<const uint8_t>(expected_data1)));
 
   instruction = SetComputeUnitLimit(99);
-  EXPECT_EQ(instruction, SolanaInstruction(mojom::kSolanaComputeBudgetProgramId,
-                                           {}, {2, 99, 0, 0, 0}));
+  std::vector<uint8_t> expected_data2 = {2, 99, 0, 0, 0};
+  EXPECT_EQ(instruction,
+            SolanaInstruction(mojom::kSolanaComputeBudgetProgramId, {},
+                              base::span<const uint8_t>(expected_data2)));
 }
 
 TEST(SolanaInstructionBuilderUnitTest, SetComputeUnitPrice) {
   auto instruction = SetComputeUnitPrice(1);
-  EXPECT_EQ(instruction, SolanaInstruction(mojom::kSolanaComputeBudgetProgramId,
-                                           {}, {3, 1, 0, 0, 0, 0, 0, 0, 0}));
+  std::vector<uint8_t> expected_data1 = {3, 1, 0, 0, 0, 0, 0, 0, 0};
+  EXPECT_EQ(instruction,
+            SolanaInstruction(mojom::kSolanaComputeBudgetProgramId, {},
+                              base::span<const uint8_t>(expected_data1)));
 
   instruction = SetComputeUnitPrice(99);
-  EXPECT_EQ(instruction, SolanaInstruction(mojom::kSolanaComputeBudgetProgramId,
-                                           {}, {3, 99, 0, 0, 0, 0, 0, 0, 0}));
+  std::vector<uint8_t> expected_data2 = {3, 99, 0, 0, 0, 0, 0, 0, 0};
+  EXPECT_EQ(instruction,
+            SolanaInstruction(mojom::kSolanaComputeBudgetProgramId, {},
+                              base::span<const uint8_t>(expected_data2)));
 }
 
 }  // namespace compute_budget_program
