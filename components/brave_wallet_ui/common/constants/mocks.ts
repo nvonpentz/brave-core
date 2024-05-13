@@ -480,7 +480,7 @@ BraveWallet.SignTransactionRequest = {
       addressTableLookups: [],
       sendOptions: undefined,
       signTransactionParam: undefined,
-      gasEstimation: undefined
+      feeEstimation: undefined
     }
   },
   rawMessage: { bytes: [1], str: undefined },
@@ -565,7 +565,7 @@ SerializableTransactionInfo = {
       addressTableLookups: [],
       sendOptions: undefined,
       signTransactionParam: undefined,
-      gasEstimation: undefined
+      feeEstimation: undefined
     }
   },
   txStatus: 0,
@@ -642,7 +642,7 @@ BraveWallet.SignAllTransactionsRequest = {
         addressTableLookups: [],
         sendOptions: undefined,
         signTransactionParam: undefined,
-        gasEstimation: undefined
+        feeEstimation: undefined
       }
     },
     {
@@ -694,7 +694,7 @@ BraveWallet.SignAllTransactionsRequest = {
         addressTableLookups: [],
         sendOptions: undefined,
         signTransactionParam: undefined,
-        gasEstimation: undefined
+        feeEstimation: undefined
       }
     }
   ],

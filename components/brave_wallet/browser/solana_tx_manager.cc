@@ -113,7 +113,7 @@ void SolanaTxManager::AddUnapprovedTransaction(
       base::BindOnce(&SolanaTxManager::ContinueAddUnapprovedTransaction,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
-  GetSolanaGasEstimationAndMeta(chain_id, std::move(meta),
+  GetSolanaFeeEstimationAndMeta(chain_id, std::move(meta),
                                 std::move(internal_callback));
 }
 
@@ -121,7 +121,7 @@ void SolanaTxManager::OnSimulateSolanaTransaction(
     const std::string& chain_id,
     std::unique_ptr<SolanaTxMeta> meta,
     uint64_t base_fee,
-    GetSolanaGasEstimationAndMetaCallback callback,
+    GetSolanaFeeEstimationAndMetaCallback callback,
     uint64_t compute_units_consumed,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
@@ -143,7 +143,7 @@ void SolanaTxManager::OnGetRecentSolanaPrioritizationFees(
     std::unique_ptr<SolanaTxMeta> meta,
     uint64_t base_fee,
     uint64_t compute_units,
-    GetSolanaGasEstimationAndMetaCallback callback,
+    GetSolanaFeeEstimationAndMetaCallback callback,
     std::vector<std::pair<uint64_t, uint64_t>> recent_fees,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
@@ -169,7 +169,7 @@ void SolanaTxManager::OnGetRecentSolanaPrioritizationFees(
     }
   }
 
-  mojom::SolanaGasEstimationPtr estimation = mojom::SolanaGasEstimation::New();
+  mojom::SolanaFeeEstimationPtr estimation = mojom::SolanaFeeEstimation::New();
   estimation->base_fee = base_fee;
   // The simulation was performed without the instructions that set a compute
   // budget and priority fee, so we must add those as well.
@@ -187,7 +187,7 @@ void SolanaTxManager::OnGetRecentSolanaPrioritizationFees(
 
 void SolanaTxManager::OnGetEstimatedTxFeeAndMeta(
     const std::string& chain_id,
-    GetSolanaGasEstimationAndMetaCallback callback,
+    GetSolanaFeeEstimationAndMetaCallback callback,
     std::unique_ptr<SolanaTxMeta> meta,
     uint64_t base_fee,
     mojom::SolanaProviderError error,
@@ -215,10 +215,10 @@ void SolanaTxManager::FinishGetEstimatedTxFee(
   std::move(callback).Run(base_fee, error, error_message);
 }
 
-void SolanaTxManager::FinishGetSolanaGasEstimation(
-    GetSolanaGasEstimationCallback callback,
+void SolanaTxManager::FinishGetSolanaFeeEstimation(
+    GetSolanaFeeEstimationCallback callback,
     std::unique_ptr<SolanaTxMeta> meta,
-    mojom::SolanaGasEstimationPtr estimation,
+    mojom::SolanaFeeEstimationPtr estimation,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
   std::move(callback).Run(std::move(estimation), error, error_message);
@@ -227,7 +227,7 @@ void SolanaTxManager::FinishGetSolanaGasEstimation(
 void SolanaTxManager::ContinueAddUnapprovedTransaction(
     AddUnapprovedTransactionCallback callback,
     std::unique_ptr<SolanaTxMeta> meta,
-    mojom::SolanaGasEstimationPtr estimation,
+    mojom::SolanaFeeEstimationPtr estimation,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
   if (error != mojom::SolanaProviderError::kSuccess) {
@@ -238,7 +238,7 @@ void SolanaTxManager::ContinueAddUnapprovedTransaction(
   auto compute_units = estimation->compute_units;
   auto fee_per_compute_unit = estimation->fee_per_compute_unit;
 
-  meta->tx()->set_gas_estimation(std::move(estimation));
+  meta->tx()->set_fee_estimation(std::move(estimation));
 
   // Modify compute units and add the priority fee
   meta->tx()->message()->AddPriorityFee(compute_units, fee_per_compute_unit);
@@ -933,10 +933,10 @@ void SolanaTxManager::OnGetFeeForMessage(
   std::move(callback).Run(std::move(meta), tx_fee, error, error_message);
 }
 
-void SolanaTxManager::GetSolanaGasEstimation(
+void SolanaTxManager::GetSolanaFeeEstimation(
     const std::string& chain_id,
     const std::string& tx_meta_id,
-    GetSolanaGasEstimationCallback callback) {
+    GetSolanaFeeEstimationCallback callback) {
   // Get the TxMeta.
   std::unique_ptr<SolanaTxMeta> meta =
       GetSolanaTxStateManager()->GetSolanaTx(tx_meta_id);
@@ -948,17 +948,17 @@ void SolanaTxManager::GetSolanaGasEstimation(
   }
 
   auto internal_callback =
-      base::BindOnce(&SolanaTxManager::FinishGetSolanaGasEstimation,
+      base::BindOnce(&SolanaTxManager::FinishGetSolanaFeeEstimation,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
-  GetSolanaGasEstimationAndMeta(chain_id, std::move(meta),
+  GetSolanaFeeEstimationAndMeta(chain_id, std::move(meta),
                                 std::move(internal_callback));
 }
 
-void SolanaTxManager::GetSolanaGasEstimationAndMeta(
+void SolanaTxManager::GetSolanaFeeEstimationAndMeta(
     const std::string& chain_id,
     std::unique_ptr<SolanaTxMeta> meta,
-    GetSolanaGasEstimationAndMetaCallback callback) {
+    GetSolanaFeeEstimationAndMetaCallback callback) {
   auto internal_callback = base::BindOnce(
       &SolanaTxManager::OnGetEstimatedTxFeeAndMeta,
       weak_ptr_factory_.GetWeakPtr(), chain_id, std::move(callback));

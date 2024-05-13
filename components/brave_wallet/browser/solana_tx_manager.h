@@ -74,11 +74,11 @@ class SolanaTxManager : public TxManager, public SolanaBlockTracker::Observer {
                               uint64_t,
                               mojom::SolanaProviderError,
                               const std::string&)>;
-  using GetSolanaGasEstimationCallback =
-      mojom::SolanaTxManagerProxy::GetSolanaGasEstimationCallback;
-  using GetSolanaGasEstimationAndMetaCallback =
+  using GetSolanaFeeEstimationCallback =
+      mojom::SolanaTxManagerProxy::GetSolanaFeeEstimationCallback;
+  using GetSolanaFeeEstimationAndMetaCallback =
       base::OnceCallback<void(std::unique_ptr<SolanaTxMeta>,
-                              mojom::SolanaGasEstimationPtr,
+                              mojom::SolanaFeeEstimationPtr,
                               mojom::SolanaProviderError,
                               const std::string&)>;
   void MakeSystemProgramTransferTxData(
@@ -102,13 +102,13 @@ class SolanaTxManager : public TxManager, public SolanaBlockTracker::Observer {
                          GetEstimatedTxFeeCallback callback);
   void GetEstimatedTxFeeAndMeta(std::unique_ptr<SolanaTxMeta> meta,
                                 GetEstimatedTxFeeAndMetaCallback callback);
-  void GetSolanaGasEstimation(const std::string& chain_id,
+  void GetSolanaFeeEstimation(const std::string& chain_id,
                               const std::string& tx_meta_id,
-                              GetSolanaGasEstimationCallback callback);
-  void GetSolanaGasEstimationAndMeta(
+                              GetSolanaFeeEstimationCallback callback);
+  void GetSolanaFeeEstimationAndMeta(
       const std::string& chain_id,
       std::unique_ptr<SolanaTxMeta> meta,
-      GetSolanaGasEstimationAndMetaCallback callback);
+      GetSolanaFeeEstimationAndMetaCallback callback);
   void ProcessSolanaHardwareSignature(
       const std::string& tx_meta_id,
       const std::vector<uint8_t>& signature_bytes,
@@ -129,7 +129,7 @@ class SolanaTxManager : public TxManager, public SolanaBlockTracker::Observer {
                            ProcessSolanaHardwareSignature);
   FRIEND_TEST_ALL_PREFIXES(SolanaTxManagerUnitTest, RetryTransaction);
   FRIEND_TEST_ALL_PREFIXES(SolanaTxManagerUnitTest, GetEstimatedTxFee);
-  FRIEND_TEST_ALL_PREFIXES(SolanaTxManagerUnitTest, GetSolanaGasEstimation);
+  FRIEND_TEST_ALL_PREFIXES(SolanaTxManagerUnitTest, GetSolanaFeeEstimation);
   friend class SolanaTxManagerUnitTest;
 
   mojom::CoinType GetCoinType() const override;
@@ -210,7 +210,7 @@ class SolanaTxManager : public TxManager, public SolanaBlockTracker::Observer {
       const std::string& chain_id,
       std::unique_ptr<SolanaTxMeta> meta,
       uint64_t base_fee,
-      GetSolanaGasEstimationAndMetaCallback callback,
+      GetSolanaFeeEstimationAndMetaCallback callback,
       uint64_t compute_units_consumed,
       mojom::SolanaProviderError error,
       const std::string& error_message);
@@ -219,14 +219,14 @@ class SolanaTxManager : public TxManager, public SolanaBlockTracker::Observer {
       std::unique_ptr<SolanaTxMeta> meta,
       uint64_t base_fee,
       uint64_t compute_units,
-      GetSolanaGasEstimationAndMetaCallback callback,
+      GetSolanaFeeEstimationAndMetaCallback callback,
       std::vector<std::pair<uint64_t, uint64_t>> recent_fees,
       mojom::SolanaProviderError error,
       const std::string& error_message);
 
   void OnGetEstimatedTxFeeAndMeta(
       const std::string& chain_id,
-      GetSolanaGasEstimationAndMetaCallback callback,
+      GetSolanaFeeEstimationAndMetaCallback callback,
       std::unique_ptr<SolanaTxMeta> meta,
       uint64_t base_fee,
       mojom::SolanaProviderError error,
@@ -238,16 +238,16 @@ class SolanaTxManager : public TxManager, public SolanaBlockTracker::Observer {
                                mojom::SolanaProviderError error,
                                const std::string& error_message);
 
-  void FinishGetSolanaGasEstimation(GetSolanaGasEstimationCallback callback,
+  void FinishGetSolanaFeeEstimation(GetSolanaFeeEstimationCallback callback,
                                     std::unique_ptr<SolanaTxMeta> meta,
-                                    mojom::SolanaGasEstimationPtr estimation,
+                                    mojom::SolanaFeeEstimationPtr estimation,
                                     mojom::SolanaProviderError error,
                                     const std::string& error_message);
 
   void ContinueAddUnapprovedTransaction(
       AddUnapprovedTransactionCallback callback,
       std::unique_ptr<SolanaTxMeta> meta,
-      mojom::SolanaGasEstimationPtr estimation,
+      mojom::SolanaFeeEstimationPtr estimation,
       mojom::SolanaProviderError error,
       const std::string& error_message);
 

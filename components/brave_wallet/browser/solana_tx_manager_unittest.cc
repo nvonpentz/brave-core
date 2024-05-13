@@ -85,10 +85,10 @@ class SolanaTxManagerUnitTest : public testing::Test {
     last_valid_block_height1_ = 3090;
     last_valid_block_height2_ = 3290;
     last_valid_block_height3_ = 3490;
-    gas_estimation1_ = mojom::SolanaGasEstimation::New();
-    gas_estimation1_->base_fee = 5000;
-    gas_estimation1_->compute_units = 69017 + 300;
-    gas_estimation1_->fee_per_compute_unit = 100;
+    fee_estimation1_ = mojom::SolanaFeeEstimation::New();
+    fee_estimation1_->base_fee = 5000;
+    fee_estimation1_->compute_units = 69017 + 300;
+    fee_estimation1_->fee_per_compute_unit = 100;
 
     SetInterceptor(latest_blockhash1_, last_valid_block_height1_, tx_hash1_, "",
                    false, last_valid_block_height1_);
@@ -563,16 +563,16 @@ class SolanaTxManagerUnitTest : public testing::Test {
     testing::Mock::VerifyAndClearExpectations(&observer);
   }
 
-  void TestGetSolanaGasEstimation(
+  void TestGetSolanaFeeEstimation(
       const std::string& chain_id,
       const std::string& tx_meta_id,
-      mojom::SolanaGasEstimationPtr expected_estimation,
+      mojom::SolanaFeeEstimationPtr expected_estimation,
       mojom::SolanaProviderError expected_error,
       const std::string& expected_error_message) {
     base::RunLoop run_loop;
-    solana_tx_manager()->GetSolanaGasEstimation(
+    solana_tx_manager()->GetSolanaFeeEstimation(
         chain_id, tx_meta_id,
-        base::BindLambdaForTesting([&](mojom::SolanaGasEstimationPtr estimation,
+        base::BindLambdaForTesting([&](mojom::SolanaFeeEstimationPtr estimation,
                                        mojom::SolanaProviderError error,
                                        const std::string& error_message) {
           EXPECT_EQ(expected_error, expected_error);
@@ -605,7 +605,7 @@ class SolanaTxManagerUnitTest : public testing::Test {
   uint64_t last_valid_block_height2_ = 0;
   uint64_t last_valid_block_height3_ = 0;
   size_t send_transaction_calls_ = 0;
-  mojom::SolanaGasEstimationPtr gas_estimation1_;
+  mojom::SolanaFeeEstimationPtr fee_estimation1_;
 };
 
 TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
@@ -643,7 +643,7 @@ TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
       nullptr, nullptr);
 
   // First add a partially signed transaction - it should not fetch add any
-  // priority fee instructions or add a gas estimate.
+  // priority fee instructions or add a fee estimate.
   auto param = mojom::SolanaSignTransactionParam::New(
       "test", std::vector<mojom::SignaturePubkeyPairPtr>());
   param->signatures.emplace_back(mojom::SignaturePubkeyPair::New(
@@ -677,14 +677,14 @@ TEST_F(SolanaTxManagerUnitTest, AddAndApproveTransaction) {
   ASSERT_TRUE(tx_meta1);
   EXPECT_EQ(tx_meta1->chain_id(), mojom::kSolanaMainnet);
   tx->message()->set_recent_blockhash(
-      latest_blockhash1_);  // Added to tx_meta1 when fetching the gas estimate
+      latest_blockhash1_);  // Added to tx_meta1 when fetching the fee estimate
   tx->message()->set_last_valid_block_height(
-      last_valid_block_height1_);  // Added to tx_meta1 when fetching the gas
+      last_valid_block_height1_);  // Added to tx_meta1 when fetching the fee
                                    // estimate
   tx->message()->AddPriorityFee(
       69017 + 300,
       100);  // Added priority automatically in AddUnapprovedTransaction
-  tx->set_gas_estimation(gas_estimation1_.Clone());
+  tx->set_fee_estimation(fee_estimation1_.Clone());
   EXPECT_EQ(*tx_meta1->tx(), *tx);
   EXPECT_EQ(tx_meta1->signature_status(), SolanaSignatureStatus());
   EXPECT_EQ(tx_meta1->from(), from_account);
@@ -1735,14 +1735,14 @@ TEST_F(SolanaTxManagerUnitTest, RebroadcastTransaction) {
   EXPECT_EQ(send_transaction_calls_, 1u);
 }
 
-TEST_F(SolanaTxManagerUnitTest, GetSolanaGasEstimation) {
-  // Fetching gas estimate for non existant tx id meta fails.
-  TestGetSolanaGasEstimation(
+TEST_F(SolanaTxManagerUnitTest, GetSolanaFeeEstimation) {
+  // Fetching fee estimate for non existant tx id meta fails.
+  TestGetSolanaFeeEstimation(
       mojom::kSolanaMainnet, "non existant tx meta id", {},
       mojom::SolanaProviderError::kInternalError,
       l10n_util::GetStringUTF8(IDS_BRAVE_WALLET_TRANSACTION_NOT_FOUND));
 
-  // Add an unapproved tx manually (circumventing the gas estimation fetching
+  // Add an unapproved tx manually (circumventing the fee estimation fetching
   // built into that function).
   const auto& from_account = sol_account();
   std::string from_account_address = from_account->address;
@@ -1785,7 +1785,7 @@ TEST_F(SolanaTxManagerUnitTest, GetSolanaGasEstimation) {
       solana_tx_manager()->GetSolanaTxStateManager()->AddOrUpdateTx(meta));
   task_environment_.RunUntilIdle();
 
-  // Call fetch gas estimation with appropriate interceptors. Verify median and
+  // Call fetch fee estimation with appropriate interceptors. Verify median and
   // priority fees.
   SetInterceptor(latest_blockhash1_, last_valid_block_height1_, tx_hash1_, R"({
       "jsonrpc":"2.0","id":1,
@@ -1795,12 +1795,12 @@ TEST_F(SolanaTxManagerUnitTest, GetSolanaGasEstimation) {
       }
     })",
                  false, last_valid_block_height1_);
-  mojom::SolanaGasEstimationPtr expected_estimate =
-      mojom::SolanaGasEstimation::New();
+  mojom::SolanaFeeEstimationPtr expected_estimate =
+      mojom::SolanaFeeEstimation::New();
   expected_estimate->base_fee = 5000;
   expected_estimate->compute_units = 69017 + 300;
   expected_estimate->fee_per_compute_unit = 100;
-  TestGetSolanaGasEstimation(mojom::kSolanaMainnet, meta.id(),
+  TestGetSolanaFeeEstimation(mojom::kSolanaMainnet, meta.id(),
                              std::move(expected_estimate),
                              mojom::SolanaProviderError::kSuccess, "");
 }

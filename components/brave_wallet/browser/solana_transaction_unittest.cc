@@ -540,11 +540,11 @@ TEST_F(SolanaTransactionUnitTest, FromToValue) {
       std::vector<uint8_t>(2, 1), "public_key2"));
   transaction.set_sign_tx_param(sign_tx_param->Clone());
 
-  auto gas_estimation = mojom::SolanaGasEstimation::New();
-  gas_estimation->base_fee = 5000;
-  gas_estimation->compute_units = 200;
-  gas_estimation->fee_per_compute_unit = 25;
-  transaction.set_gas_estimation(std::move(gas_estimation));
+  auto fee_estimation = mojom::SolanaFeeEstimation::New();
+  fee_estimation->base_fee = 5000;
+  fee_estimation->compute_units = 200;
+  fee_estimation->fee_per_compute_unit = 25;
+  transaction.set_fee_estimation(std::move(fee_estimation));
 
   base::Value::Dict value = transaction.ToValue();
   auto expect_tx_value = base::test::ParseJson(R"(
@@ -646,7 +646,7 @@ TEST_F(SolanaTransactionUnitTest, FromToValue) {
             {"signature": "AQE=", "public_key": "public_key2"}
           ]
         },
-        "gas_estimation": {
+        "fee_estimation": {
           "base_fee": "5000",
           "compute_units": "200",
           "fee_per_compute_unit": "25"

@@ -193,7 +193,7 @@ bool SolanaTransaction::operator==(const SolanaTransaction& tx) const {
          spl_token_mint_address_ == tx.spl_token_mint_address_ &&
          tx_type_ == tx.tx_type_ && lamports_ == tx.lamports_ &&
          amount_ == tx.amount_ && send_options_ == tx.send_options_ &&
-         tx.gas_estimation_ == gas_estimation_;
+         tx.fee_estimation_ == fee_estimation_;
 }
 
 bool SolanaTransaction::operator!=(const SolanaTransaction& tx) const {
@@ -378,7 +378,7 @@ mojom::SolanaTxDataPtr SolanaTransaction::ToSolanaTxData() const {
   solana_tx_data->tx_type = tx_type_;
   solana_tx_data->lamports = lamports_;
   solana_tx_data->amount = amount_;
-  solana_tx_data->gas_estimation = gas_estimation_.Clone();
+  solana_tx_data->fee_estimation = fee_estimation_.Clone();
 
   if (send_options_) {
     solana_tx_data->send_options = send_options_->ToMojomSendOptions();
@@ -424,16 +424,16 @@ base::Value::Dict SolanaTransaction::ToValue() const {
     dict.Set(kSignTxParam, std::move(sign_tx_param_dict));
   }
 
-  if (gas_estimation_) {
-    base::Value::Dict gas_estimation_dict;
-    gas_estimation_dict.Set("base_fee",
-                            base::NumberToString(gas_estimation_->base_fee));
-    gas_estimation_dict.Set(
-        "compute_units", base::NumberToString(gas_estimation_->compute_units));
-    gas_estimation_dict.Set(
+  if (fee_estimation_) {
+    base::Value::Dict fee_estimation_dict;
+    fee_estimation_dict.Set("base_fee",
+                            base::NumberToString(fee_estimation_->base_fee));
+    fee_estimation_dict.Set(
+        "compute_units", base::NumberToString(fee_estimation_->compute_units));
+    fee_estimation_dict.Set(
         "fee_per_compute_unit",
-        base::NumberToString(gas_estimation_->fee_per_compute_unit));
-    dict.Set("gas_estimation", std::move(gas_estimation_dict));
+        base::NumberToString(fee_estimation_->fee_per_compute_unit));
+    dict.Set("fee_estimation", std::move(fee_estimation_dict));
   }
 
   return dict;
@@ -548,36 +548,36 @@ std::unique_ptr<SolanaTransaction> SolanaTransaction::FromValue(
     tx->set_sign_tx_param(std::move(sign_tx_param));
   }
 
-  const base::Value::Dict* gas_estimation_dict =
-      value.FindDict("gas_estimation");
-  if (gas_estimation_dict) {
-    auto gas_estimation = mojom::SolanaGasEstimation::New();
-    const auto* base_fee_string = gas_estimation_dict->FindString("base_fee");
+  const base::Value::Dict* fee_estimation_dict =
+      value.FindDict("fee_estimation");
+  if (fee_estimation_dict) {
+    auto fee_estimation = mojom::SolanaFeeEstimation::New();
+    const auto* base_fee_string = fee_estimation_dict->FindString("base_fee");
     uint64_t base_fee = 0;
     if (base_fee_string && base::StringToUint64(*base_fee_string, &base_fee)) {
-      gas_estimation->base_fee = base_fee;
+      fee_estimation->base_fee = base_fee;
     }
 
     const auto* compute_units_string =
-        gas_estimation_dict->FindString("compute_units");
+        fee_estimation_dict->FindString("compute_units");
     uint32_t compute_units = 0;
     if (compute_units_string &&
         base::StringToUint(*compute_units_string, &compute_units)) {
-      gas_estimation->compute_units = compute_units;
+      fee_estimation->compute_units = compute_units;
     }
 
     const auto* fee_per_compute_unit_string =
-        gas_estimation_dict->FindString("fee_per_compute_unit");
+        fee_estimation_dict->FindString("fee_per_compute_unit");
     uint64_t fee_per_compute_unit = 0;
     if (fee_per_compute_unit_string &&
         base::StringToUint64(*fee_per_compute_unit_string,
                              &fee_per_compute_unit)) {
-      gas_estimation->fee_per_compute_unit = fee_per_compute_unit;
+      fee_estimation->fee_per_compute_unit = fee_per_compute_unit;
     }
 
-    if (gas_estimation->base_fee != 0 || gas_estimation->compute_units != 0 ||
-        gas_estimation->fee_per_compute_unit != 0) {
-      tx->set_gas_estimation(std::move(gas_estimation));
+    if (fee_estimation->base_fee != 0 || fee_estimation->compute_units != 0 ||
+        fee_estimation->fee_per_compute_unit != 0) {
+      tx->set_fee_estimation(std::move(fee_estimation));
     }
   }
 

@@ -132,8 +132,8 @@ class SolanaTransaction {
     sign_tx_param_ = std::move(sign_tx_param);
   }
   void set_wired_tx(const std::string& wired_tx) { wired_tx_ = wired_tx; }
-  void set_gas_estimation(mojom::SolanaGasEstimationPtr estimation) {
-    gas_estimation_ = std::move(estimation);
+  void set_fee_estimation(mojom::SolanaFeeEstimationPtr estimation) {
+    fee_estimation_ = std::move(estimation);
   }
 
  private:
@@ -172,8 +172,8 @@ class SolanaTransaction {
   // API as the options to be passed to sendTransaction RPC call.
   std::optional<SendOptions> send_options_;
 
-  // Gas estimation result
-  mojom::SolanaGasEstimationPtr gas_estimation_;
+  // Fee estimation result
+  mojom::SolanaFeeEstimationPtr fee_estimation_;
 };
 
 }  // namespace brave_wallet

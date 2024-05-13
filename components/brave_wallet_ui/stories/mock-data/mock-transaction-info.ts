@@ -93,7 +93,7 @@ export const mockSolanaTransactionInfo: SerializableTransactionInfo = {
         encodedSerializedMsg: '',
         signatures: []
       },
-      gasEstimation: undefined,
+      feeEstimation: undefined,
       splTokenMintAddress: '',
       staticAccountKeys: [],
       toWalletAddress: mockSolanaAccountInfo.address,
