@@ -101,6 +101,13 @@ class SolanaMessage {
       const std::vector<SolanaInstruction>& instructions,
       std::vector<SolanaAccountMeta>* unique_account_metas);
 
+  static bool ProcessAccountMetas(
+      const std::vector<SolanaAccountMeta>& unique_account_metas,
+      std::vector<SolanaAddress>& static_accounts,
+      uint16_t& num_required_signatures,
+      uint16_t& num_readonly_signed_accounts,
+      uint16_t& num_readonly_unsigned_accounts);
+
   // Returns true if transaction begins with a valid advance nonce instruction.
   bool UsesPriorityFee() const;
 
