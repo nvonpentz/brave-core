@@ -758,7 +758,7 @@ class TransactionParserTests: XCTestCase {
       addressTableLookups: [],
       send: .init(maxRetries: .init(maxRetries: 1), preflightCommitment: nil, skipPreflight: nil),
       signTransactionParam: nil,
-      gasEstimation: nil
+      feeEstimation: nil
     )
     let transaction = BraveWallet.TransactionInfo(
       id: "7",
@@ -862,7 +862,7 @@ class TransactionParserTests: XCTestCase {
       addressTableLookups: [],
       send: .init(maxRetries: .init(maxRetries: 1), preflightCommitment: nil, skipPreflight: nil),
       signTransactionParam: nil,
-      gasEstimation: nil
+      feeEstimation: nil
     )
     let transaction = BraveWallet.TransactionInfo(
       id: "7",
@@ -952,7 +952,7 @@ class TransactionParserTests: XCTestCase {
       addressTableLookups: [],
       send: .init(maxRetries: .init(maxRetries: 1), preflightCommitment: nil, skipPreflight: nil),
       signTransactionParam: nil,
-      gasEstimation: nil
+      feeEstimation: nil
     )
     let transaction = BraveWallet.TransactionInfo(
       id: "7",

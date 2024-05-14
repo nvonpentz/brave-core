@@ -131,7 +131,13 @@ import XCTest
     }
 
     let solTxManagerProxy = BraveWallet.TestSolanaTxManagerProxy()
-    solTxManagerProxy._estimatedTxFee = { $2(0, .success, "") }
+    let feeEstimation = BraveWallet.SolanaFeeEstimation(
+      baseFee: UInt64(0),
+      computeUnits: UInt32(0),
+      feePerComputeUnit: UInt64(0)
+    )
+
+    solTxManagerProxy._solanaTxFeeEstimation = { $2(feeEstimation, .success, "") }
 
     return TransactionConfirmationStore(
       assetRatioService: assetRatioService,

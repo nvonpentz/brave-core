@@ -382,7 +382,7 @@ extension BraveWallet.TransactionInfo {
           addressTableLookups: [],
           send: nil,
           signTransactionParam: nil,
-          gasEstimation: nil
+          feeEstimation: nil
         )
       ),
       txStatus: .confirmed,
@@ -422,7 +422,7 @@ extension BraveWallet.TransactionInfo {
           addressTableLookups: [],
           send: nil,
           signTransactionParam: nil,
-          gasEstimation: nil
+          feeEstimation: nil
         )
       ),
       txStatus: .confirmed,

@@ -185,11 +185,11 @@ class TransactionDetailsStore: ObservableObject, WalletObserverStore {
       }
 
       if transaction.coin == .sol, solEstimatedTxFeesCache[transaction.id] == nil {
-        let (solEstimatedTxFee, _, _) = await solanaTxManagerProxy.estimatedTxFee(
+        let (solEstimatedTxFee, _, _) = await solanaTxManagerProxy.solanaTxFeeEstimation(
           chainId: network.chainId,
           txMetaId: transaction.id
         )
-        self.solEstimatedTxFeesCache[transaction.id] = solEstimatedTxFee
+        self.solEstimatedTxFeesCache[transaction.id] = solEstimatedTxFee.baseFee
       }
       guard
         let parsedTransaction = transaction.parsedTransaction(
