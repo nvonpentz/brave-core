@@ -465,23 +465,6 @@ class SolanaTxManagerUnitTest : public testing::Test {
     run_loop.Run();
   }
 
-  void TestGetEstimatedTxFee(const std::string& tx_meta_id,
-                             uint64_t expected_tx_fee,
-                             mojom::SolanaProviderError expected_error,
-                             const std::string& expected_err_message) {
-    base::RunLoop run_loop;
-    solana_tx_manager()->GetEstimatedTxFee(
-        tx_meta_id, base::BindLambdaForTesting(
-                        [&](uint64_t tx_fee, mojom::SolanaProviderError error,
-                            const std::string& err_message) {
-                          EXPECT_EQ(expected_tx_fee, tx_fee);
-                          EXPECT_EQ(expected_error, error);
-                          EXPECT_EQ(expected_err_message, err_message);
-                          run_loop.Quit();
-                        }));
-    run_loop.Run();
-  }
-
   void TestGetTransactionMessageToSign(
       const std::string& tx_meta_id,
       std::optional<std::vector<std::uint8_t>> expected_tx_message) {
@@ -563,14 +546,14 @@ class SolanaTxManagerUnitTest : public testing::Test {
     testing::Mock::VerifyAndClearExpectations(&observer);
   }
 
-  void TestGetSolanaFeeEstimation(
+  void TestGetSolanaTxFeeEstimation(
       const std::string& chain_id,
       const std::string& tx_meta_id,
       mojom::SolanaFeeEstimationPtr expected_estimation,
       mojom::SolanaProviderError expected_error,
       const std::string& expected_error_message) {
     base::RunLoop run_loop;
-    solana_tx_manager()->GetSolanaFeeEstimation(
+    solana_tx_manager()->GetSolanaTxFeeEstimation(
         chain_id, tx_meta_id,
         base::BindLambdaForTesting([&](mojom::SolanaFeeEstimationPtr estimation,
                                        mojom::SolanaProviderError error,
@@ -1152,63 +1135,6 @@ TEST_F(SolanaTxManagerUnitTest, MakeTxDataFromBase64EncodedTransaction) {
       l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
 }
 
-TEST_F(SolanaTxManagerUnitTest, GetEstimatedTxFee) {
-  const auto& from = sol_account();
-  const std::string to = "JDqrvDz8d8tFCADashbUKQDKfJZFobNy13ugN65t1wvV";
-  mojom::SolanaTxDataPtr system_transfer_data = nullptr;
-  TestMakeSystemProgramTransferTxData(from, to, 10000000, nullptr,
-                                      mojom::SolanaProviderError::kSuccess, "",
-                                      &system_transfer_data);
-  ASSERT_TRUE(system_transfer_data);
-
-  SetInterceptor(latest_blockhash1_, last_valid_block_height1_, tx_hash1_, R"({
-      "jsonrpc":"2.0","id":1,
-      "result": {
-        "context":{"slot":123065869},
-        "value": 18446744073709551615
-      }
-    })",
-                 false, last_valid_block_height1_);
-  std::string system_transfer_meta_id;
-  AddUnapprovedTransaction(mojom::kSolanaMainnet,
-                           std::move(system_transfer_data), from,
-                           &system_transfer_meta_id);
-  ASSERT_FALSE(system_transfer_meta_id.empty());
-
-  std::string json = R"({
-      "jsonrpc": "2.0",
-      "result": { "context": { "slot": 5068 }, "value": 18446744073709551615 },
-      "id": 1
-  })";
-
-  std::string json2 = R"({
-      "jsonrpc": "2.0",
-      "result": { "context": { "slot": 5068 }, "value": null },
-      "id": 1
-  })";
-
-  // GetEstimatedTxFee with latest blockhash and non-null tx fee from remote.
-  TestGetEstimatedTxFee(system_transfer_meta_id, UINT64_MAX,
-                        mojom::SolanaProviderError::kSuccess, "");
-
-  // GetEstimatedTxFee with cached blockhash and error at parsing tx fee.
-  SetInterceptor(latest_blockhash1_, last_valid_block_height1_, "", "{}");
-  TestGetEstimatedTxFee(system_transfer_meta_id, 0,
-                        mojom::SolanaProviderError::kParsingError,
-                        l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
-
-  // GetEstimatedTxFee with cached blockhash and null tx fee from remote.
-  SetInterceptor(latest_blockhash1_, last_valid_block_height1_, "", json2);
-  TestGetEstimatedTxFee(system_transfer_meta_id, 0,
-                        mojom::SolanaProviderError::kSuccess, "");
-
-  // GetEstimatedTxFee with cached latest blockhash and non-null tx fee from
-  // remote.
-  SetInterceptor("", 0, "", json);
-  TestGetEstimatedTxFee(system_transfer_meta_id, UINT64_MAX,
-                        mojom::SolanaProviderError::kSuccess, "");
-}
-
 TEST_F(SolanaTxManagerUnitTest, DropTxWithInvalidBlockhash) {
   const auto& from = sol_account();
   const std::string to = "JDqrvDz8d8tFCADashbUKQDKfJZFobNy13ugN65t1wvV";
@@ -1735,9 +1661,9 @@ TEST_F(SolanaTxManagerUnitTest, RebroadcastTransaction) {
   EXPECT_EQ(send_transaction_calls_, 1u);
 }
 
-TEST_F(SolanaTxManagerUnitTest, GetSolanaFeeEstimation) {
+TEST_F(SolanaTxManagerUnitTest, GetSolanaTxFeeEstimation) {
   // Fetching fee estimate for non existant tx id meta fails.
-  TestGetSolanaFeeEstimation(
+  TestGetSolanaTxFeeEstimation(
       mojom::kSolanaMainnet, "non existant tx meta id", {},
       mojom::SolanaProviderError::kInternalError,
       l10n_util::GetStringUTF8(IDS_BRAVE_WALLET_TRANSACTION_NOT_FOUND));
@@ -1800,9 +1726,9 @@ TEST_F(SolanaTxManagerUnitTest, GetSolanaFeeEstimation) {
   expected_estimate->base_fee = 5000;
   expected_estimate->compute_units = 69017 + 300;
   expected_estimate->fee_per_compute_unit = 100;
-  TestGetSolanaFeeEstimation(mojom::kSolanaMainnet, meta.id(),
-                             std::move(expected_estimate),
-                             mojom::SolanaProviderError::kSuccess, "");
+  TestGetSolanaTxFeeEstimation(mojom::kSolanaMainnet, meta.id(),
+                               std::move(expected_estimate),
+                               mojom::SolanaProviderError::kSuccess, "");
 }
 
 }  // namespace brave_wallet

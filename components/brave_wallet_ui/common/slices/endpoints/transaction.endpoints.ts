@@ -1771,14 +1771,14 @@ export const transactionEndpoints = ({
         try {
           const { solanaTxManagerProxy } = baseQuery(undefined).data
           const { errorMessage, fee } =
-            await solanaTxManagerProxy.getEstimatedTxFee(arg.chainId, arg.txId)
+            await solanaTxManagerProxy.getSolanaTxFeeEstimation(arg.chainId, arg.txId)
 
           if (!fee) {
             throw new Error(errorMessage)
           }
 
           return {
-            data: fee.toString()
+            data: fee.baseFee.toString()
           }
         } catch (error) {
           return handleEndpointError(

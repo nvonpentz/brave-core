@@ -113,15 +113,15 @@ void SolanaTxManager::AddUnapprovedTransaction(
       base::BindOnce(&SolanaTxManager::ContinueAddUnapprovedTransaction,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
-  GetSolanaFeeEstimationAndMeta(chain_id, std::move(meta),
-                                std::move(internal_callback));
+  GetSolanaTxFeeEstimationAndMeta(chain_id, std::move(meta),
+                                  std::move(internal_callback));
 }
 
 void SolanaTxManager::OnSimulateSolanaTransaction(
     const std::string& chain_id,
     std::unique_ptr<SolanaTxMeta> meta,
     uint64_t base_fee,
-    GetSolanaFeeEstimationAndMetaCallback callback,
+    GetSolanaTxFeeEstimationAndMetaCallback callback,
     uint64_t compute_units_consumed,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
@@ -143,7 +143,7 @@ void SolanaTxManager::OnGetRecentSolanaPrioritizationFees(
     std::unique_ptr<SolanaTxMeta> meta,
     uint64_t base_fee,
     uint64_t compute_units,
-    GetSolanaFeeEstimationAndMetaCallback callback,
+    GetSolanaTxFeeEstimationAndMetaCallback callback,
     std::vector<std::pair<uint64_t, uint64_t>> recent_fees,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
@@ -185,9 +185,9 @@ void SolanaTxManager::OnGetRecentSolanaPrioritizationFees(
                           mojom::SolanaProviderError::kSuccess, "");
 }
 
-void SolanaTxManager::OnGetEstimatedTxFeeAndMeta(
+void SolanaTxManager::OnGetEstimatedTxBaseFee(
     const std::string& chain_id,
-    GetSolanaFeeEstimationAndMetaCallback callback,
+    GetSolanaTxFeeEstimationAndMetaCallback callback,
     std::unique_ptr<SolanaTxMeta> meta,
     uint64_t base_fee,
     mojom::SolanaProviderError error,
@@ -206,17 +206,8 @@ void SolanaTxManager::OnGetEstimatedTxFeeAndMeta(
                                                std::move(internal_callback));
 }
 
-void SolanaTxManager::FinishGetEstimatedTxFee(
-    GetEstimatedTxFeeCallback callback,
-    std::unique_ptr<SolanaTxMeta> meta,
-    uint64_t base_fee,
-    mojom::SolanaProviderError error,
-    const std::string& error_message) {
-  std::move(callback).Run(base_fee, error, error_message);
-}
-
-void SolanaTxManager::FinishGetSolanaFeeEstimation(
-    GetSolanaFeeEstimationCallback callback,
+void SolanaTxManager::FinishGetSolanaTxFeeEstimation(
+    GetSolanaTxFeeEstimationCallback callback,
     std::unique_ptr<SolanaTxMeta> meta,
     mojom::SolanaFeeEstimationPtr estimation,
     mojom::SolanaProviderError error,
@@ -857,28 +848,9 @@ void SolanaTxManager::OnGetAccountInfo(
                           mojom::SolanaProviderError::kSuccess, "");
 }
 
-void SolanaTxManager::GetEstimatedTxFee(const std::string& tx_meta_id,
-                                        GetEstimatedTxFeeCallback callback) {
-  std::unique_ptr<SolanaTxMeta> meta =
-      GetSolanaTxStateManager()->GetSolanaTx(tx_meta_id);
-  if (!meta) {
-    DCHECK(false) << "Transaction should be found";
-    std::move(callback).Run(
-        false, mojom::SolanaProviderError::kInternalError,
-        l10n_util::GetStringUTF8(IDS_BRAVE_WALLET_TRANSACTION_NOT_FOUND));
-    return;
-  }
-
-  auto internal_callback =
-      base::BindOnce(&SolanaTxManager::FinishGetEstimatedTxFee,
-                     weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-
-  GetEstimatedTxFeeAndMeta(std::move(meta), std::move(internal_callback));
-}
-
-void SolanaTxManager::GetEstimatedTxFeeAndMeta(
+void SolanaTxManager::GetEstimatedTxBaseFee(
     std::unique_ptr<SolanaTxMeta> meta,
-    GetEstimatedTxFeeAndMetaCallback callback) {
+    GetEstimatedTxBaseFeeCallback callback) {
   const std::string chain_id = meta->chain_id();
   const std::string blockhash = meta->tx()->message()->recent_blockhash();
   if (blockhash.empty()) {
@@ -902,7 +874,7 @@ void SolanaTxManager::GetEstimatedTxFeeAndMeta(
 
 void SolanaTxManager::OnGetLatestBlockhashForGetEstimatedTxFee(
     std::unique_ptr<SolanaTxMeta> meta,
-    GetEstimatedTxFeeAndMetaCallback callback,
+    GetEstimatedTxBaseFeeCallback callback,
     const std::string& latest_blockhash,
     uint64_t last_valid_block_height,
     mojom::SolanaProviderError error,
@@ -924,19 +896,18 @@ void SolanaTxManager::OnGetLatestBlockhashForGetEstimatedTxFee(
                      std::move(meta)));
 }
 
-void SolanaTxManager::OnGetFeeForMessage(
-    GetEstimatedTxFeeAndMetaCallback callback,
-    std::unique_ptr<SolanaTxMeta> meta,
-    uint64_t tx_fee,
-    mojom::SolanaProviderError error,
-    const std::string& error_message) {
+void SolanaTxManager::OnGetFeeForMessage(GetEstimatedTxBaseFeeCallback callback,
+                                         std::unique_ptr<SolanaTxMeta> meta,
+                                         uint64_t tx_fee,
+                                         mojom::SolanaProviderError error,
+                                         const std::string& error_message) {
   std::move(callback).Run(std::move(meta), tx_fee, error, error_message);
 }
 
-void SolanaTxManager::GetSolanaFeeEstimation(
+void SolanaTxManager::GetSolanaTxFeeEstimation(
     const std::string& chain_id,
     const std::string& tx_meta_id,
-    GetSolanaFeeEstimationCallback callback) {
+    GetSolanaTxFeeEstimationCallback callback) {
   // Get the TxMeta.
   std::unique_ptr<SolanaTxMeta> meta =
       GetSolanaTxStateManager()->GetSolanaTx(tx_meta_id);
@@ -948,21 +919,21 @@ void SolanaTxManager::GetSolanaFeeEstimation(
   }
 
   auto internal_callback =
-      base::BindOnce(&SolanaTxManager::FinishGetSolanaFeeEstimation,
+      base::BindOnce(&SolanaTxManager::FinishGetSolanaTxFeeEstimation,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
 
-  GetSolanaFeeEstimationAndMeta(chain_id, std::move(meta),
-                                std::move(internal_callback));
+  GetSolanaTxFeeEstimationAndMeta(chain_id, std::move(meta),
+                                  std::move(internal_callback));
 }
 
-void SolanaTxManager::GetSolanaFeeEstimationAndMeta(
+void SolanaTxManager::GetSolanaTxFeeEstimationAndMeta(
     const std::string& chain_id,
     std::unique_ptr<SolanaTxMeta> meta,
-    GetSolanaFeeEstimationAndMetaCallback callback) {
+    GetSolanaTxFeeEstimationAndMetaCallback callback) {
   auto internal_callback = base::BindOnce(
-      &SolanaTxManager::OnGetEstimatedTxFeeAndMeta,
-      weak_ptr_factory_.GetWeakPtr(), chain_id, std::move(callback));
-  GetEstimatedTxFeeAndMeta(std::move(meta), std::move(internal_callback));
+      &SolanaTxManager::OnGetEstimatedTxBaseFee, weak_ptr_factory_.GetWeakPtr(),
+      chain_id, std::move(callback));
+  GetEstimatedTxBaseFee(std::move(meta), std::move(internal_callback));
 }
 
 void SolanaTxManager::OnLatestBlockhashUpdated(

@@ -477,18 +477,12 @@ void TxService::MakeTxDataFromBase64EncodedTransaction(
       std::move(callback));
 }
 
-void TxService::GetEstimatedTxFee(const std::string& chain_id,
-                                  const std::string& tx_meta_id,
-                                  GetEstimatedTxFeeCallback callback) {
-  GetSolanaTxManager()->GetEstimatedTxFee(tx_meta_id, std::move(callback));
-}
-
-void TxService::GetSolanaFeeEstimation(
+void TxService::GetSolanaTxFeeEstimation(
     const std::string& chain_id,
     const std::string& tx_meta_id,
-    GetSolanaFeeEstimationCallback callback) {
-  GetSolanaTxManager()->GetSolanaFeeEstimation(chain_id, tx_meta_id,
-                                               std::move(callback));
+    GetSolanaTxFeeEstimationCallback callback) {
+  GetSolanaTxManager()->GetSolanaTxFeeEstimation(chain_id, tx_meta_id,
+                                                 std::move(callback));
 }
 
 void TxService::ProcessSolanaHardwareSignature(
