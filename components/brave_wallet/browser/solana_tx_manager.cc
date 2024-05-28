@@ -126,7 +126,15 @@ void SolanaTxManager::OnSimulateSolanaTransaction(
     mojom::SolanaProviderError error,
     const std::string& error_message) {
   if (error != mojom::SolanaProviderError::kSuccess) {
-    std::move(callback).Run({}, {}, error, error_message);
+    // If the simulation fails, we'll still propagate the base
+    // fee - the client can use it even if the priority fee fails.
+    mojom::SolanaFeeEstimationPtr estimation = mojom::SolanaFeeEstimation::New();
+    estimation->base_fee = base_fee;
+    estimation->compute_units = 0;
+    estimation->fee_per_compute_unit = 0;
+    std::move(callback).Run(std::move(meta),
+                            std::move(estimation),
+                            error, error_message);
     return;
   }
 
@@ -148,7 +156,16 @@ void SolanaTxManager::OnGetRecentSolanaPrioritizationFees(
     mojom::SolanaProviderError error,
     const std::string& error_message) {
   if (error != mojom::SolanaProviderError::kSuccess) {
-    std::move(callback).Run({}, {}, error, error_message);
+    // If the simulation fails, we'll still propagate the base
+    // fee - the client can use it even if the priority fee fails.
+    mojom::SolanaFeeEstimationPtr estimation = mojom::SolanaFeeEstimation::New();
+    estimation->base_fee = base_fee;
+    // estimation->compute_units = compute_units;
+    estimation->compute_units = compute_units;
+    estimation->fee_per_compute_unit = 0;
+    std::move(callback).Run(std::move(meta),
+                            std::move(estimation),
+                            error, error_message);
     return;
   }
 
@@ -221,14 +238,32 @@ void SolanaTxManager::ContinueAddUnapprovedTransaction(
     mojom::SolanaFeeEstimationPtr estimation,
     mojom::SolanaProviderError error,
     const std::string& error_message) {
+  // TODO: If just the priority fee related stuff fails (simulation
+  // and recent prioritization fees) but we still have a base fee
+  // then, just skip the fee part. In this case, I'll think
+  // we'll have 0 for fees.
   if (error != mojom::SolanaProviderError::kSuccess) {
-    std::move(callback).Run(false, "", error_message);
+
+    // Actually: I think we're fine to just just not set the fee estimation
+    // even if base fee fails. It's an optional.
+    
+    // If we don't even have a base fee, then just fail
+    // the add request.
+    if (estimation.base_fee == 0) {
+      std::move(callback).Run(false, "", error_message);
+      return;
+    }
+
+    // If we do have a base fee
     return;
   }
 
   auto compute_units = estimation->compute_units;
   auto fee_per_compute_unit = estimation->fee_per_compute_unit;
 
+  // TODO: Double check that if this isn't called, the value
+  // is null - not just empty values. we need to distinguish to
+  // frontends when they need to fetch the whole fee thing again.
   meta->tx()->set_fee_estimation(std::move(estimation));
 
   // Modify compute units and add the priority fee
